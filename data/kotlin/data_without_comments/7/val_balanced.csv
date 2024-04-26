@@ -1,0 +1,54 @@
+processed_func,target
+"    override fun doWork(): Result {
+        if (BuildConfig.DEBUG)
+            DP3T.addWorkerStartedToHistory(applicationContext, TAG)
+        reportFakeInfectionUseCase.reportFakeInfection().subscribe()
+        start(applicationContext, getRandomDelay(), ExistingWorkPolicy.APPEND)
+        return Result.success()
+    }",1
+"        fun start(context: Context) {
+            start(context, getRandomDelay(), ExistingWorkPolicy.KEEP)
+        }",1
+"        fun sampleFromStandard(): Double {
+            val random = SecureRandom()
+            return -ln(1.0 - random.nextDouble())
+        }",0
+"    override fun getCurrentLocation(): Location = getCurrentPath().endLocation
+}",0
+"    override fun onCreate() {
+        super.onCreate()
+
+        initRxJavaSettings()
+
+        DP3T.init(
+            this,
+            ApplicationInfo(packageName, BuildConfig.REPORT_URL, BuildConfig.BUCKET_URL),
+            SignatureUtil.getPublicKeyFromBase64OrThrow(BuildConfig.PUBLIC_KEY),
+            BuildConfig.DEBUG
+        )
+        DP3T.setCertificatePinner(certificatePinner)
+        DP3T.setUserAgent(userAgent)
+
+        FakeInfectionReportWorker.start(this)
+
+        registerReceiver(ExposureStatusChangeBroadcastReceiver(), DP3T.getUpdateIntentFilter())
+
+    }",1
+"                            override fun checkServerTrusted(
+                                    chain: Array<X509Certificate>,
+                                    authType: String
+                            ) {
+                            }",1
+"    override fun getHealingTime(): HealingTime {
+        val healingTimeJson = preferences.getString(
+            KEY_HEALING_TIME,
+            ""{\n"" +
+                    ""        \""exposureHighMinutes\"": 20160,\n"" +
+                    ""        \""infectedMinutes\"": 43200\n"" +
+                    ""    }""
+        )
+        return Gson().fromJson(healingTimeJson, HealingTime::class.java)
+    }",0
+"        override fun currentTimeMillis(): Long {
+            return System.currentTimeMillis()
+        }",0

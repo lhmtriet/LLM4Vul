@@ -1,0 +1,393 @@
+processed_func,target
+"    override fun getCurrentPath(): YamlPath {
+        return if (haveStartedReadingElements) {
+            currentElementDecoder.node.path
+        } else {
+            list.path
+        }
+    }",0
+"        private fun start(
+            context: Context,
+            tDummy: Long,
+            existingWorkPolicy: ExistingWorkPolicy
+        ) {
+
+            val now = clock.currentTimeMillis()
+            val executionDelay = 0L.coerceAtLeast(tDummy - now)
+
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+            val work =
+                OneTimeWorkRequest
+                    .Builder(FakeInfectionReportWorker::class.java)
+                    .setInitialDelay(executionDelay, TimeUnit.MILLISECONDS)
+                    .setConstraints(constraints)
+                    .setInputData(Data.Builder().putLong(KEY_T_DUMMY, tDummy).build())
+                    .build()
+            WorkManager.getInstance(context)
+                .enqueueUniqueWork(TAG, existingWorkPolicy, work)
+        }",0
+"        fun start(context: Context, preferencesRepository: PreferencesRepository) {
+            var tDummy: Long = preferencesRepository.getTDummy()
+            if (tDummy == -1L) {
+                tDummy = clock.currentTimeMillis() + clock.syncInterval()
+                preferencesRepository.setTDummy(tDummy)
+            }
+            start(context, tDummy, ExistingWorkPolicy.KEEP)
+        }",0
+"                            override fun checkServerTrusted(
+                                    chain: Array<X509Certificate>,
+                                    authType: String
+                            ) {
+                            }",1
+"            override fun <Base : Any, Sub : Base> polymorphic(baseClass: KClass<Base>, actualClass: KClass<Sub>, actualSerializer: KSerializer<Sub>) {
+                if (baseClass.simpleName == className) {
+                    knownTypes.add(actualSerializer.descriptor.serialName)
+                }
+            }",0
+"    override fun onCreate() {
+        super.onCreate()
+
+        initRxJavaSettings()
+
+        DP3T.init(
+            this,
+            ApplicationInfo(packageName, BuildConfig.REPORT_URL, BuildConfig.BUCKET_URL),
+            SignatureUtil.getPublicKeyFromBase64OrThrow(BuildConfig.PUBLIC_KEY),
+            BuildConfig.DEBUG
+        )
+        DP3T.setCertificatePinner(certificatePinner)
+        DP3T.setUserAgent(userAgent)
+
+        registerReceiver(ExposureStatusChangeBroadcastReceiver(), DP3T.getUpdateIntentFilter())
+
+    }",1
+"    override fun getCurrentPath(): YamlPath {
+        return if (haveStartedReadingEntries) {
+            currentValueDecoder.node.path
+        } else {
+            node.path
+        }
+    }",0
+"                            override fun checkServerTrusted(
+                                    chain: Array<X509Certificate>,
+                                    authType: String
+                            ) {
+                            }",1
+"    override fun getHealingTime(): HealingTime {
+        val healingTimeJson = preferences.getString(
+            KEY_HEALING_TIME,
+            ""{\n"" +
+                    ""        \""exposureHighMinutes\"": 20160,\n"" +
+                    ""        \""infectedMinutes\"": 43200\n"" +
+                    ""    }""
+        )
+        return Gson().fromJson(healingTimeJson, HealingTime::class.java)
+    }",0
+"                            override fun checkServerTrusted(
+                                    chain: Array<X509Certificate>,
+                                    authType: String
+                            ) {
+                            }",1
+"    override fun getCurrentLocation(): Location = getCurrentPath().endLocation
+}",0
+"    fun reportInfected(reportCode: String): Completable {
+
+        return getVerifyToken(reportCode).flatMapCompletable {
+            contactTracingRepository.notifyInfected(it.token, jwtTokenUtils.getOnset(it.token))
+        }.concatWith {
+            preferencesRepository.setInfectionReportDate(Date())
+            it.onComplete()
+        }
+
+    }",1
+"    fun reportInfected(reportCode: String): Completable {
+
+        return getVerifyToken(reportCode).flatMapCompletable {
+            contactTracingRepository.notifyInfected(it.token, jwtTokenUtils.getOnset(it.token))
+        }.concatWith {
+            preferencesRepository.setInfectionReportDate(Date())
+            it.onComplete()
+        }
+
+    }",1
+"    override fun doWork(): Result {
+        val now = clock.currentTimeMillis()
+        var tDummy = inputData.getLong(KEY_T_DUMMY, now)
+        while (tDummy < now) {
+            if (tDummy >= now - FACTOR_HOUR_MILLIS * MAX_DELAY_HOURS) {
+                if (BuildConfig.DEBUG)
+                    DP3T.addWorkerStartedToHistory(applicationContext, TAG)
+                reportFakeInfectionUseCase.reportFakeInfection().subscribe()
+            }
+            tDummy += clock.syncInterval();
+            preferencesRepository.setTDummy(tDummy)
+        }
+
+        start(applicationContext, tDummy, ExistingWorkPolicy.APPEND)
+        return Result.success()
+    }",0
+"    override fun setOnboardingCompleted(onboardingCompleted: Boolean) {
+        preferences
+            .edit()
+            .putBoolean(KEY_ONBOARDING_COMPLETED, onboardingCompleted)
+            .apply()
+    }",0
+"    override fun doWork(): Result {
+        val now = clock.currentTimeMillis()
+        var tDummy = inputData.getLong(KEY_T_DUMMY, now)
+        while (tDummy < now) {
+            
+            if (tDummy >= now - FACTOR_HOUR_MILLIS * MAX_DELAY_HOURS) {
+                if (BuildConfig.DEBUG)
+                    DP3T.addWorkerStartedToHistory(applicationContext, TAG)
+                reportFakeInfectionUseCase.reportFakeInfection().subscribe()
+            }
+            tDummy += clock.syncInterval();
+            preferencesRepository.setTDummy(tDummy)
+        }
+
+        start(applicationContext, tDummy, ExistingWorkPolicy.APPEND)
+        return Result.success()
+    }",1
+"    fun reportInfected(reportCode: String): Completable {
+
+        return getVerifyToken(reportCode).flatMapCompletable {
+            contactTracingRepository.notifyInfected(it.token, jwtTokenUtils.getOnset(it.token))
+        }.concatWith {
+            preferencesRepository.setInfectionReportDate(Date())
+            it.onComplete()
+        }
+
+    }",1
+"    fun reportInfected(reportCode: String): Completable {
+
+        return getVerifyToken(reportCode).flatMapCompletable {
+            contactTracingRepository.notifyInfected(it.token, jwtTokenUtils.getOnset(it.token))
+        }.concatWith {
+            preferencesRepository.setInfectionReportDate(Date())
+            it.onComplete()
+        }
+
+    }",1
+"        fun sampleFromStandard(): Double {
+            val random = SecureRandom()
+            return -ln(1.0 - random.nextDouble())
+        }",0
+"    override fun doWork(): Result {
+        val now = clock.currentTimeMillis()
+        var tDummy = inputData.getLong(KEY_T_DUMMY, now)
+        while (tDummy < now) {
+            
+            if (tDummy >= now - FACTOR_HOUR_MILLIS * MAX_DELAY_HOURS) {
+                if (BuildConfig.DEBUG)
+                    DP3T.addWorkerStartedToHistory(applicationContext, TAG)
+                reportFakeInfectionUseCase.reportFakeInfection().subscribe()
+            }
+            tDummy += clock.syncInterval();
+            preferencesRepository.setTDummy(tDummy)
+        }
+
+        start(applicationContext, tDummy, ExistingWorkPolicy.APPEND)
+        return Result.success()
+    }",1
+"    override fun doWork(): Result {
+        val now = clock.currentTimeMillis()
+        var tDummy = inputData.getLong(KEY_T_DUMMY, now)
+        while (tDummy < now) {
+            
+            if (tDummy >= now - FACTOR_HOUR_MILLIS * MAX_DELAY_HOURS) {
+                if (BuildConfig.DEBUG)
+                    DP3T.addWorkerStartedToHistory(applicationContext, TAG)
+                reportFakeInfectionUseCase.reportFakeInfection().subscribe()
+            }
+            tDummy += clock.syncInterval();
+            preferencesRepository.setTDummy(tDummy)
+        }
+
+        start(applicationContext, tDummy, ExistingWorkPolicy.REPLACE)
+        return Result.success()
+    }",0
+"    fun reportInfected(reportCode: String): Completable {
+
+        return getVerifyToken(reportCode).flatMapCompletable {
+            contactTracingRepository.notifyInfected(it.token, jwtTokenUtils.getOnset(it.token))
+        }.concatWith {
+            preferencesRepository.setInfectionReportDate(Date())
+            it.onComplete()
+        }
+
+    }",1
+"    override fun <T> decodeSerializableValue(deserializer: DeserializationStrategy<T>): T {
+        try {
+            return super.decodeSerializableValue(deserializer)
+        } catch (e: SerializationException) {
+            throwIfUnknownPolymorphicTypeException(e, deserializer)
+
+            throw e
+        }
+    }",0
+"                            override fun checkServerTrusted(
+                                    chain: Array<X509Certificate>,
+                                    authType: String
+                            ) {
+                            }",1
+"        private fun start(
+            context: Context,
+            tDummy: Long,
+            existingWorkPolicy: ExistingWorkPolicy
+        ) {
+
+            val now = clock.currentTimeMillis()
+            val executionDelay = 0L.coerceAtLeast(tDummy - now)
+            val executionDelayDays =
+                executionDelay / FACTOR_DAY_MILLIS
+
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+            val work =
+                OneTimeWorkRequest
+                    .Builder(FakeInfectionReportWorker::class.java)
+                    .setInitialDelay(executionDelayDays, TimeUnit.MINUTES)
+                    .setConstraints(constraints)
+                    .setInputData(Data.Builder().putLong(KEY_T_DUMMY, tDummy).build())
+                    .build()
+            WorkManager.getInstance(context)
+                .enqueueUniqueWork(TAG, existingWorkPolicy, work)
+        }",0
+"    override fun decodeNotNullMark(): Boolean {
+        if (!haveStartedReadingElements) {
+            return true
+        }
+
+        return currentElementDecoder.decodeNotNullMark()
+    }",0
+"    fun reportInfected(reportCode: String): Completable {
+
+        return getVerifyToken(reportCode).flatMapCompletable {
+            contactTracingRepository.notifyInfected(it.token, jwtTokenUtils.getOnset(it.token))
+        }.concatWith {
+            preferencesRepository.setInfectionReportDate(Date())
+            it.onComplete()
+        }
+
+    }",1
+"                            override fun checkServerTrusted(
+                                    chain: Array<X509Certificate>,
+                                    authType: String
+                            ) {
+                            }",1
+"    override fun doWork(): Result {
+        val now = clock.currentTimeMillis()
+        var tDummy = inputData.getLong(KEY_T_DUMMY, now)
+        while (tDummy < now) {
+            
+            if (tDummy >= now - FACTOR_HOUR_MILLIS * MAX_DELAY_HOURS) {
+                if (BuildConfig.DEBUG)
+                    DP3T.addWorkerStartedToHistory(applicationContext, TAG)
+                reportFakeInfectionUseCase.reportFakeInfection().subscribe()
+            }
+            tDummy += clock.syncInterval();
+            preferencesRepository.setTDummy(tDummy)
+        }
+
+        start(applicationContext, tDummy, ExistingWorkPolicy.APPEND)
+        return Result.success()
+    }",1
+"    private fun getKnownTypesForSealedType(deserializer: DeserializationStrategy<*>): Set<String> {
+        val typesDescriptor = deserializer.descriptor.getElementDescriptor(1)
+
+        return typesDescriptor.elementNames.toSet()
+    }",0
+"        override fun syncInterval(): Long {
+            val newDelayDays: Double =
+                ExponentialDistribution.sampleFromStandard() / SAMPLING_RATE
+            return (newDelayDays * FACTOR_DAY_MILLIS).toLong()
+        }",0
+"        fun sampleFromStandard(): Double {
+            val random = SecureRandom()
+            return -Math.log(1.0 - random.nextDouble())
+        }",0
+"    fun read(path: Path): Baseline {
+        try {
+            Files.newInputStream(path).use {
+                val reader = SAXParserFactory.newInstance()
+                    .apply {
+                        setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true)
+                    }
+                    .newSAXParser()
+                val handler = BaselineHandler()
+                reader.parse(it, handler)
+                return handler.createBaseline()
+            }
+        } catch (error: SAXParseException) {
+            val (line, column) = error.lineNumber to error.columnNumber
+            throw InvalidState(""Error on position $line:$column while reading the baseline xml file!"", error)
+        }
+    }",0
+"        private fun getRandomDelay(): Long = Random.nextLong(180, 360)
+
+    }",0
+"    fun reportInfected(reportCode: String): Completable {
+
+        return getVerifyToken(reportCode).flatMapCompletable {
+            contactTracingRepository.notifyInfected(it.token, jwtTokenUtils.getOnset(it.token))
+        }.concatWith {
+            preferencesRepository.setInfectionReportDate(Date())
+            it.onComplete()
+        }
+
+    }",1
+"                            override fun checkServerTrusted(
+                                    chain: Array<X509Certificate>,
+                                    authType: String
+                            ) {
+                            }",1
+"    override fun getLanguages(): List<Language> {
+        val itemType = object : TypeToken<List<Language>>() {}.type
+        return Gson().fromJson(
+            preferences.getString(
+                KEY_LANGUAGES, ""[]""
+            ),
+            itemType
+        )
+    }",0
+"    fun reportInfected(reportCode: String): Completable {
+
+        return getVerifyToken(reportCode).flatMapCompletable {
+            contactTracingRepository.notifyInfected(it.token, jwtTokenUtils.getOnset(it.token))
+        }.concatWith {
+            preferencesRepository.setInfectionReportDate(Date())
+            it.onComplete()
+        }
+
+    }",1
+"    fun reportInfected(reportCode: String): Completable {
+
+        return getVerifyToken(reportCode).flatMapCompletable {
+            contactTracingRepository.notifyInfected(it.token, jwtTokenUtils.getOnset(it.token))
+        }.concatWith {
+            preferencesRepository.setInfectionReportDate(Date())
+            it.onComplete()
+        }
+
+    }",1
+"    override fun doWork(): Result {
+        val now = clock.currentTimeMillis()
+        var tDummy = inputData.getLong(KEY_T_DUMMY, now)
+        while (tDummy < now) {
+            
+            if (tDummy >= now - FACTOR_HOUR_MILLIS * MAX_DELAY_HOURS) {
+                if (BuildConfig.DEBUG)
+                    DP3T.addWorkerStartedToHistory(applicationContext, TAG)
+                reportFakeInfectionUseCase.reportFakeInfection().subscribe()
+            }
+            tDummy += clock.syncInterval();
+            preferencesRepository.setTDummy(tDummy)
+        }
+
+        start(applicationContext, tDummy, ExistingWorkPolicy.APPEND)
+        return Result.success()
+    }",1

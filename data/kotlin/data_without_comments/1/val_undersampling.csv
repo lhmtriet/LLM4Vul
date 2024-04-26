@@ -1,0 +1,78 @@
+processed_func,target
+"    override fun doWork(): Result {
+        val now = clock.currentTimeMillis()
+        var tDummy = inputData.getLong(KEY_T_DUMMY, now)
+        while (tDummy < now) {
+            
+            if (tDummy >= now - FACTOR_HOUR_MILLIS * MAX_DELAY_HOURS) {
+                if (BuildConfig.DEBUG)
+                    DP3T.addWorkerStartedToHistory(applicationContext, TAG)
+                reportFakeInfectionUseCase.reportFakeInfection().subscribe()
+            }
+            tDummy += clock.syncInterval();
+            preferencesRepository.setTDummy(tDummy)
+        }
+
+        start(applicationContext, tDummy, ExistingWorkPolicy.APPEND)
+        return Result.success()
+    }",1
+"    override fun getCurrentLocation(): Location = getCurrentPath().endLocation
+}",0
+"    override fun onCreate() {
+        super.onCreate()
+
+        initRxJavaSettings()
+
+        DP3T.init(
+            this,
+            ApplicationInfo(packageName, BuildConfig.REPORT_URL, BuildConfig.BUCKET_URL),
+            SignatureUtil.getPublicKeyFromBase64OrThrow(BuildConfig.PUBLIC_KEY),
+            BuildConfig.DEBUG
+        )
+        DP3T.setCertificatePinner(certificatePinner)
+        DP3T.setUserAgent(userAgent)
+
+        registerReceiver(ExposureStatusChangeBroadcastReceiver(), DP3T.getUpdateIntentFilter())
+
+    }",1
+"    override fun getHealingTime(): HealingTime {
+        val healingTimeJson = preferences.getString(
+            KEY_HEALING_TIME,
+            ""{\n"" +
+                    ""        \""exposureHighMinutes\"": 20160,\n"" +
+                    ""        \""infectedMinutes\"": 43200\n"" +
+                    ""    }""
+        )
+        return Gson().fromJson(healingTimeJson, HealingTime::class.java)
+    }",0
+"    override fun getCurrentPath(): YamlPath {
+        return if (haveStartedReadingElements) {
+            currentElementDecoder.node.path
+        } else {
+            list.path
+        }
+    }",0
+"    override fun getLanguages(): List<Language> {
+        val itemType = object : TypeToken<List<Language>>() {}.type
+        return Gson().fromJson(
+            preferences.getString(
+                KEY_LANGUAGES, ""[]""
+            ),
+            itemType
+        )
+    }",0
+"                            override fun checkServerTrusted(
+                                    chain: Array<X509Certificate>,
+                                    authType: String
+                            ) {
+                            }",1
+"    fun reportInfected(reportCode: String): Completable {
+
+        return getVerifyToken(reportCode).flatMapCompletable {
+            contactTracingRepository.notifyInfected(it.token, jwtTokenUtils.getOnset(it.token))
+        }.concatWith {
+            preferencesRepository.setInfectionReportDate(Date())
+            it.onComplete()
+        }
+
+    }",1

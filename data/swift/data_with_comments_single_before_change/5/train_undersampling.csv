@@ -1,0 +1,534 @@
+processed_func,target,flaw_line_index,flaw_line
+"private func handlePong(_ pingData: HTTP2PingData) -> Action {
+    if pingData.integer == self.pingCode {
+      return .cancelScheduledTimeout
+    } else {
+      return .none
+    }
+  }",1,1,    if pingData.integer == self.pingCode {
+"internal static func participantsNOthers(_ p1: Any, _ p2: Int) -> String {
+          return L10n.tr(""Localizable"", ""content.system.participants_n_others"", String(describing: p1), p2)
+        }",0,,
+"    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        
+        if window != nil {
+            startCapture()
+        }
+    }",1,4,            startCapture()
+"private(set) var connectionManagerEvent: ConnectionManagerEvent?
+
+    /// The value of HTTP/2 SETTINGS_MAX_CONCURRENT_STREAMS changed.
+    private(set) var maxConcurrentStreamsChange: Int?
+
+    /// An idle task, either scheduling or cancelling an idle timeout.
+    private(set) var idleTask: IdleTask?
+
+    /// Send a GOAWAY frame with the last peer initiated stream ID set to this value.
+    private(set) var sendGoAwayWithLastPeerInitiatedStreamID: HTTP2StreamID?
+
+    /// Whether the channel should be closed.
+    private(set) var shouldCloseChannel: Bool
+
+    fileprivate static let none = Operations()
+
+    fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+      self.sendGoAwayWithLastPeerInitiatedStreamID = streamID
+    }",1,16,fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+"    fileprivate init(fromOperating state: Operating, idleTask: Scheduled<Void>) {
+      // We won't transition to this state unless we've seen a SETTINGS frame.
+      assert(state.hasSeenSettings)
+
+      self.role = state.role
+      self.lastPeerInitiatedStreamID = state.lastPeerInitiatedStreamID
+      self.maxConcurrentStreams = state.maxConcurrentStreams
+      self.idleTask = idleTask
+    }",0,,
+"internal static func reply(_ p1: Any) -> String {
+            return L10n.tr(""Localizable"", ""conversation.status.message.reply"", String(describing: p1))
+          }",0,,
+"public func streamFile(
+        at path: String,
+        chunkSize: Int = NonBlockingFileIO.defaultChunkSize,
+        mediaType: HTTPMediaType? = nil,
+        onCompleted: @escaping (Result<Void, Error>) -> () = { _ in }
+    ) -> Response {
+        // Get file attributes for this file.
+        guard
+            let attributes = try? FileManager.default.attributesOfItem(atPath: path),
+            let modifiedAt = attributes[.modificationDate] as? Date,
+            let fileSize = (attributes[.size] as? NSNumber)?.intValue
+        else {
+            return Response(status: .internalServerError)
+        }
+
+        let contentRange: HTTPHeaders.Range?
+        if let rangeFromHeaders = request.headers.range {
+            if rangeFromHeaders.unit == .bytes && rangeFromHeaders.ranges.count == 1 {
+                contentRange = rangeFromHeaders
+            } else {
+                contentRange = nil
+            }
+        } else {
+            contentRange = nil
+        }
+        // Create empty headers array.
+        var headers: HTTPHeaders = [:]
+
+        // Generate ETag value, ""HEX value of last modified date"" + ""-"" + ""file size""
+        let fileETag = ""\(modifiedAt.timeIntervalSince1970)-\(fileSize)""
+        headers.replaceOrAdd(name: .eTag, value: fileETag)
+
+        // Check if file has been cached already and return NotModified response if the etags match
+        if fileETag == request.headers.first(name: .ifNoneMatch) {
+            return Response(status: .notModified)
+        }
+
+        // Create the HTTP response.
+        let response = Response(status: .ok, headers: headers)
+        let offset: Int64
+        let byteCount: Int
+        if let contentRange = contentRange {
+            response.status = .partialContent
+            response.headers.add(name: .accept, value: contentRange.unit.serialize())
+            if let firstRange = contentRange.ranges.first {
+                let range = firstRange.asResponseContentRange(limit: fileSize)
+                response.headers.contentRange = HTTPHeaders.ContentRange(unit: contentRange.unit, range: range)
+                (offset, byteCount) = firstRange.asByteBufferBounds(withMaxSize: fileSize)
+            } else {
+                offset = 0
+                byteCount = fileSize
+            }
+        } else {
+            offset = 0
+            byteCount = fileSize
+        }
+        // Set Content-Type header based on the media type
+        // Only set Content-Type if file not modified and returned above.
+        if
+            let fileExtension = path.components(separatedBy: ""."").last,
+            let type = mediaType ?? HTTPMediaType.fileExtension(fileExtension)
+        {
+            response.headers.contentType = type
+        }
+        response.body = .init(stream: { stream in
+            self.read(path: path, fromOffset: offset, byteCount: byteCount, chunkSize: chunkSize) { chunk in
+                return stream.write(.buffer(chunk))
+            }.whenComplete { result in
+                switch result {
+                case .failure(let error):
+                    stream.write(.error(error), promise: nil)
+                case .success:
+                    stream.write(.end, promise: nil)
+                }
+                onCompleted(result)
+            }
+        }, count: byteCount, byteBufferAllocator: request.byteBufferAllocator)
+        
+        return response
+    }
+
+    /// Private read method. `onRead` closure uses ByteBuffer and expects future return.
+    /// There may be use in publicizing this in the future for reads that must be async.
+    private func read(
+        path: String,
+        fromOffset offset: Int64,
+        byteCount: Int,
+        chunkSize: Int,
+        onRead: @escaping (ByteBuffer) -> EventLoopFuture<Void>
+    ) -> EventLoopFuture<Void> {
+        do {
+            let fd = try NIOFileHandle(path: path)
+            let done = self.io.readChunked(
+                fileHandle: fd,
+                fromOffset: offset,
+                byteCount: byteCount,
+                chunkSize: chunkSize,
+                allocator: allocator,
+                eventLoop: self.request.eventLoop
+            ) { chunk in
+                return onRead(chunk)
+            }
+            done.whenComplete { _ in
+                try? fd.close()
+            }
+            return done
+        } catch {
+            return self.request.eventLoop.makeFailedFuture(error)
+        }
+    }
+    
+    /// Write the contents of buffer to a file at the supplied path.
+    ///
+    ///     let data = ByteBuffer(string: ""ByteBuffer"")
+    ///     try req.fileio.writeFile(data, at: ""/path/to/file.txt"").wait()
+    ///
+    /// - parameters:
+    ///     - path: Path to file on the disk.
+    ///     - buffer: The `ByteBuffer` to write.
+    /// - returns: `Future` that will complete when the file write is finished.
+    public func writeFile(_ buffer: ByteBuffer, at path: String) -> EventLoopFuture<Void> {
+        do {
+            let fd = try NIOFileHandle(path: path, mode: .write, flags: .allowFileCreation())
+            let done = io.write(fileHandle: fd, buffer: buffer, eventLoop: self.request.eventLoop)
+            done.whenComplete { _ in
+                try? fd.close()
+            }
+            return done
+        } catch {
+            return self.request.eventLoop.makeFailedFuture(error)
+        }
+    }
+}",1,47,"                (offset, byteCount) = firstRange.asByteBufferBounds(withMaxSize: fileSize)"
+"result.set(value: .urlEncoded(value), forPath: [])
+            case 2:
+                let key = kv[0]
+                let value = String(kv[1])
+                result.set(value: .urlEncoded(value), forPath: try parseKey(key: Substring(key)))
+            default:
+                //Empty `&&`
+                continue
+            }
+        }
+        return result
+    }
+
+    func parseKey(key: Substring) throws -> [String] {
+        guard let percentDecodedKey = key.removingPercentEncoding else {
+            throw URLEncodedFormError.malformedKey(key: key)
+        }
+        return try percentDecodedKey.split(separator: ""["").enumerated().map { (i, part) in 
+            switch i {
+            case 0:
+                return String(part)
+            default:
+                guard part.last == ""]"" else {
+                    throw URLEncodedFormError.malformedKey(key: key)
+                }
+                return String(part.dropLast())
+            }
+        }
+    }",1,"0,4","                result.set(value: .urlEncoded(value), forPath: [])/~/                result.set(value: .urlEncoded(value), forPath: try parseKey(key: Substring(key)))"
+"internal static func title(_ p1: Any) -> String {
+            return L10n.tr(""Localizable"", ""registration.email_invitation.hero.title"", String(describing: p1))
+          }",0,,
+"    func asUrlEncoded() throws -> String {
+        switch self {
+        case .urlEncoded(let encoded):
+            return encoded
+        case .urlDecoded(let decoded):
+            return try decoded.urlEncoded()
+        }
+    }",0,,
+"internal static func textYou(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""content.ping.text-you"", String(describing: p1))
+        }",0,,
+"    func scheduleNotification(expositionInfo: ExpositionInfo) {
+        var title, body: String?
+        var sound: UNNotificationSound?
+        formatter.dateFormat = ""dd.MM.YYYY""
+
+        switch expositionInfo.level {
+        case .exposed:
+            title = ""NOTIFICATION_TITLE_EXPOSURE_HIGH"".localized
+            body = ""NOTIFICATION_MESSAGE_EXPOSURE_HIGH"".localized
+            sound = .defaultCritical
+        default:
+            debugPrint(""No notification for exposition: \(expositionInfo.level.rawValue)"")
+        }
+
+        if let title = title, let body = body, let sound = sound {
+            scheduleNotification(title: title, body: body, sound: sound)
+        }
+    }",1,4,
+"internal static func titleYou(_ p1: Any) -> String {
+              return L10n.tr(""Localizable"", ""content.system.conversation.with_name.title-you"", String(describing: p1))
+            }",0,,
+"internal static func participants(_ p1: Int) -> String {
+          return L10n.tr(""Localizable"", ""participants.section.participants"", p1)
+        }",0,,
+"internal static func group(_ p1: Any) -> String {
+            return L10n.tr(""Localizable"", ""conversation.status.typing.group"", String(describing: p1))
+          }",0,,
+"private func checkIfVerificationLevelChanged(addedUsers: Set<ZMUser>) {
+        self.decreaseSecurityLevelIfNeededAfterDiscovering(clients: Set(addedUsers.flatMap { $0.clients }), causedBy: addedUsers)
+    }",1,"0,1","private func checkIfVerificationLevelChanged(addedUsers: Set<ZMUser>) {/~/        self.decreaseSecurityLevelIfNeededAfterDiscovering(clients: Set(addedUsers.flatMap { $0.clients }), causedBy: addedUsers)"
+"    init(values: [URLQueryFragment] = [], children: [String: URLEncodedFormData] = [:]) {
+        self.values = values
+        self.children = children
+    }",0,,
+"internal static func accessibilityValue(_ p1: Any) -> String {
+            return L10n.tr(""Localizable"", ""conversation_list.header.self_team.accessibility_value"", String(describing: p1))
+          }",0,,
+"private func perform(operations: GRPCIdleHandlerStateMachine.Operations) {
+    // Prod the connection manager.
+    if let event = operations.connectionManagerEvent, let manager = self.mode.connectionManager {
+      switch event {
+      case .idle:
+        manager.idle()
+      case .inactive:
+        manager.channelInactive()
+      case .ready:
+        manager.ready()
+      case .quiescing:
+        manager.beginQuiescing()
+      }
+    }
+
+    // Max concurrent streams changed.
+    if let manager = self.mode.connectionManager,
+      let maxConcurrentStreams = operations.maxConcurrentStreamsChange {
+      manager.maxConcurrentStreamsChanged(maxConcurrentStreams)
+    }
+
+    // Handle idle timeout creation/cancellation.
+    if let idleTask = operations.idleTask {
+      switch idleTask {
+      case let .cancel(task):
+        task.cancel()
+
+      case .schedule:
+        if self.idleTimeout != .nanoseconds(.max), let context = self.context {
+          let task = context.eventLoop.scheduleTask(in: self.idleTimeout) {
+            self.idleTimeoutFired()
+          }
+          self.perform(operations: self.stateMachine.scheduledIdleTimeoutTask(task))
+        }
+      }
+    }
+
+    // Send a GOAWAY frame.
+    if let streamID = operations.sendGoAwayWithLastPeerInitiatedStreamID {
+      let goAwayFrame = HTTP2Frame(
+        streamID: .rootStream,
+        payload: .goAway(lastStreamID: streamID, errorCode: .noError, opaqueData: nil)
+      )
+      self.context?.writeAndFlush(self.wrapOutboundOut(goAwayFrame), promise: nil)
+    }
+
+    // Close the channel, if necessary.
+    if operations.shouldCloseChannel, let context = self.context {
+      // Close on the next event-loop tick so we don't drop any events which are
+      // currently being processed.
+      context.eventLoop.execute {
+        context.close(mode: .all, promise: nil)
+      }
+    }
+  }",1,43,"      self.context?.writeAndFlush(self.wrapOutboundOut(goAwayFrame), promise: nil)"
+"internal static func fileMessage(_ p1: Any) -> String {
+              return L10n.tr(""Localizable"", ""conversation.input_bar.message_preview.accessibility.file_message"", String(describing: p1))
+            }",0,,
+"fileprivate func asByteBufferBounds(withMaxSize size: Int) -> (offset: Int64, byteCount: Int) {
+        switch self {
+            case .start(let value):
+                return (offset: numericCast(value), byteCount: size - value)
+            case .tail(let value):
+                return (offset: numericCast(size - value), byteCount: value)
+            case .within(let start, let end):
+                return (offset: numericCast(start), byteCount: end - start + 1)
+        }
+    }",1,"0,7","fileprivate func asByteBufferBounds(withMaxSize size: Int) -> (offset: Int64, byteCount: Int) {/~/                return (offset: numericCast(start), byteCount: end - start + 1)"
+"    public func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
+        // make a copy of the path
+        var path = request.url.path
+
+        // path must be relative.
+        while path.hasPrefix(""/"") {
+            path = String(path.dropFirst())
+        }
+
+        // protect against relative paths
+        guard !path.contains(""../"") else {
+            return request.eventLoop.makeFailedFuture(Abort(.forbidden))
+        }
+
+        // create absolute file path
+        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+
+        // check if file exists and is not a directory
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: filePath, isDirectory: &isDir), !isDir.boolValue else {
+            return next.respond(to: request)
+        }
+
+        // stream the file
+        let res = request.fileio.streamFile(at: filePath)
+        return request.eventLoop.makeSucceededFuture(res)
+    }",1,"1,2,15",        // make a copy of the path/~/        var path = request.url.path/~/        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+"private func updateMetrics(
+        for request: Request,
+        path: String,
+        startTime: UInt64,
+        statusCode: UInt
+    ) {
+        let counterDimensions = [
+            (""method"", request.method.string),
+            (""path"", path),
+            (""status"", statusCode.description),
+        ]
+        Counter(label: ""http_requests_total"", dimensions: counterDimensions).increment()
+        if statusCode >= 500 {
+            Counter(label: ""http_request_errors_total"", dimensions: counterDimensions).increment()
+        }
+        Timer(
+            label: ""http_request_duration_seconds"",
+            dimensions: [
+                (""method"", request.method.string),
+                (""path"", path)
+            ],
+            preferredDisplayUnit: .seconds
+        ).recordNanoseconds(DispatchTime.now().uptimeNanoseconds - startTime)
+    }",1,"2,6,7,8,11,13,17,18,19,20","        path: String,/~/        let counterDimensions = [/~/            (""method"", request.method.string),/~/            (""path"", path),/~/        Counter(label: ""http_requests_total"", dimensions: counterDimensions).increment()/~/            Counter(label: ""http_request_errors_total"", dimensions: counterDimensions).increment()/~/            dimensions: [/~/                (""method"", request.method.string),/~/                (""path"", path)/~/            ],"
+"    private func increaseSecurityLevelIfNeeded(for cause: SecurityChangeCause) {
+        guard securityLevel != .secure &&
+            allUsersTrusted &&
+            allParticipantsHaveClients &&
+            conversationType != .connection else {
+                return
+        }
+
+        securityLevel = .secure
+        appendNewIsSecureSystemMessage(cause: cause)
+        notifyOnUI(name: ZMConversation.isVerifiedNotificationName)
+    }",1,"1,4,5",        guard securityLevel != .secure &&/~/            conversationType != .connection else {/~/                return
+"    private func presentAlertForDeletedAccountIfNeeded(_ error: NSError?) {
+        guard
+            error?.userSessionErrorCode == .accountDeleted,
+            let reason = error?.userInfo[ZMAccountDeletedReasonKey] as? ZMAccountDeletedReason
+        else {
+            return
+        }
+
+        switch reason {
+        case .sessionExpired:
+            rootViewController.presentAlertWithOKButton(title: ""account_deleted_session_expired_alert.title"".localized,
+                                                        message: ""account_deleted_session_expired_alert.message"".localized)
+
+        case .databaseWiped:
+            let wipeCompletionViewController = WipeCompletionViewController()
+            wipeCompletionViewController.modalPresentationStyle = .fullScreen
+            rootViewController.present(wipeCompletionViewController, animated: true)
+
+        default:
+            break
+        }
+    }",1,"10,11","            rootViewController.presentAlertWithOKButton(title: ""account_deleted_session_expired_alert.title"".localized,/~/                                                        message: ""account_deleted_session_expired_alert.message"".localized)"
+"public func addParticipantsAndUpdateConversationState(usersAndRoles: [(ZMUser, Role?)]) {
+        
+        // Is this a new conversation, or an existing one that is being updated?
+        let doesExistsOnBackend = self.remoteIdentifier != nil
+        
+        let addedRoles = usersAndRoles.compactMap { (user, role) -> ParticipantRole? in
+            guard !user.isAccountDeleted else { return nil }
+            
+            // make sure the role is the right team/conversation role
+            require(
+                role == nil || (role!.team == self.team || role!.conversation == self),
+                ""Tried to add a role that does not belong to the conversation""
+            )
+            
+            guard let (result, pr) = updateExistingOrCreateParticipantRole(for: user, with: role) else { return nil }
+            return (result == .created) ? pr : nil
+        }
+        
+        let addedSelfUser = doesExistsOnBackend && addedRoles.contains(where: {$0.user.isSelfUser})
+        if addedSelfUser {
+            self.markToDownloadRolesIfNeeded()
+            self.needsToBeUpdatedFromBackend = true
+        }
+        
+        if !addedRoles.isEmpty {
+            self.checkIfArchivedStatusChanged(addedSelfUser: addedSelfUser)
+            self.checkIfVerificationLevelChanged(addedUsers: Set(addedRoles.map { $0.user}))
+        }
+    }",1,26,self.checkIfVerificationLevelChanged(addedUsers: Set(addedRoles.map { $0.user}))
+"    @objc public func appendNewPotentialGapSystemMessage(users: Set<ZMUser>?, timestamp: Date) {
+        
+        let previousLastMessage = lastMessage
+        let systemMessage = self.appendSystemMessage(type: .potentialGap,
+                                                     sender: ZMUser.selfUser(in: self.managedObjectContext!),
+                                                     users: users,
+                                                     clients: nil,
+                                                     timestamp: timestamp)
+        systemMessage.needsUpdatingUsers = true
+        
+        if let previousLastMessage = previousLastMessage as? ZMSystemMessage, previousLastMessage.systemMessageType == .potentialGap,
+           let previousLastMessageTimestamp = previousLastMessage.serverTimestamp, previousLastMessageTimestamp <= timestamp {
+            // In case the message before the new system message was also a system message of
+            // the type ZMSystemMessageTypePotentialGap, we delete the old one and update the
+            // users property of the new one to use old users and calculate the added / removed users
+            // from the time the previous one was added
+            systemMessage.users = previousLastMessage.users
+            self.managedObjectContext?.delete(previousLastMessage)
+        }
+    }",0,,
+"    private func appendLegalHoldDisabledSystemMessageForConversation() {
+        appendSystemMessage(type: .legalHoldDisabled,
+                            sender: ZMUser.selfUser(in: self.managedObjectContext!),
+                            users: nil,
+                            clients: nil,
+                            timestamp: timestampAfterLastMessage())
+    }",0,,
+"    func updateOverlayWindowFrame(size: CGSize? = nil) {
+        if let size = size {
+            screenCurtain.frame.size = size
+        } else {
+            screenCurtain.frame = UIApplication.shared.keyWindow?.frame ?? UIScreen.main.bounds
+        }
+    }",0,,
+"    private func updateSelfPreview() {
+        guard
+            let selfStreamId = ZMUser.selfUser()?.selfStreamId,
+            let selfStream = stream(with: selfStreamId)
+        else {
+            return
+        }
+
+        if let view = viewCache[selfStreamId] as? SelfVideoPreviewView {
+            view.stream = selfStream
+            view.shouldShowActiveSpeakerFrame = configuration.shouldShowActiveSpeakerFrame
+        } else {
+            viewCache[selfStreamId] = SelfVideoPreviewView(
+                stream: selfStream,
+                isCovered: isCovered,
+                shouldShowActiveSpeakerFrame: configuration.shouldShowActiveSpeakerFrame
+            )
+        }
+    }",1,"1,2,3,4","        guard/~/            let selfStreamId = ZMUser.selfUser()?.selfStreamId,/~/            let selfStream = stream(with: selfStreamId)/~/        else {"
+"internal func sign(digest: ByteBuffer) throws -> ByteBuffer {
+        let bio = BIO_new(BIO_s_mem())
+        defer { BIO_free(bio) }
+        let res = buffer.withUnsafeReadableBytes { ptr in
+            Int(BIO_puts(bio, ptr.baseAddress?.assumingMemoryBound(to: Int8.self)))
+        }
+        assert(res >= 0, ""BIO_puts failed"")
+
+        guard let opaquePointer = OpaquePointer.make(optional: PEM_read_bio_ECPrivateKey(bio!, nil, nil, nil)) else {
+            throw APNSwiftError.SigningError.invalidAuthKey
+        }
+        defer { EC_KEY_free(opaquePointer) }
+        
+        let sig = digest.withUnsafeReadableBytes { ptr in
+            ECDSA_do_sign(ptr.baseAddress?.assumingMemoryBound(to: UInt8.self), Int32(digest.readableBytes), opaquePointer)
+        }
+        defer { ECDSA_SIG_free(sig) }
+
+        var derEncodedSignature: UnsafeMutablePointer<UInt8>?
+        let derLength = i2d_ECDSA_SIG(sig, &derEncodedSignature)
+        guard let derCopy = derEncodedSignature, derLength > 0 else {
+            throw APNSwiftError.SigningError.invalidASN1
+        }
+
+        var derBytes = ByteBufferAllocator().buffer(capacity: Int(derLength))
+        for b in 0 ..< Int(derLength) {
+            derBytes.writeBytes([derCopy[b]])
+        }
+
+        return derBytes
+    }",1,"4,6,18,25,26,27,28","Int(BIO_puts(bio, ptr.baseAddress?.assumingMemoryBound(to: Int8.self)))/~/        assert(res >= 0, ""BIO_puts failed"")/~/        var derEncodedSignature: UnsafeMutablePointer<UInt8>?/~/        for b in 0 ..< Int(derLength) {/~/            derBytes.writeBytes([derCopy[b]])/~/        }/~/"
+"    init(arrayLiteral: String...) {
+        self.values = arrayLiteral.map({ (s: String) -> URLQueryFragment in
+            return .urlDecoded(s)
+        })
+        self.children = [:]
+    }",0,,

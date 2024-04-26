@@ -1,0 +1,2666 @@
+processed_func,target,flaw_line_index,flaw_line
+"internal func sign(digest: ByteBuffer) throws -> ByteBuffer {
+        let bio = BIO_new(BIO_s_mem())
+        defer { BIO_free(bio) }
+        let res = buffer.withUnsafeReadableBytes { ptr in
+            Int(BIO_puts(bio, ptr.baseAddress?.assumingMemoryBound(to: Int8.self)))
+        }
+        assert(res >= 0, ""BIO_puts failed"")
+
+        guard let opaquePointer = OpaquePointer.make(optional: PEM_read_bio_ECPrivateKey(bio!, nil, nil, nil)) else {
+            throw APNSwiftError.SigningError.invalidAuthKey
+        }
+        defer { EC_KEY_free(opaquePointer) }
+        
+        let sig = digest.withUnsafeReadableBytes { ptr in
+            ECDSA_do_sign(ptr.baseAddress?.assumingMemoryBound(to: UInt8.self), Int32(digest.readableBytes), opaquePointer)
+        }
+        defer { ECDSA_SIG_free(sig) }
+
+        var derEncodedSignature: UnsafeMutablePointer<UInt8>?
+        let derLength = i2d_ECDSA_SIG(sig, &derEncodedSignature)
+        guard let derCopy = derEncodedSignature, derLength > 0 else {
+            throw APNSwiftError.SigningError.invalidASN1
+        }
+
+        var derBytes = ByteBufferAllocator().buffer(capacity: Int(derLength))
+        for b in 0 ..< Int(derLength) {
+            derBytes.writeBytes([derCopy[b]])
+        }
+
+        return derBytes
+    }",1,"4,6,18,25,26,27,28","Int(BIO_puts(bio, ptr.baseAddress?.assumingMemoryBound(to: Int8.self)))/~/        assert(res >= 0, ""BIO_puts failed"")/~/        var derEncodedSignature: UnsafeMutablePointer<UInt8>?/~/        for b in 0 ..< Int(derLength) {/~/            derBytes.writeBytes([derCopy[b]])/~/        }/~/"
+"self.state = .operating(.init(role: role))
+    self.logger = logger
+  }
+
+  
+
+  
+  mutating func streamCreated(withID streamID: HTTP2StreamID) -> Operations {
+    var operations: Operations = .none
+
+    switch self.state {
+    case var .operating(state):
+      
+      state.streamCreated(streamID, logger: self.logger)
+      self.state = .operating(state)
+
+    case let .waitingToIdle(state):
+      var operating = Operating(fromWaitingToIdle: state)
+      operating.streamCreated(streamID, logger: self.logger)
+      self.state = .operating(operating)
+      operations.cancelIdleTask(state.idleTask)
+
+    case var .quiescing(state):
+      precondition(state.initiatedByUs)
+      precondition(state.role == .client)
+      
+      
+      
+      
+      state.openStreams += 1
+      self.state = .quiescing(state)
+
+    case .closing, .closed:
+      ()
+    }
+
+    return operations
+  }",1,"23,24,25,26,27,28",precondition(state.initiatedByUs)/~/      precondition(state.role == .client)/~/      // If we're a client and we initiated shutdown then it's possible for streams to be created in/~/      // the quiescing state as there's a delay between stream channels (i.e. `HTTP2StreamChannel`)/~/      // being created and us being notified about their creation (via a user event fired by/~/      // the `HTTP2Handler`).
+"self.state = .operating(.init(role: role))
+    self.logger = logger
+  }
+
+  
+
+  
+  mutating func streamCreated(withID streamID: HTTP2StreamID) -> Operations {
+    var operations: Operations = .none
+
+    switch self.state {
+    case var .operating(state):
+      
+      state.streamCreated(streamID, logger: self.logger)
+      self.state = .operating(state)
+
+    case let .waitingToIdle(state):
+      var operating = Operating(fromWaitingToIdle: state)
+      operating.streamCreated(streamID, logger: self.logger)
+      self.state = .operating(operating)
+      operations.cancelIdleTask(state.idleTask)
+
+    case var .quiescing(state):
+      precondition(state.initiatedByUs)
+      precondition(state.role == .client)
+      
+      
+      
+      
+      state.openStreams += 1
+      self.state = .quiescing(state)
+
+    case .closing, .closed:
+      ()
+    }
+
+    return operations
+  }",1,"23,24,25,26,27,28",precondition(state.initiatedByUs)/~/      precondition(state.role == .client)/~/      // If we're a client and we initiated shutdown then it's possible for streams to be created in/~/      // the quiescing state as there's a delay between stream channels (i.e. `HTTP2StreamChannel`)/~/      // being created and us being notified about their creation (via a user event fired by/~/      // the `HTTP2Handler`).
+"    init(values: [URLQueryFragment] = [], children: [String: URLEncodedFormData] = [:]) {
+        self.values = values
+        self.children = children
+    }",0,,
+"private mutating func handlePing(_ pingData: HTTP2PingData) -> Action {
+    
+    if let maximumPingStrikes = self.maximumPingStrikes {
+      
+      if self.isPingStrike {
+        self.pingStrikes += 1
+
+        
+        if maximumPingStrikes != 0, self.pingStrikes > maximumPingStrikes {
+          return .reply(PingHandler.goAwayFrame)
+        } else {
+          return .none
+        }
+      } else {
+        
+        self.pingStrikes = 0
+        self.lastReceivedPingDate = self.now()
+        return .reply(self.generatePingFrame(code: pingData.integer, ack: true))
+      }
+    } else {
+      
+      
+      
+      
+      return .reply(self.generatePingFrame(code: pingData.integer, ack: true))
+    }
+  }",1,"17,24","        return .reply(self.generatePingFrame(code: pingData.integer, ack: true))/~/      return .reply(self.generatePingFrame(code: pingData.integer, ack: true))"
+"internal static func otherAddedParticipant(_ p1: Any, _ p2: Any) -> String {
+          return L10n.tr(""Localizable"", ""content.system.other_added_participant"", String(describing: p1), String(describing: p2))
+        }",0,,
+"private mutating func handlePing(_ pingData: HTTP2PingData) -> Action {
+    
+    if let maximumPingStrikes = self.maximumPingStrikes {
+      
+      if self.isPingStrike {
+        self.pingStrikes += 1
+
+        
+        if maximumPingStrikes != 0, self.pingStrikes > maximumPingStrikes {
+          return .reply(PingHandler.goAwayFrame)
+        } else {
+          return .none
+        }
+      } else {
+        
+        self.pingStrikes = 0
+        self.lastReceivedPingDate = self.now()
+        return .reply(self.generatePingFrame(code: pingData.integer, ack: true))
+      }
+    } else {
+      
+      
+      
+      
+      return .reply(self.generatePingFrame(code: pingData.integer, ack: true))
+    }
+  }",1,"17,24","        return .reply(self.generatePingFrame(code: pingData.integer, ack: true))/~/      return .reply(self.generatePingFrame(code: pingData.integer, ack: true))"
+"internal static func button(_ p1: Int) -> String {
+            return L10n.tr(""Localizable"", ""collections.section.all.button"", p1)
+          }",0,,
+"self.state = .operating(.init(role: role))
+    self.logger = logger
+  }
+
+  
+
+  
+  mutating func streamCreated(withID streamID: HTTP2StreamID) -> Operations {
+    var operations: Operations = .none
+
+    switch self.state {
+    case var .operating(state):
+      
+      state.streamCreated(streamID, logger: self.logger)
+      self.state = .operating(state)
+
+    case let .waitingToIdle(state):
+      var operating = Operating(fromWaitingToIdle: state)
+      operating.streamCreated(streamID, logger: self.logger)
+      self.state = .operating(operating)
+      operations.cancelIdleTask(state.idleTask)
+
+    case var .quiescing(state):
+      precondition(state.initiatedByUs)
+      precondition(state.role == .client)
+      
+      
+      
+      
+      state.openStreams += 1
+      self.state = .quiescing(state)
+
+    case .closing, .closed:
+      ()
+    }
+
+    return operations
+  }",1,"23,24,25,26,27,28",precondition(state.initiatedByUs)/~/      precondition(state.role == .client)/~/      // If we're a client and we initiated shutdown then it's possible for streams to be created in/~/      // the quiescing state as there's a delay between stream channels (i.e. `HTTP2StreamChannel`)/~/      // being created and us being notified about their creation (via a user event fired by/~/      // the `HTTP2Handler`).
+"    public func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
+        
+        var path = request.url.path
+
+        
+        while path.hasPrefix(""/"") {
+            path = String(path.dropFirst())
+        }
+
+        
+        guard !path.contains(""../"") else {
+            return request.eventLoop.makeFailedFuture(Abort(.forbidden))
+        }
+
+        
+        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+
+        
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: filePath, isDirectory: &isDir), !isDir.boolValue else {
+            return next.respond(to: request)
+        }
+
+        
+        let res = request.fileio.streamFile(at: filePath)
+        return request.eventLoop.makeSucceededFuture(res)
+    }",1,"1,2,15",        // make a copy of the path/~/        var path = request.url.path/~/        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+"internal static func messagePlural(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""self.new_device_alert.message_plural"", String(describing: p1))
+        }",0,,
+"private mutating func handlePing(_ pingData: HTTP2PingData) -> Action {
+    
+    if let maximumPingStrikes = self.maximumPingStrikes {
+      
+      if self.isPingStrike {
+        self.pingStrikes += 1
+
+        
+        if maximumPingStrikes != 0, self.pingStrikes > maximumPingStrikes {
+          return .reply(PingHandler.goAwayFrame)
+        } else {
+          return .none
+        }
+      } else {
+        
+        self.pingStrikes = 0
+        self.lastReceivedPingDate = self.now()
+        return .reply(self.generatePingFrame(code: pingData.integer, ack: true))
+      }
+    } else {
+      
+      
+      
+      
+      return .reply(self.generatePingFrame(code: pingData.integer, ack: true))
+    }
+  }",1,"17,24","        return .reply(self.generatePingFrame(code: pingData.integer, ack: true))/~/      return .reply(self.generatePingFrame(code: pingData.integer, ack: true))"
+"internal static func user(_ p1: Any) -> String {
+              return L10n.tr(""Localizable"", ""call.degraded.alert.message.user"", String(describing: p1))
+            }",0,,
+    init() { },0,,
+"    public init(routes: Routes, middleware: [Middleware] = []) {
+        let options = routes.caseInsensitive ?
+            Set(arrayLiteral: TrieRouter<CachedRoute>.ConfigurationOption.caseInsensitive) : []
+        let router = TrieRouter(CachedRoute.self, options: options)
+        
+        for route in routes.all {
+            
+            let cached = CachedRoute(
+                route: route,
+                responder: middleware.makeResponder(chainingTo: route.responder)
+            )
+            
+            let path = route.path.filter { component in
+                switch component {
+                case .constant(let string):
+                    return string != """"
+                default:
+                    return true
+                }
+            }
+            router.register(cached, at: [.constant(route.method.string)] + path)
+        }
+        self.router = router
+        self.notFoundResponder = middleware.makeResponder(chainingTo: NotFoundResponder())
+    }",0,,
+"  func channelRead(context: ChannelHandlerContext, data: NIOAny) {
+    let frame = self.unwrapInboundIn(data)
+
+    switch frame.payload {
+    case .goAway:
+      self.perform(operations: self.stateMachine.receiveGoAway())
+    case let .settings(.settings(settings)):
+      self.perform(operations: self.stateMachine.receiveSettings(settings))
+    case let .ping(data, ack):
+      self.handlePingAction(self.pingHandler.read(pingData: data, ack: ack))
+    default:
+      
+      ()
+    }
+
+    context.fireChannelRead(data)
+  }",0,,
+"    public func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
+        
+        var path = request.url.path
+
+        
+        while path.hasPrefix(""/"") {
+            path = String(path.dropFirst())
+        }
+
+        
+        guard !path.contains(""../"") else {
+            return request.eventLoop.makeFailedFuture(Abort(.forbidden))
+        }
+
+        
+        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+
+        
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: filePath, isDirectory: &isDir), !isDir.boolValue else {
+            return next.respond(to: request)
+        }
+
+        
+        let res = request.fileio.streamFile(at: filePath)
+        return request.eventLoop.makeSucceededFuture(res)
+    }",1,"1,2,15",        // make a copy of the path/~/        var path = request.url.path/~/        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+"private(set) var connectionManagerEvent: ConnectionManagerEvent?
+
+    
+    private(set) var maxConcurrentStreamsChange: Int?
+
+    
+    private(set) var idleTask: IdleTask?
+
+    
+    private(set) var sendGoAwayWithLastPeerInitiatedStreamID: HTTP2StreamID?
+
+    
+    private(set) var shouldCloseChannel: Bool
+
+    fileprivate static let none = Operations()
+
+    fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+      self.sendGoAwayWithLastPeerInitiatedStreamID = streamID
+    }",1,16,fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+"    public func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
+        
+        var path = request.url.path
+
+        
+        while path.hasPrefix(""/"") {
+            path = String(path.dropFirst())
+        }
+
+        
+        guard !path.contains(""../"") else {
+            return request.eventLoop.makeFailedFuture(Abort(.forbidden))
+        }
+
+        
+        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+
+        
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: filePath, isDirectory: &isDir), !isDir.boolValue else {
+            return next.respond(to: request)
+        }
+
+        
+        let res = request.fileio.streamFile(at: filePath)
+        return request.eventLoop.makeSucceededFuture(res)
+    }",1,"1,2,15",        // make a copy of the path/~/        var path = request.url.path/~/        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+"internal static func title(_ p1: Any) -> String {
+            return L10n.tr(""Localizable"", ""profile.devices.fingerprint_message.title"", String(describing: p1))
+          }",0,,
+"internal static func incomingCall(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""conversation.status.incoming_call"", String(describing: p1))
+        }",0,,
+"    func addObserverToken(_ token: NSObjectProtocol) {
+        observerTokens.append(token)
+    }",0,,
+"  private func idleTimeoutFired() {
+    self.perform(operations: self.stateMachine.idleTimeoutTaskFired())
+  }",0,,
+"internal static func tooManyMembersInConversation(_ p1: Int) -> String {
+          return L10n.tr(""Localizable"", ""error.group_call.too_many_members_in_conversation"", p1)
+        }",0,,
+"internal static func outgoing(_ p1: Any) -> String {
+            return L10n.tr(""Localizable"", ""voice.status.one_to_one.outgoing"", String(describing: p1))
+          }",0,,
+"self.state = .operating(.init(role: role))
+    self.logger = logger
+  }
+
+  
+
+  
+  mutating func streamCreated(withID streamID: HTTP2StreamID) -> Operations {
+    var operations: Operations = .none
+
+    switch self.state {
+    case var .operating(state):
+      
+      state.streamCreated(streamID, logger: self.logger)
+      self.state = .operating(state)
+
+    case let .waitingToIdle(state):
+      var operating = Operating(fromWaitingToIdle: state)
+      operating.streamCreated(streamID, logger: self.logger)
+      self.state = .operating(operating)
+      operations.cancelIdleTask(state.idleTask)
+
+    case var .quiescing(state):
+      precondition(state.initiatedByUs)
+      precondition(state.role == .client)
+      
+      
+      
+      
+      state.openStreams += 1
+      self.state = .quiescing(state)
+
+    case .closing, .closed:
+      ()
+    }
+
+    return operations
+  }",1,"23,24,25,26,27,28",precondition(state.initiatedByUs)/~/      precondition(state.role == .client)/~/      // If we're a client and we initiated shutdown then it's possible for streams to be created in/~/      // the quiescing state as there's a delay between stream channels (i.e. `HTTP2StreamChannel`)/~/      // being created and us being notified about their creation (via a user event fired by/~/      // the `HTTP2Handler`).
+"    public func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
+        
+        var path = request.url.path
+
+        
+        while path.hasPrefix(""/"") {
+            path = String(path.dropFirst())
+        }
+
+        
+        guard !path.contains(""../"") else {
+            return request.eventLoop.makeFailedFuture(Abort(.forbidden))
+        }
+
+        
+        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+
+        
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: filePath, isDirectory: &isDir), !isDir.boolValue else {
+            return next.respond(to: request)
+        }
+
+        
+        let res = request.fileio.streamFile(at: filePath)
+        return request.eventLoop.makeSucceededFuture(res)
+    }",1,"1,2,15",        // make a copy of the path/~/        var path = request.url.path/~/        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+"internal static func showAll(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""call.participants.show_all"", String(describing: p1))
+        }",0,,
+"private(set) var connectionManagerEvent: ConnectionManagerEvent?
+
+    
+    private(set) var maxConcurrentStreamsChange: Int?
+
+    
+    private(set) var idleTask: IdleTask?
+
+    
+    private(set) var sendGoAwayWithLastPeerInitiatedStreamID: HTTP2StreamID?
+
+    
+    private(set) var shouldCloseChannel: Bool
+
+    fileprivate static let none = Operations()
+
+    fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+      self.sendGoAwayWithLastPeerInitiatedStreamID = streamID
+    }",1,16,fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+"self.state = .operating(.init(role: role))
+    self.logger = logger
+  }
+
+  
+
+  
+  mutating func streamCreated(withID streamID: HTTP2StreamID) -> Operations {
+    var operations: Operations = .none
+
+    switch self.state {
+    case var .operating(state):
+      
+      state.streamCreated(streamID, logger: self.logger)
+      self.state = .operating(state)
+
+    case let .waitingToIdle(state):
+      var operating = Operating(fromWaitingToIdle: state)
+      operating.streamCreated(streamID, logger: self.logger)
+      self.state = .operating(operating)
+      operations.cancelIdleTask(state.idleTask)
+
+    case var .quiescing(state):
+      precondition(state.initiatedByUs)
+      precondition(state.role == .client)
+      
+      
+      
+      
+      state.openStreams += 1
+      self.state = .quiescing(state)
+
+    case .closing, .closed:
+      ()
+    }
+
+    return operations
+  }",1,"23,24,25,26,27,28",precondition(state.initiatedByUs)/~/      precondition(state.role == .client)/~/      // If we're a client and we initiated shutdown then it's possible for streams to be created in/~/      // the quiescing state as there's a delay between stream channels (i.e. `HTTP2StreamChannel`)/~/      // being created and us being notified about their creation (via a user event fired by/~/      // the `HTTP2Handler`).
+"self.state = .operating(.init(role: role))
+    self.logger = logger
+  }
+
+  
+
+  
+  mutating func streamCreated(withID streamID: HTTP2StreamID) -> Operations {
+    var operations: Operations = .none
+
+    switch self.state {
+    case var .operating(state):
+      
+      state.streamCreated(streamID, logger: self.logger)
+      self.state = .operating(state)
+
+    case let .waitingToIdle(state):
+      var operating = Operating(fromWaitingToIdle: state)
+      operating.streamCreated(streamID, logger: self.logger)
+      self.state = .operating(operating)
+      operations.cancelIdleTask(state.idleTask)
+
+    case var .quiescing(state):
+      precondition(state.initiatedByUs)
+      precondition(state.role == .client)
+      
+      
+      
+      
+      state.openStreams += 1
+      self.state = .quiescing(state)
+
+    case .closing, .closed:
+      ()
+    }
+
+    return operations
+  }",1,"23,24,25,26,27,28",precondition(state.initiatedByUs)/~/      precondition(state.role == .client)/~/      // If we're a client and we initiated shutdown then it's possible for streams to be created in/~/      // the quiescing state as there's a delay between stream channels (i.e. `HTTP2StreamChannel`)/~/      // being created and us being notified about their creation (via a user event fired by/~/      // the `HTTP2Handler`).
+"internal static func defaultMessage(_ p1: Any, _ p2: Any) -> String {
+          return L10n.tr(""Localizable"", ""missive.connection_request.default_message"", String(describing: p1), String(describing: p2))
+        }",0,,
+"internal static func message(_ p1: Int) -> String {
+            return L10n.tr(""Localizable"", ""conversation.input_bar.message_too_long.message"", p1)
+          }",0,,
+"    private func increaseSecurityLevelIfNeeded(for cause: SecurityChangeCause) {
+        guard securityLevel != .secure &&
+            allUsersTrusted &&
+            allParticipantsHaveClients &&
+            conversationType != .connection else {
+                return
+        }
+
+        securityLevel = .secure
+        appendNewIsSecureSystemMessage(cause: cause)
+        notifyOnUI(name: ZMConversation.isVerifiedNotificationName)
+    }",1,"1,4,5",        guard securityLevel != .secure &&/~/            conversationType != .connection else {/~/                return
+"internal static func message(_ p1: Any) -> String {
+                  return L10n.tr(""Localizable"", ""self.settings.account_section.email.change.resend.message"", String(describing: p1))
+                }",0,,
+"    public func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
+        
+        var path = request.url.path
+
+        
+        while path.hasPrefix(""/"") {
+            path = String(path.dropFirst())
+        }
+
+        
+        guard !path.contains(""../"") else {
+            return request.eventLoop.makeFailedFuture(Abort(.forbidden))
+        }
+
+        
+        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+
+        
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: filePath, isDirectory: &isDir), !isDir.boolValue else {
+            return next.respond(to: request)
+        }
+
+        
+        let res = request.fileio.streamFile(at: filePath)
+        return request.eventLoop.makeSucceededFuture(res)
+    }",1,"1,2,15",        // make a copy of the path/~/        var path = request.url.path/~/        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+"internal static func errorDetails(_ p1: Int, _ p2: Any) -> String {
+            return L10n.tr(""Localizable"", ""content.system.cannot_decrypt.error_details"", p1, String(describing: p2))
+          }",0,,
+"    public func openDeepLinkURL(_ deepLinkURL: URL) -> Bool {
+        return urlActionRouter.open(url: deepLinkURL)
+    }",0,,
+"internal static func joined(_ p1: Any) -> String {
+              return L10n.tr(""Localizable"", ""content.system.conversation.guest.joined"", String(describing: p1))
+            }",0,,
+"    public func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
+        
+        var path = request.url.path
+
+        
+        while path.hasPrefix(""/"") {
+            path = String(path.dropFirst())
+        }
+
+        
+        guard !path.contains(""../"") else {
+            return request.eventLoop.makeFailedFuture(Abort(.forbidden))
+        }
+
+        
+        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+
+        
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: filePath, isDirectory: &isDir), !isDir.boolValue else {
+            return next.respond(to: request)
+        }
+
+        
+        let res = request.fileio.streamFile(at: filePath)
+        return request.eventLoop.makeSucceededFuture(res)
+    }",1,"1,2,15",        // make a copy of the path/~/        var path = request.url.path/~/        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+"    fileprivate func appendNewIsSecureSystemMessage(verified clients: Set<UserClient>, for users: Set<ZMUser>) {
+        guard !users.isEmpty, securityLevel != .secureWithIgnored else {
+            return
+        }
+
+        appendSystemMessage(type: .conversationIsSecure,
+                            sender: ZMUser.selfUser(in: self.managedObjectContext!),
+                            users: users,
+                            clients: clients,
+                            timestamp: timestampAfterLastMessage())
+    }",0,,
+"self.state = .operating(.init(role: role))
+    self.logger = logger
+  }
+
+  
+
+  
+  mutating func streamCreated(withID streamID: HTTP2StreamID) -> Operations {
+    var operations: Operations = .none
+
+    switch self.state {
+    case var .operating(state):
+      
+      state.streamCreated(streamID, logger: self.logger)
+      self.state = .operating(state)
+
+    case let .waitingToIdle(state):
+      var operating = Operating(fromWaitingToIdle: state)
+      operating.streamCreated(streamID, logger: self.logger)
+      self.state = .operating(operating)
+      operations.cancelIdleTask(state.idleTask)
+
+    case var .quiescing(state):
+      precondition(state.initiatedByUs)
+      precondition(state.role == .client)
+      
+      
+      
+      
+      state.openStreams += 1
+      self.state = .quiescing(state)
+
+    case .closing, .closed:
+      ()
+    }
+
+    return operations
+  }",1,"23,24,25,26,27,28",precondition(state.initiatedByUs)/~/      precondition(state.role == .client)/~/      // If we're a client and we initiated shutdown then it's possible for streams to be created in/~/      // the quiescing state as there's a delay between stream channels (i.e. `HTTP2StreamChannel`)/~/      // being created and us being notified about their creation (via a user event fired by/~/      // the `HTTP2Handler`).
+"    public func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
+        
+        var path = request.url.path
+
+        
+        while path.hasPrefix(""/"") {
+            path = String(path.dropFirst())
+        }
+
+        
+        guard !path.contains(""../"") else {
+            return request.eventLoop.makeFailedFuture(Abort(.forbidden))
+        }
+
+        
+        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+
+        
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: filePath, isDirectory: &isDir), !isDir.boolValue else {
+            return next.respond(to: request)
+        }
+
+        
+        let res = request.fileio.streamFile(at: filePath)
+        return request.eventLoop.makeSucceededFuture(res)
+    }",1,"1,2,15",        // make a copy of the path/~/        var path = request.url.path/~/        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+"    private func increaseSecurityLevelIfNeeded(for cause: SecurityChangeCause) {
+        guard securityLevel != .secure &&
+            allUsersTrusted &&
+            allParticipantsHaveClients &&
+            conversationType != .connection else {
+                return
+        }
+
+        securityLevel = .secure
+        appendNewIsSecureSystemMessage(cause: cause)
+        notifyOnUI(name: ZMConversation.isVerifiedNotificationName)
+    }",1,"1,4,5",        guard securityLevel != .secure &&/~/            conversationType != .connection else {/~/                return
+"private(set) var connectionManagerEvent: ConnectionManagerEvent?
+
+    
+    private(set) var maxConcurrentStreamsChange: Int?
+
+    
+    private(set) var idleTask: IdleTask?
+
+    
+    private(set) var sendGoAwayWithLastPeerInitiatedStreamID: HTTP2StreamID?
+
+    
+    private(set) var shouldCloseChannel: Bool
+
+    fileprivate static let none = Operations()
+
+    fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+      self.sendGoAwayWithLastPeerInitiatedStreamID = streamID
+    }",1,16,fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+"fileprivate func appendNewIsSecureSystemMessage(cause: SecurityChangeCause) {
+        switch cause {
+        case .removedUsers(let users):
+            appendNewIsSecureSystemMessage(verified: [], for: users)
+        case .verifiedClients(let userClients):
+            let users = Set(userClients.compactMap { $0.user })
+            appendNewIsSecureSystemMessage(verified: userClients, for: users)
+        case .removedClients(let userClients):
+            let users = Set(userClients.keys)
+            let clients = Set(userClients.values.flatMap { $0 })
+            appendNewIsSecureSystemMessage(verified: clients, for: users)
+        default:
+            
+            return
+        }
+    }",0,,
+"self.state = .operating(.init(role: role))
+    self.logger = logger
+  }
+
+  
+
+  
+  mutating func streamCreated(withID streamID: HTTP2StreamID) -> Operations {
+    var operations: Operations = .none
+
+    switch self.state {
+    case var .operating(state):
+      
+      state.streamCreated(streamID, logger: self.logger)
+      self.state = .operating(state)
+
+    case let .waitingToIdle(state):
+      var operating = Operating(fromWaitingToIdle: state)
+      operating.streamCreated(streamID, logger: self.logger)
+      self.state = .operating(operating)
+      operations.cancelIdleTask(state.idleTask)
+
+    case var .quiescing(state):
+      precondition(state.initiatedByUs)
+      precondition(state.role == .client)
+      
+      
+      
+      
+      state.openStreams += 1
+      self.state = .quiescing(state)
+
+    case .closing, .closed:
+      ()
+    }
+
+    return operations
+  }",1,"23,24,25,26,27,28",precondition(state.initiatedByUs)/~/      precondition(state.role == .client)/~/      // If we're a client and we initiated shutdown then it's possible for streams to be created in/~/      // the quiescing state as there's a delay between stream channels (i.e. `HTTP2StreamChannel`)/~/      // being created and us being notified about their creation (via a user event fired by/~/      // the `HTTP2Handler`).
+"internal static func started(_ p1: Any, _ p2: Any) -> String {
+              return L10n.tr(""Localizable"", ""content.system.conversation.other.started"", String(describing: p1), String(describing: p2))
+            }",0,,
+"private mutating func handlePing(_ pingData: HTTP2PingData) -> Action {
+    
+    if let maximumPingStrikes = self.maximumPingStrikes {
+      
+      if self.isPingStrike {
+        self.pingStrikes += 1
+
+        
+        if maximumPingStrikes != 0, self.pingStrikes > maximumPingStrikes {
+          return .reply(PingHandler.goAwayFrame)
+        } else {
+          return .none
+        }
+      } else {
+        
+        self.pingStrikes = 0
+        self.lastReceivedPingDate = self.now()
+        return .reply(self.generatePingFrame(code: pingData.integer, ack: true))
+      }
+    } else {
+      
+      
+      
+      
+      return .reply(self.generatePingFrame(code: pingData.integer, ack: true))
+    }
+  }",1,"17,24","        return .reply(self.generatePingFrame(code: pingData.integer, ack: true))/~/      return .reply(self.generatePingFrame(code: pingData.integer, ack: true))"
+"    private func appendLegalHoldDisabledSystemMessageForConversation() {
+        appendSystemMessage(type: .legalHoldDisabled,
+                            sender: ZMUser.selfUser(in: self.managedObjectContext!),
+                            users: nil,
+                            clients: nil,
+                            timestamp: timestampAfterLastMessage())
+    }",0,,
+"self.state = .operating(.init(role: role))
+    self.logger = logger
+  }
+
+  
+
+  
+  mutating func streamCreated(withID streamID: HTTP2StreamID) -> Operations {
+    var operations: Operations = .none
+
+    switch self.state {
+    case var .operating(state):
+      
+      state.streamCreated(streamID, logger: self.logger)
+      self.state = .operating(state)
+
+    case let .waitingToIdle(state):
+      var operating = Operating(fromWaitingToIdle: state)
+      operating.streamCreated(streamID, logger: self.logger)
+      self.state = .operating(operating)
+      operations.cancelIdleTask(state.idleTask)
+
+    case var .quiescing(state):
+      precondition(state.initiatedByUs)
+      precondition(state.role == .client)
+      
+      
+      
+      
+      state.openStreams += 1
+      self.state = .quiescing(state)
+
+    case .closing, .closed:
+      ()
+    }
+
+    return operations
+  }",1,"23,24,25,26,27,28",precondition(state.initiatedByUs)/~/      precondition(state.role == .client)/~/      // If we're a client and we initiated shutdown then it's possible for streams to be created in/~/      // the quiescing state as there's a delay between stream channels (i.e. `HTTP2StreamChannel`)/~/      // being created and us being notified about their creation (via a user event fired by/~/      // the `HTTP2Handler`).
+"    static func previewSize(for traitCollection: UITraitCollection) -> CGSize {
+        switch traitCollection.horizontalSizeClass {
+        case .regular:
+            return .floatingPreviewLarge
+        case .compact, .unspecified:
+            return .floatingPreviewSmall
+        @unknown default:
+            return .floatingPreviewSmall
+        }
+    }",0,,
+"    public func increaseSecurityLevelIfNeededAfterTrusting(clients: Set<UserClient>) {
+         applySecurityChanges(cause: .verifiedClients(clients))
+    }",0,,
+"private mutating func handlePing(_ pingData: HTTP2PingData) -> Action {
+    
+    if let maximumPingStrikes = self.maximumPingStrikes {
+      
+      if self.isPingStrike {
+        self.pingStrikes += 1
+
+        
+        if maximumPingStrikes != 0, self.pingStrikes > maximumPingStrikes {
+          return .reply(PingHandler.goAwayFrame)
+        } else {
+          return .none
+        }
+      } else {
+        
+        self.pingStrikes = 0
+        self.lastReceivedPingDate = self.now()
+        return .reply(self.generatePingFrame(code: pingData.integer, ack: true))
+      }
+    } else {
+      
+      
+      
+      
+      return .reply(self.generatePingFrame(code: pingData.integer, ack: true))
+    }
+  }",1,"17,24","        return .reply(self.generatePingFrame(code: pingData.integer, ack: true))/~/      return .reply(self.generatePingFrame(code: pingData.integer, ack: true))"
+"    public func refreshMembership() {
+        membership?.needsToBeUpdatedFromBackend = true
+    }",0,,
+"private func updateExistingOrCreateParticipantRole(for user: ZMUser, with role: Role?) -> (FetchOrCreation, ParticipantRole)? {
+        
+        guard let moc = self.managedObjectContext else { return nil }
+        
+        
+        if let current = self.participantRoles.first(where: {$0.user == user}) {
+            if let role = role {
+                current.role = role
+            }
+            
+            return (.fetched, current)
+            
+        } else {
+            
+            let participantRole = ParticipantRole.insertNewObject(in: moc)
+            participantRole.conversation = self
+            participantRole.user = user
+            participantRole.role = role
+            
+            return (.created, participantRole)
+        }
+    }",0,,
+"internal static func newConversation(_ p1: Int) -> String {
+            return L10n.tr(""Localizable"", ""add_participants.alert.message.new_conversation"", p1)
+          }",0,,
+"self.state = .operating(.init(role: role))
+    self.logger = logger
+  }
+
+  
+
+  
+  mutating func streamCreated(withID streamID: HTTP2StreamID) -> Operations {
+    var operations: Operations = .none
+
+    switch self.state {
+    case var .operating(state):
+      
+      state.streamCreated(streamID, logger: self.logger)
+      self.state = .operating(state)
+
+    case let .waitingToIdle(state):
+      var operating = Operating(fromWaitingToIdle: state)
+      operating.streamCreated(streamID, logger: self.logger)
+      self.state = .operating(operating)
+      operations.cancelIdleTask(state.idleTask)
+
+    case var .quiescing(state):
+      precondition(state.initiatedByUs)
+      precondition(state.role == .client)
+      
+      
+      
+      
+      state.openStreams += 1
+      self.state = .quiescing(state)
+
+    case .closing, .closed:
+      ()
+    }
+
+    return operations
+  }",1,"23,24,25,26,27,28",precondition(state.initiatedByUs)/~/      precondition(state.role == .client)/~/      // If we're a client and we initiated shutdown then it's possible for streams to be created in/~/      // the quiescing state as there's a delay between stream channels (i.e. `HTTP2StreamChannel`)/~/      // being created and us being notified about their creation (via a user event fired by/~/      // the `HTTP2Handler`).
+"    func setupNotifications() -> Observable<Bool> {
+        .create { (observer) -> Disposable in
+            let notificationCenter = UNUserNotificationCenter.current()
+            notificationCenter.delegate = self
+            let options: UNAuthorizationOptions = [.alert, .sound]
+            notificationCenter.requestAuthorization(options: options) { didAllow, error in
+                if let error = error {
+                    observer.onError(error)
+                } else {
+                    if !didAllow {
+                        debugPrint(""User has declined notifications"")
+                    }
+                    observer.onNext(didAllow)
+                    observer.onCompleted()
+                }
+
+            }
+            return Disposables.create()
+        }
+
+    }",0,,
+"internal static func otherLeft(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""content.system.other_left"", String(describing: p1))
+        }",0,,
+"internal static func onTwitter(_ p1: Any) -> String {
+        return L10n.tr(""Localizable"", ""twitter_status.on_twitter"", String(describing: p1))
+      }",0,,
+"private(set) var connectionManagerEvent: ConnectionManagerEvent?
+
+    
+    private(set) var maxConcurrentStreamsChange: Int?
+
+    
+    private(set) var idleTask: IdleTask?
+
+    
+    private(set) var sendGoAwayWithLastPeerInitiatedStreamID: HTTP2StreamID?
+
+    
+    private(set) var shouldCloseChannel: Bool
+
+    fileprivate static let none = Operations()
+
+    fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+      self.sendGoAwayWithLastPeerInitiatedStreamID = streamID
+    }",1,16,fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+"    fileprivate mutating func notifyConnectionManager(about event: ConnectionManagerEvent) {
+      self.connectionManagerEvent = event
+    }",0,,
+"    private func increaseSecurityLevelIfNeeded(for cause: SecurityChangeCause) {
+        guard securityLevel != .secure &&
+            allUsersTrusted &&
+            allParticipantsHaveClients &&
+            conversationType != .connection else {
+                return
+        }
+
+        securityLevel = .secure
+        appendNewIsSecureSystemMessage(cause: cause)
+        notifyOnUI(name: ZMConversation.isVerifiedNotificationName)
+    }",1,"1,4,5",        guard securityLevel != .secure &&/~/            conversationType != .connection else {/~/                return
+"internal func sign(digest: ByteBuffer) throws -> ByteBuffer {
+        let bio = BIO_new(BIO_s_mem())
+        defer { BIO_free(bio) }
+        let res = buffer.withUnsafeReadableBytes { ptr in
+            Int(BIO_puts(bio, ptr.baseAddress?.assumingMemoryBound(to: Int8.self)))
+        }
+        assert(res >= 0, ""BIO_puts failed"")
+
+        guard let opaquePointer = OpaquePointer.make(optional: PEM_read_bio_ECPrivateKey(bio!, nil, nil, nil)) else {
+            throw APNSwiftError.SigningError.invalidAuthKey
+        }
+        defer { EC_KEY_free(opaquePointer) }
+        
+        let sig = digest.withUnsafeReadableBytes { ptr in
+            ECDSA_do_sign(ptr.baseAddress?.assumingMemoryBound(to: UInt8.self), Int32(digest.readableBytes), opaquePointer)
+        }
+        defer { ECDSA_SIG_free(sig) }
+
+        var derEncodedSignature: UnsafeMutablePointer<UInt8>?
+        let derLength = i2d_ECDSA_SIG(sig, &derEncodedSignature)
+        guard let derCopy = derEncodedSignature, derLength > 0 else {
+            throw APNSwiftError.SigningError.invalidASN1
+        }
+
+        var derBytes = ByteBufferAllocator().buffer(capacity: Int(derLength))
+        for b in 0 ..< Int(derLength) {
+            derBytes.writeBytes([derCopy[b]])
+        }
+
+        return derBytes
+    }",1,"4,6,18,25,26,27,28","Int(BIO_puts(bio, ptr.baseAddress?.assumingMemoryBound(to: Int8.self)))/~/        assert(res >= 0, ""BIO_puts failed"")/~/        var derEncodedSignature: UnsafeMutablePointer<UInt8>?/~/        for b in 0 ..< Int(derLength) {/~/            derBytes.writeBytes([derCopy[b]])/~/        }/~/"
+"        didSet {
+            setupAnalyticsSharing()
+        }",0,,
+"    private func displayIndicatorViewsIfNeeded() {
+        networkConditionView.networkQuality = configuration.networkQuality
+        networkConditionView.isHidden = shouldHideNetworkCondition
+    }",0,,
+"private(set) var connectionManagerEvent: ConnectionManagerEvent?
+
+    
+    private(set) var maxConcurrentStreamsChange: Int?
+
+    
+    private(set) var idleTask: IdleTask?
+
+    
+    private(set) var sendGoAwayWithLastPeerInitiatedStreamID: HTTP2StreamID?
+
+    
+    private(set) var shouldCloseChannel: Bool
+
+    fileprivate static let none = Operations()
+
+    fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+      self.sendGoAwayWithLastPeerInitiatedStreamID = streamID
+    }",1,16,fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+"    private func increaseSecurityLevelIfNeeded(for cause: SecurityChangeCause) {
+        guard securityLevel != .secure &&
+            allUsersTrusted &&
+            allParticipantsHaveClients &&
+            conversationType != .connection else {
+                return
+        }
+
+        securityLevel = .secure
+        appendNewIsSecureSystemMessage(cause: cause)
+        notifyOnUI(name: ZMConversation.isVerifiedNotificationName)
+    }",1,"1,4,5",        guard securityLevel != .secure &&/~/            conversationType != .connection else {/~/                return
+"    private func appendLegalHoldDisabledSystemMessageForConversationAfterReceivingMessage(at timestamp: Date) {
+        appendSystemMessage(type: .legalHoldDisabled,
+                            sender: ZMUser.selfUser(in: self.managedObjectContext!),
+                            users: nil,
+                            clients: nil,
+                            timestamp: timestamp.previousNearestTimestamp)
+    }",0,,
+"internal func sign(digest: ByteBuffer) throws -> ByteBuffer {
+        let bio = BIO_new(BIO_s_mem())
+        defer { BIO_free(bio) }
+        let res = buffer.withUnsafeReadableBytes { ptr in
+            Int(BIO_puts(bio, ptr.baseAddress?.assumingMemoryBound(to: Int8.self)))
+        }
+        assert(res >= 0, ""BIO_puts failed"")
+
+        guard let opaquePointer = OpaquePointer.make(optional: PEM_read_bio_ECPrivateKey(bio!, nil, nil, nil)) else {
+            throw APNSwiftError.SigningError.invalidAuthKey
+        }
+        defer { EC_KEY_free(opaquePointer) }
+        
+        let sig = digest.withUnsafeReadableBytes { ptr in
+            ECDSA_do_sign(ptr.baseAddress?.assumingMemoryBound(to: UInt8.self), Int32(digest.readableBytes), opaquePointer)
+        }
+        defer { ECDSA_SIG_free(sig) }
+
+        var derEncodedSignature: UnsafeMutablePointer<UInt8>?
+        let derLength = i2d_ECDSA_SIG(sig, &derEncodedSignature)
+        guard let derCopy = derEncodedSignature, derLength > 0 else {
+            throw APNSwiftError.SigningError.invalidASN1
+        }
+
+        var derBytes = ByteBufferAllocator().buffer(capacity: Int(derLength))
+        for b in 0 ..< Int(derLength) {
+            derBytes.writeBytes([derCopy[b]])
+        }
+
+        return derBytes
+    }",1,"4,6,18,25,26,27,28","Int(BIO_puts(bio, ptr.baseAddress?.assumingMemoryBound(to: Int8.self)))/~/        assert(res >= 0, ""BIO_puts failed"")/~/        var derEncodedSignature: UnsafeMutablePointer<UInt8>?/~/        for b in 0 ..< Int(derLength) {/~/            derBytes.writeBytes([derCopy[b]])/~/        }/~/"
+"    private func increaseSecurityLevelIfNeeded(for cause: SecurityChangeCause) {
+        guard securityLevel != .secure &&
+            allUsersTrusted &&
+            allParticipantsHaveClients &&
+            conversationType != .connection else {
+                return
+        }
+
+        securityLevel = .secure
+        appendNewIsSecureSystemMessage(cause: cause)
+        notifyOnUI(name: ZMConversation.isVerifiedNotificationName)
+    }",1,"1,4,5",        guard securityLevel != .secure &&/~/            conversationType != .connection else {/~/                return
+"internal static func existingConversation(_ p1: Int, _ p2: Int) -> String {
+            return L10n.tr(""Localizable"", ""add_participants.alert.message.existing_conversation"", p1, p2)
+          }",0,,
+"    func applicationWillEnterForeground() {
+        updateOverlayWindowFrame()
+    }",0,,
+"internal func sign(digest: ByteBuffer) throws -> ByteBuffer {
+        let bio = BIO_new(BIO_s_mem())
+        defer { BIO_free(bio) }
+        let res = buffer.withUnsafeReadableBytes { ptr in
+            Int(BIO_puts(bio, ptr.baseAddress?.assumingMemoryBound(to: Int8.self)))
+        }
+        assert(res >= 0, ""BIO_puts failed"")
+
+        guard let opaquePointer = OpaquePointer.make(optional: PEM_read_bio_ECPrivateKey(bio!, nil, nil, nil)) else {
+            throw APNSwiftError.SigningError.invalidAuthKey
+        }
+        defer { EC_KEY_free(opaquePointer) }
+        
+        let sig = digest.withUnsafeReadableBytes { ptr in
+            ECDSA_do_sign(ptr.baseAddress?.assumingMemoryBound(to: UInt8.self), Int32(digest.readableBytes), opaquePointer)
+        }
+        defer { ECDSA_SIG_free(sig) }
+
+        var derEncodedSignature: UnsafeMutablePointer<UInt8>?
+        let derLength = i2d_ECDSA_SIG(sig, &derEncodedSignature)
+        guard let derCopy = derEncodedSignature, derLength > 0 else {
+            throw APNSwiftError.SigningError.invalidASN1
+        }
+
+        var derBytes = ByteBufferAllocator().buffer(capacity: Int(derLength))
+        for b in 0 ..< Int(derLength) {
+            derBytes.writeBytes([derCopy[b]])
+        }
+
+        return derBytes
+    }",1,"4,6,18,25,26,27,28","Int(BIO_puts(bio, ptr.baseAddress?.assumingMemoryBound(to: Int8.self)))/~/        assert(res >= 0, ""BIO_puts failed"")/~/        var derEncodedSignature: UnsafeMutablePointer<UInt8>?/~/        for b in 0 ..< Int(derLength) {/~/            derBytes.writeBytes([derCopy[b]])/~/        }/~/"
+"    @NSManaged public internal(set) var membership: Member?
+
+    
+    @NSManaged var reactions: Set<Reaction>
+    
+    
+    @NSManaged var systemMessages: Set<ZMSystemMessage>
+    
+    @NSManaged var expiresAt: Date?
+    
+    
+    @NSManaged public internal(set) var isAccountDeleted: Bool
+    
+    @NSManaged public var usesCompanyLogin: Bool
+    
+    
+    @NSManaged public var needsToRefetchLabels: Bool
+    
+    @NSManaged public var domain: String?
+    
+    @objc(setImageData:size:)
+    public func setImage(data: Data?, size: ProfileImageSize) {
+        guard let imageData = data else {
+            managedObjectContext?.zm_userImageCache?.removeAllUserImages(self)
+            return
+        }
+        managedObjectContext?.zm_userImageCache?.setUserImage(self, imageData: imageData, size: size)
+        
+        if let uiContext = managedObjectContext?.zm_userInterface {
+            let changedKey = size == .preview ? #keyPath(ZMUser.previewImageData) : #keyPath(ZMUser.completeImageData)
+            NotificationDispatcher.notifyNonCoreDataChanges(objectID: objectID, changedKeys: [changedKey], uiContext: uiContext)
+        }
+    }",0,,
+"    private func resetAuthenticationCoordinatorIfNeeded(for state: AppState) {
+        switch state {
+        case .authenticated:
+            authenticationCoordinator = nil
+        default:
+            break
+        }
+    }",0,,
+"self.state = .operating(.init(role: role))
+    self.logger = logger
+  }
+
+  
+
+  
+  mutating func streamCreated(withID streamID: HTTP2StreamID) -> Operations {
+    var operations: Operations = .none
+
+    switch self.state {
+    case var .operating(state):
+      
+      state.streamCreated(streamID, logger: self.logger)
+      self.state = .operating(state)
+
+    case let .waitingToIdle(state):
+      var operating = Operating(fromWaitingToIdle: state)
+      operating.streamCreated(streamID, logger: self.logger)
+      self.state = .operating(operating)
+      operations.cancelIdleTask(state.idleTask)
+
+    case var .quiescing(state):
+      precondition(state.initiatedByUs)
+      precondition(state.role == .client)
+      
+      
+      
+      
+      state.openStreams += 1
+      self.state = .quiescing(state)
+
+    case .closing, .closed:
+      ()
+    }
+
+    return operations
+  }",1,"23,24,25,26,27,28",precondition(state.initiatedByUs)/~/      precondition(state.role == .client)/~/      // If we're a client and we initiated shutdown then it's possible for streams to be created in/~/      // the quiescing state as there's a delay between stream channels (i.e. `HTTP2StreamChannel`)/~/      // being created and us being notified about their creation (via a user event fired by/~/      // the `HTTP2Handler`).
+"internal static func footer(_ p1: Int) -> String {
+            return L10n.tr(""Localizable"", ""participants.section.name.footer"", p1)
+          }",0,,
+"    func executeAuthenticatedBlocks() {
+        while !authenticatedBlocks.isEmpty {
+            authenticatedBlocks.removeFirst()()
+        }
+    }",0,,
+"    private func increaseSecurityLevelIfNeeded(for cause: SecurityChangeCause) {
+        guard securityLevel != .secure &&
+            allUsersTrusted &&
+            allParticipantsHaveClients &&
+            conversationType != .connection else {
+                return
+        }
+
+        securityLevel = .secure
+        appendNewIsSecureSystemMessage(cause: cause)
+        notifyOnUI(name: ZMConversation.isVerifiedNotificationName)
+    }",1,"1,4,5",        guard securityLevel != .secure &&/~/            conversationType != .connection else {/~/                return
+"private static func readUint64(_ buffer: UnsafePointer<UInt8>, offset: Int) -> UInt64 {
+        var value = UInt64(0)
+        for i in 0...7 {
+            value = (value << 8) | UInt64(buffer[offset + i])
+        }
+        return value
+    }",0,,
+"    private func updateSecurityLevel(cause: SecurityChangeCause) {
+        switch cause {
+        case .addedUsers, .addedClients, .ignoredClients:
+            degradeSecurityLevelIfNeeded(for: cause)
+
+        case .removedUsers, .removedClients, .verifiedClients:
+            increaseSecurityLevelIfNeeded(for: cause)
+            
+        case .verifyLegalHold:
+            
+            break
+        }
+    }",0,,
+"internal static func youAddedParticipant(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""content.system.you_added_participant"", String(describing: p1))
+        }",0,,
+"    private func increaseSecurityLevelIfNeeded(for cause: SecurityChangeCause) {
+        guard securityLevel != .secure &&
+            allUsersTrusted &&
+            allParticipantsHaveClients &&
+            conversationType != .connection else {
+                return
+        }
+
+        securityLevel = .secure
+        appendNewIsSecureSystemMessage(cause: cause)
+        notifyOnUI(name: ZMConversation.isVerifiedNotificationName)
+    }",1,"1,4,5",        guard securityLevel != .secure &&/~/            conversationType != .connection else {/~/                return
+"self.state = .operating(.init(role: role))
+    self.logger = logger
+  }
+
+  
+
+  
+  mutating func streamCreated(withID streamID: HTTP2StreamID) -> Operations {
+    var operations: Operations = .none
+
+    switch self.state {
+    case var .operating(state):
+      
+      state.streamCreated(streamID, logger: self.logger)
+      self.state = .operating(state)
+
+    case let .waitingToIdle(state):
+      var operating = Operating(fromWaitingToIdle: state)
+      operating.streamCreated(streamID, logger: self.logger)
+      self.state = .operating(operating)
+      operations.cancelIdleTask(state.idleTask)
+
+    case var .quiescing(state):
+      precondition(state.initiatedByUs)
+      precondition(state.role == .client)
+      
+      
+      
+      
+      state.openStreams += 1
+      self.state = .quiescing(state)
+
+    case .closing, .closed:
+      ()
+    }
+
+    return operations
+  }",1,"23,24,25,26,27,28",precondition(state.initiatedByUs)/~/      precondition(state.role == .client)/~/      // If we're a client and we initiated shutdown then it's possible for streams to be created in/~/      // the quiescing state as there's a delay between stream channels (i.e. `HTTP2StreamChannel`)/~/      // being created and us being notified about their creation (via a user event fired by/~/      // the `HTTP2Handler`).
+"private(set) var connectionManagerEvent: ConnectionManagerEvent?
+
+    
+    private(set) var maxConcurrentStreamsChange: Int?
+
+    
+    private(set) var idleTask: IdleTask?
+
+    
+    private(set) var sendGoAwayWithLastPeerInitiatedStreamID: HTTP2StreamID?
+
+    
+    private(set) var shouldCloseChannel: Bool
+
+    fileprivate static let none = Operations()
+
+    fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+      self.sendGoAwayWithLastPeerInitiatedStreamID = streamID
+    }",1,16,fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+"private mutating func handlePing(_ pingData: HTTP2PingData) -> Action {
+    
+    if let maximumPingStrikes = self.maximumPingStrikes {
+      
+      if self.isPingStrike {
+        self.pingStrikes += 1
+
+        
+        if maximumPingStrikes != 0, self.pingStrikes > maximumPingStrikes {
+          return .reply(PingHandler.goAwayFrame)
+        } else {
+          return .none
+        }
+      } else {
+        
+        self.pingStrikes = 0
+        self.lastReceivedPingDate = self.now()
+        return .reply(self.generatePingFrame(code: pingData.integer, ack: true))
+      }
+    } else {
+      
+      
+      
+      
+      return .reply(self.generatePingFrame(code: pingData.integer, ack: true))
+    }
+  }",1,"17,24","        return .reply(self.generatePingFrame(code: pingData.integer, ack: true))/~/      return .reply(self.generatePingFrame(code: pingData.integer, ack: true))"
+"response.body = .init(stream: { stream in
+            self.read(path: path, fromOffset: offset, byteCount: byteCount, chunkSize: chunkSize) { chunk in
+                return stream.write(.buffer(chunk))
+            }.whenComplete { result in
+                switch result {
+                case .failure(let error):
+                    stream.write(.error(error), promise: nil)
+                case .success:
+                    stream.write(.end, promise: nil)
+                }
+                onCompleted(result)
+            }
+        }, count: byteCount, byteBufferAllocator: request.byteBufferAllocator)
+        
+        return response
+    }
+
+    
+    
+    private func read(
+        path: String,
+        fromOffset offset: Int64,
+        byteCount: Int,
+        chunkSize: Int,
+        onRead: @escaping (ByteBuffer) -> EventLoopFuture<Void>
+    ) -> EventLoopFuture<Void> {
+        do {
+            let fd = try NIOFileHandle(path: path)
+            let done = self.io.readChunked(
+                fileHandle: fd,
+                fromOffset: offset,
+                byteCount: byteCount,
+                chunkSize: chunkSize,
+                allocator: allocator,
+                eventLoop: self.request.eventLoop
+            ) { chunk in
+                return onRead(chunk)
+            }
+            done.whenComplete { _ in
+                try? fd.close()
+            }
+            return done
+        } catch {
+            return self.request.eventLoop.makeFailedFuture(error)
+        }
+    }",0,,
+"private mutating func handlePing(_ pingData: HTTP2PingData) -> Action {
+    
+    if let maximumPingStrikes = self.maximumPingStrikes {
+      
+      if self.isPingStrike {
+        self.pingStrikes += 1
+
+        
+        if maximumPingStrikes != 0, self.pingStrikes > maximumPingStrikes {
+          return .reply(PingHandler.goAwayFrame)
+        } else {
+          return .none
+        }
+      } else {
+        
+        self.pingStrikes = 0
+        self.lastReceivedPingDate = self.now()
+        return .reply(self.generatePingFrame(code: pingData.integer, ack: true))
+      }
+    } else {
+      
+      
+      
+      
+      return .reply(self.generatePingFrame(code: pingData.integer, ack: true))
+    }
+  }",1,"17,24","        return .reply(self.generatePingFrame(code: pingData.integer, ack: true))/~/      return .reply(self.generatePingFrame(code: pingData.integer, ack: true))"
+"    deinit {
+        stopCapture()
+    }",0,,
+"internal static func seen(_ p1: Int) -> String {
+          return L10n.tr(""Localizable"", ""message_details.tabs.seen"", p1)
+        }",0,,
+"func has(participantWithId userId: UserId?) -> Bool {
+        return localParticipants.contains { $0.userId == userId }
+    }",0,,
+"    private func increaseSecurityLevelIfNeeded(for cause: SecurityChangeCause) {
+        guard securityLevel != .secure &&
+            allUsersTrusted &&
+            allParticipantsHaveClients &&
+            conversationType != .connection else {
+                return
+        }
+
+        securityLevel = .secure
+        appendNewIsSecureSystemMessage(cause: cause)
+        notifyOnUI(name: ZMConversation.isVerifiedNotificationName)
+    }",1,"1,4,5",        guard securityLevel != .secure &&/~/            conversationType != .connection else {/~/                return
+"self.state = .operating(.init(role: role))
+    self.logger = logger
+  }
+
+  
+
+  
+  mutating func streamCreated(withID streamID: HTTP2StreamID) -> Operations {
+    var operations: Operations = .none
+
+    switch self.state {
+    case var .operating(state):
+      
+      state.streamCreated(streamID, logger: self.logger)
+      self.state = .operating(state)
+
+    case let .waitingToIdle(state):
+      var operating = Operating(fromWaitingToIdle: state)
+      operating.streamCreated(streamID, logger: self.logger)
+      self.state = .operating(operating)
+      operations.cancelIdleTask(state.idleTask)
+
+    case var .quiescing(state):
+      precondition(state.initiatedByUs)
+      precondition(state.role == .client)
+      
+      
+      
+      
+      state.openStreams += 1
+      self.state = .quiescing(state)
+
+    case .closing, .closed:
+      ()
+    }
+
+    return operations
+  }",1,"23,24,25,26,27,28",precondition(state.initiatedByUs)/~/      precondition(state.role == .client)/~/      // If we're a client and we initiated shutdown then it's possible for streams to be created in/~/      // the quiescing state as there's a delay between stream channels (i.e. `HTTP2StreamChannel`)/~/      // being created and us being notified about their creation (via a user event fired by/~/      // the `HTTP2Handler`).
+"private(set) var connectionManagerEvent: ConnectionManagerEvent?
+
+    
+    private(set) var maxConcurrentStreamsChange: Int?
+
+    
+    private(set) var idleTask: IdleTask?
+
+    
+    private(set) var sendGoAwayWithLastPeerInitiatedStreamID: HTTP2StreamID?
+
+    
+    private(set) var shouldCloseChannel: Bool
+
+    fileprivate static let none = Operations()
+
+    fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+      self.sendGoAwayWithLastPeerInitiatedStreamID = streamID
+    }",1,16,fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+"internal static func messageReadReceiptOnYou(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""content.system.message_read_receipt_on-you"", String(describing: p1))
+        }",0,,
+"private(set) var connectionManagerEvent: ConnectionManagerEvent?
+
+    
+    private(set) var maxConcurrentStreamsChange: Int?
+
+    
+    private(set) var idleTask: IdleTask?
+
+    
+    private(set) var sendGoAwayWithLastPeerInitiatedStreamID: HTTP2StreamID?
+
+    
+    private(set) var shouldCloseChannel: Bool
+
+    fileprivate static let none = Operations()
+
+    fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+      self.sendGoAwayWithLastPeerInitiatedStreamID = streamID
+    }",1,16,fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+"private(set) var connectionManagerEvent: ConnectionManagerEvent?
+
+    
+    private(set) var maxConcurrentStreamsChange: Int?
+
+    
+    private(set) var idleTask: IdleTask?
+
+    
+    private(set) var sendGoAwayWithLastPeerInitiatedStreamID: HTTP2StreamID?
+
+    
+    private(set) var shouldCloseChannel: Bool
+
+    fileprivate static let none = Operations()
+
+    fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+      self.sendGoAwayWithLastPeerInitiatedStreamID = streamID
+    }",1,16,fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+"self.state = .operating(.init(role: role))
+    self.logger = logger
+  }
+
+  
+
+  
+  mutating func streamCreated(withID streamID: HTTP2StreamID) -> Operations {
+    var operations: Operations = .none
+
+    switch self.state {
+    case var .operating(state):
+      
+      state.streamCreated(streamID, logger: self.logger)
+      self.state = .operating(state)
+
+    case let .waitingToIdle(state):
+      var operating = Operating(fromWaitingToIdle: state)
+      operating.streamCreated(streamID, logger: self.logger)
+      self.state = .operating(operating)
+      operations.cancelIdleTask(state.idleTask)
+
+    case var .quiescing(state):
+      precondition(state.initiatedByUs)
+      precondition(state.role == .client)
+      
+      
+      
+      
+      state.openStreams += 1
+      self.state = .quiescing(state)
+
+    case .closing, .closed:
+      ()
+    }
+
+    return operations
+  }",1,"23,24,25,26,27,28",precondition(state.initiatedByUs)/~/      precondition(state.role == .client)/~/      // If we're a client and we initiated shutdown then it's possible for streams to be created in/~/      // the quiescing state as there's a delay between stream channels (i.e. `HTTP2StreamChannel`)/~/      // being created and us being notified about their creation (via a user event fired by/~/      // the `HTTP2Handler`).
+"    fileprivate init(fromOperating state: Operating, initiatedByUs: Bool) {
+      
+      
+      assert(initiatedByUs || state.hasSeenSettings)
+      self.role = state.role
+      self.initiatedByUs = initiatedByUs
+      self.openStreams = state.openStreams
+      self.lastPeerInitiatedStreamID = state.lastPeerInitiatedStreamID
+      self.maxConcurrentStreams = state.maxConcurrentStreams
+    }",0,,
+"    private func configureAuthenticatedAppearance() {
+        rootViewController.view.window?.tintColor = .accent()
+        UIColor.setAccentOverride(.undefined)
+    }",0,,
+"    public func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
+        
+        var path = request.url.path
+
+        
+        while path.hasPrefix(""/"") {
+            path = String(path.dropFirst())
+        }
+
+        
+        guard !path.contains(""../"") else {
+            return request.eventLoop.makeFailedFuture(Abort(.forbidden))
+        }
+
+        
+        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+
+        
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: filePath, isDirectory: &isDir), !isDir.boolValue else {
+            return next.respond(to: request)
+        }
+
+        
+        let res = request.fileio.streamFile(at: filePath)
+        return request.eventLoop.makeSucceededFuture(res)
+    }",1,"1,2,15",        // make a copy of the path/~/        var path = request.url.path/~/        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+"internal func sign(digest: ByteBuffer) throws -> ByteBuffer {
+        let bio = BIO_new(BIO_s_mem())
+        defer { BIO_free(bio) }
+        let res = buffer.withUnsafeReadableBytes { ptr in
+            Int(BIO_puts(bio, ptr.baseAddress?.assumingMemoryBound(to: Int8.self)))
+        }
+        assert(res >= 0, ""BIO_puts failed"")
+
+        guard let opaquePointer = OpaquePointer.make(optional: PEM_read_bio_ECPrivateKey(bio!, nil, nil, nil)) else {
+            throw APNSwiftError.SigningError.invalidAuthKey
+        }
+        defer { EC_KEY_free(opaquePointer) }
+        
+        let sig = digest.withUnsafeReadableBytes { ptr in
+            ECDSA_do_sign(ptr.baseAddress?.assumingMemoryBound(to: UInt8.self), Int32(digest.readableBytes), opaquePointer)
+        }
+        defer { ECDSA_SIG_free(sig) }
+
+        var derEncodedSignature: UnsafeMutablePointer<UInt8>?
+        let derLength = i2d_ECDSA_SIG(sig, &derEncodedSignature)
+        guard let derCopy = derEncodedSignature, derLength > 0 else {
+            throw APNSwiftError.SigningError.invalidASN1
+        }
+
+        var derBytes = ByteBufferAllocator().buffer(capacity: Int(derLength))
+        for b in 0 ..< Int(derLength) {
+            derBytes.writeBytes([derCopy[b]])
+        }
+
+        return derBytes
+    }",1,"4,6,18,25,26,27,28","Int(BIO_puts(bio, ptr.baseAddress?.assumingMemoryBound(to: Int8.self)))/~/        assert(res >= 0, ""BIO_puts failed"")/~/        var derEncodedSignature: UnsafeMutablePointer<UInt8>?/~/        for b in 0 ..< Int(derLength) {/~/            derBytes.writeBytes([derCopy[b]])/~/        }/~/"
+"    public func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
+        
+        var path = request.url.path
+
+        
+        while path.hasPrefix(""/"") {
+            path = String(path.dropFirst())
+        }
+
+        
+        guard !path.contains(""../"") else {
+            return request.eventLoop.makeFailedFuture(Abort(.forbidden))
+        }
+
+        
+        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+
+        
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: filePath, isDirectory: &isDir), !isDir.boolValue else {
+            return next.respond(to: request)
+        }
+
+        
+        let res = request.fileio.streamFile(at: filePath)
+        return request.eventLoop.makeSucceededFuture(res)
+    }",1,"1,2,15",        // make a copy of the path/~/        var path = request.url.path/~/        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+"internal static func devices(_ p1: Int) -> String {
+            return L10n.tr(""Localizable"", ""self.new_device_alert.title_prefix.devices"", p1)
+          }",0,,
+"internal static func otherStartedConversation(_ p1: Any, _ p2: Any) -> String {
+          return L10n.tr(""Localizable"", ""content.system.other_started_conversation"", String(describing: p1), String(describing: p2))
+        }",0,,
+"open func write(string: String, completion: (() -> ())? = nil) {
+        guard isConnected else { return }
+        dequeueWrite(string.data(using: String.Encoding.utf8)!, code: .textFrame, writeCompletion: completion)
+    }",0,,
+"internal static func textYou(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""content.ping.text-you"", String(describing: p1))
+        }",0,,
+"    public init(rawValue: Int) {
+        self.rawValue = rawValue
+    }",0,,
+"    public class func keyPathsForValuesAffectingLocalParticipants() -> Set<String> {
+        return Set(participantRolesKeys)
+    }",0,,
+"    public func imageData(for size: ProfileImageSize, queue: DispatchQueue, completion: @escaping (_ imageData: Data?) -> Void) {
+        managedObjectContext?.zm_userImageCache?.userImage(self, size: size, queue: queue, completion: completion)
+    }",0,,
+"    public func imageData(for size: ProfileImageSize) -> Data? {
+        return managedObjectContext?.zm_userImageCache?.userImage(self, size: size)
+    }",0,,
+"public init(url: URL, protocols: [String]? = nil) {
+        self.url = url
+        self.origin = url.absoluteString
+        if let hostUrl = URL (string: ""/"", relativeTo: url) {
+            var origin = hostUrl.absoluteString
+            origin.remove(at: origin.index(before: origin.endIndex))
+            self.origin = origin
+        }
+        writeQueue.maxConcurrentOperationCount = 1
+        optionalProtocols = protocols
+    }",0,,
+"    private func increaseSecurityLevelIfNeeded(for cause: SecurityChangeCause) {
+        guard securityLevel != .secure &&
+            allUsersTrusted &&
+            allParticipantsHaveClients &&
+            conversationType != .connection else {
+                return
+        }
+
+        securityLevel = .secure
+        appendNewIsSecureSystemMessage(cause: cause)
+        notifyOnUI(name: ZMConversation.isVerifiedNotificationName)
+    }",1,"1,4,5",        guard securityLevel != .secure &&/~/            conversationType != .connection else {/~/                return
+"internal func sign(digest: ByteBuffer) throws -> ByteBuffer {
+        let bio = BIO_new(BIO_s_mem())
+        defer { BIO_free(bio) }
+        let res = buffer.withUnsafeReadableBytes { ptr in
+            Int(BIO_puts(bio, ptr.baseAddress?.assumingMemoryBound(to: Int8.self)))
+        }
+        assert(res >= 0, ""BIO_puts failed"")
+
+        guard let opaquePointer = OpaquePointer.make(optional: PEM_read_bio_ECPrivateKey(bio!, nil, nil, nil)) else {
+            throw APNSwiftError.SigningError.invalidAuthKey
+        }
+        defer { EC_KEY_free(opaquePointer) }
+        
+        let sig = digest.withUnsafeReadableBytes { ptr in
+            ECDSA_do_sign(ptr.baseAddress?.assumingMemoryBound(to: UInt8.self), Int32(digest.readableBytes), opaquePointer)
+        }
+        defer { ECDSA_SIG_free(sig) }
+
+        var derEncodedSignature: UnsafeMutablePointer<UInt8>?
+        let derLength = i2d_ECDSA_SIG(sig, &derEncodedSignature)
+        guard let derCopy = derEncodedSignature, derLength > 0 else {
+            throw APNSwiftError.SigningError.invalidASN1
+        }
+
+        var derBytes = ByteBufferAllocator().buffer(capacity: Int(derLength))
+        for b in 0 ..< Int(derLength) {
+            derBytes.writeBytes([derCopy[b]])
+        }
+
+        return derBytes
+    }",1,"4,6,18,25,26,27,28","Int(BIO_puts(bio, ptr.baseAddress?.assumingMemoryBound(to: Int8.self)))/~/        assert(res >= 0, ""BIO_puts failed"")/~/        var derEncodedSignature: UnsafeMutablePointer<UInt8>?/~/        for b in 0 ..< Int(derLength) {/~/            derBytes.writeBytes([derCopy[b]])/~/        }/~/"
+"private mutating func handlePing(_ pingData: HTTP2PingData) -> Action {
+    
+    if let maximumPingStrikes = self.maximumPingStrikes {
+      
+      if self.isPingStrike {
+        self.pingStrikes += 1
+
+        
+        if maximumPingStrikes != 0, self.pingStrikes > maximumPingStrikes {
+          return .reply(PingHandler.goAwayFrame)
+        } else {
+          return .none
+        }
+      } else {
+        
+        self.pingStrikes = 0
+        self.lastReceivedPingDate = self.now()
+        return .reply(self.generatePingFrame(code: pingData.integer, ack: true))
+      }
+    } else {
+      
+      
+      
+      
+      return .reply(self.generatePingFrame(code: pingData.integer, ack: true))
+    }
+  }",1,"17,24","        return .reply(self.generatePingFrame(code: pingData.integer, ack: true))/~/      return .reply(self.generatePingFrame(code: pingData.integer, ack: true))"
+"private mutating func handlePing(_ pingData: HTTP2PingData) -> Action {
+    
+    if let maximumPingStrikes = self.maximumPingStrikes {
+      
+      if self.isPingStrike {
+        self.pingStrikes += 1
+
+        
+        if maximumPingStrikes != 0, self.pingStrikes > maximumPingStrikes {
+          return .reply(PingHandler.goAwayFrame)
+        } else {
+          return .none
+        }
+      } else {
+        
+        self.pingStrikes = 0
+        self.lastReceivedPingDate = self.now()
+        return .reply(self.generatePingFrame(code: pingData.integer, ack: true))
+      }
+    } else {
+      
+      
+      
+      
+      return .reply(self.generatePingFrame(code: pingData.integer, ack: true))
+    }
+  }",1,"17,24","        return .reply(self.generatePingFrame(code: pingData.integer, ack: true))/~/      return .reply(self.generatePingFrame(code: pingData.integer, ack: true))"
+"self.state = .operating(.init(role: role))
+    self.logger = logger
+  }
+
+  
+
+  
+  mutating func streamCreated(withID streamID: HTTP2StreamID) -> Operations {
+    var operations: Operations = .none
+
+    switch self.state {
+    case var .operating(state):
+      
+      state.streamCreated(streamID, logger: self.logger)
+      self.state = .operating(state)
+
+    case let .waitingToIdle(state):
+      var operating = Operating(fromWaitingToIdle: state)
+      operating.streamCreated(streamID, logger: self.logger)
+      self.state = .operating(operating)
+      operations.cancelIdleTask(state.idleTask)
+
+    case var .quiescing(state):
+      precondition(state.initiatedByUs)
+      precondition(state.role == .client)
+      
+      
+      
+      
+      state.openStreams += 1
+      self.state = .quiescing(state)
+
+    case .closing, .closed:
+      ()
+    }
+
+    return operations
+  }",1,"23,24,25,26,27,28",precondition(state.initiatedByUs)/~/      precondition(state.role == .client)/~/      // If we're a client and we initiated shutdown then it's possible for streams to be created in/~/      // the quiescing state as there's a delay between stream channels (i.e. `HTTP2StreamChannel`)/~/      // being created and us being notified about their creation (via a user event fired by/~/      // the `HTTP2Handler`).
+"private(set) var connectionManagerEvent: ConnectionManagerEvent?
+
+    
+    private(set) var maxConcurrentStreamsChange: Int?
+
+    
+    private(set) var idleTask: IdleTask?
+
+    
+    private(set) var sendGoAwayWithLastPeerInitiatedStreamID: HTTP2StreamID?
+
+    
+    private(set) var shouldCloseChannel: Bool
+
+    fileprivate static let none = Operations()
+
+    fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+      self.sendGoAwayWithLastPeerInitiatedStreamID = streamID
+    }",1,16,fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+"    private func increaseSecurityLevelIfNeeded(for cause: SecurityChangeCause) {
+        guard securityLevel != .secure &&
+            allUsersTrusted &&
+            allParticipantsHaveClients &&
+            conversationType != .connection else {
+                return
+        }
+
+        securityLevel = .secure
+        appendNewIsSecureSystemMessage(cause: cause)
+        notifyOnUI(name: ZMConversation.isVerifiedNotificationName)
+    }",1,"1,4,5",        guard securityLevel != .secure &&/~/            conversationType != .connection else {/~/                return
+"internal static func message(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""guest_room.share.message"", String(describing: p1))
+        }",0,,
+"    public func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
+        
+        var path = request.url.path
+
+        
+        while path.hasPrefix(""/"") {
+            path = String(path.dropFirst())
+        }
+
+        
+        guard !path.contains(""../"") else {
+            return request.eventLoop.makeFailedFuture(Abort(.forbidden))
+        }
+
+        
+        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+
+        
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: filePath, isDirectory: &isDir), !isDir.boolValue else {
+            return next.respond(to: request)
+        }
+
+        
+        let res = request.fileio.streamFile(at: filePath)
+        return request.eventLoop.makeSucceededFuture(res)
+    }",1,"1,2,15",        // make a copy of the path/~/        var path = request.url.path/~/        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+"private(set) var connectionManagerEvent: ConnectionManagerEvent?
+
+    
+    private(set) var maxConcurrentStreamsChange: Int?
+
+    
+    private(set) var idleTask: IdleTask?
+
+    
+    private(set) var sendGoAwayWithLastPeerInitiatedStreamID: HTTP2StreamID?
+
+    
+    private(set) var shouldCloseChannel: Bool
+
+    fileprivate static let none = Operations()
+
+    fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+      self.sendGoAwayWithLastPeerInitiatedStreamID = streamID
+    }",1,16,fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+"    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: GridCell.reuseIdentifier, for: indexPath) as? GridCell else {
+            return UICollectionViewCell()
+        }
+
+        let videoStream = dataSource[indexPath.row]
+        cell.add(streamView: streamView(for: videoStream))
+
+        return cell
+    }",0,,
+"private func createConstraints() {
+        for subView in [gridView, thumbnailViewController.view] {
+            subView?.translatesAutoresizingMaskIntoConstraints = false
+            subView?.fitInSuperview()
+        }
+
+        constrain(view, networkConditionView) { view, networkConditionView in
+            networkConditionView.centerX == view.centerX
+            networkConditionView.top == view.safeAreaLayoutGuideOrFallback.top + 24
+        }
+    }",0,,
+"self.state = .operating(.init(role: role))
+    self.logger = logger
+  }
+
+  
+
+  
+  mutating func streamCreated(withID streamID: HTTP2StreamID) -> Operations {
+    var operations: Operations = .none
+
+    switch self.state {
+    case var .operating(state):
+      
+      state.streamCreated(streamID, logger: self.logger)
+      self.state = .operating(state)
+
+    case let .waitingToIdle(state):
+      var operating = Operating(fromWaitingToIdle: state)
+      operating.streamCreated(streamID, logger: self.logger)
+      self.state = .operating(operating)
+      operations.cancelIdleTask(state.idleTask)
+
+    case var .quiescing(state):
+      precondition(state.initiatedByUs)
+      precondition(state.role == .client)
+      
+      
+      
+      
+      state.openStreams += 1
+      self.state = .quiescing(state)
+
+    case .closing, .closed:
+      ()
+    }
+
+    return operations
+  }",1,"23,24,25,26,27,28",precondition(state.initiatedByUs)/~/      precondition(state.role == .client)/~/      // If we're a client and we initiated shutdown then it's possible for streams to be created in/~/      // the quiescing state as there's a delay between stream channels (i.e. `HTTP2StreamChannel`)/~/      // being created and us being notified about their creation (via a user event fired by/~/      // the `HTTP2Handler`).
+"internal static func knock(_ p1: Int) -> String {
+              return L10n.tr(""Localizable"", ""conversation.silenced.status.message.knock"", p1)
+            }",0,,
+"    func urlActionRouterWillShowCompanyLoginError() {
+        authenticationCoordinator?.cancelCompanyLogin()
+    }",0,,
+"internal static func unverifiedSelfDevices(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""content.system.unverified_self_devices"", String(describing: p1))
+        }",0,,
+"private mutating func handlePing(_ pingData: HTTP2PingData) -> Action {
+    
+    if let maximumPingStrikes = self.maximumPingStrikes {
+      
+      if self.isPingStrike {
+        self.pingStrikes += 1
+
+        
+        if maximumPingStrikes != 0, self.pingStrikes > maximumPingStrikes {
+          return .reply(PingHandler.goAwayFrame)
+        } else {
+          return .none
+        }
+      } else {
+        
+        self.pingStrikes = 0
+        self.lastReceivedPingDate = self.now()
+        return .reply(self.generatePingFrame(code: pingData.integer, ack: true))
+      }
+    } else {
+      
+      
+      
+      
+      return .reply(self.generatePingFrame(code: pingData.integer, ack: true))
+    }
+  }",1,"17,24","        return .reply(self.generatePingFrame(code: pingData.integer, ack: true))/~/      return .reply(self.generatePingFrame(code: pingData.integer, ack: true))"
+"private(set) var connectionManagerEvent: ConnectionManagerEvent?
+
+    
+    private(set) var maxConcurrentStreamsChange: Int?
+
+    
+    private(set) var idleTask: IdleTask?
+
+    
+    private(set) var sendGoAwayWithLastPeerInitiatedStreamID: HTTP2StreamID?
+
+    
+    private(set) var shouldCloseChannel: Bool
+
+    fileprivate static let none = Operations()
+
+    fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+      self.sendGoAwayWithLastPeerInitiatedStreamID = streamID
+    }",1,16,fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+"private(set) var connectionManagerEvent: ConnectionManagerEvent?
+
+    
+    private(set) var maxConcurrentStreamsChange: Int?
+
+    
+    private(set) var idleTask: IdleTask?
+
+    
+    private(set) var sendGoAwayWithLastPeerInitiatedStreamID: HTTP2StreamID?
+
+    
+    private(set) var shouldCloseChannel: Bool
+
+    fileprivate static let none = Operations()
+
+    fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+      self.sendGoAwayWithLastPeerInitiatedStreamID = streamID
+    }",1,16,fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+"internal static func messageTimerChanges(_ p1: Any, _ p2: Any) -> String {
+          return L10n.tr(""Localizable"", ""content.system.message_timer_changes"", String(describing: p1), String(describing: p2))
+        }",0,,
+"internal static func user(_ p1: Any) -> String {
+                return L10n.tr(""Localizable"", ""call.degraded.ended.alert.message.user"", String(describing: p1))
+              }",0,,
+"private mutating func handlePing(_ pingData: HTTP2PingData) -> Action {
+    
+    if let maximumPingStrikes = self.maximumPingStrikes {
+      
+      if self.isPingStrike {
+        self.pingStrikes += 1
+
+        
+        if maximumPingStrikes != 0, self.pingStrikes > maximumPingStrikes {
+          return .reply(PingHandler.goAwayFrame)
+        } else {
+          return .none
+        }
+      } else {
+        
+        self.pingStrikes = 0
+        self.lastReceivedPingDate = self.now()
+        return .reply(self.generatePingFrame(code: pingData.integer, ack: true))
+      }
+    } else {
+      
+      
+      
+      
+      return .reply(self.generatePingFrame(code: pingData.integer, ack: true))
+    }
+  }",1,"17,24","        return .reply(self.generatePingFrame(code: pingData.integer, ack: true))/~/      return .reply(self.generatePingFrame(code: pingData.integer, ack: true))"
+"internal static func peopleWaiting(_ p1: Int) -> String {
+          return L10n.tr(""Localizable"", ""list.connect_request.people_waiting"", p1)
+        }",0,,
+"private(set) var connectionManagerEvent: ConnectionManagerEvent?
+
+    
+    private(set) var maxConcurrentStreamsChange: Int?
+
+    
+    private(set) var idleTask: IdleTask?
+
+    
+    private(set) var sendGoAwayWithLastPeerInitiatedStreamID: HTTP2StreamID?
+
+    
+    private(set) var shouldCloseChannel: Bool
+
+    fileprivate static let none = Operations()
+
+    fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+      self.sendGoAwayWithLastPeerInitiatedStreamID = streamID
+    }",1,16,fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+"    func sortedUsers(_ users: Set<ZMUser>) -> [ZMUser] {
+        let nameDescriptor = NSSortDescriptor(key: ""normalizedName"", ascending: true)
+        let sortedUser = (users as NSSet?)?.sortedArray(using: [nameDescriptor]) as? [ZMUser]
+
+        return sortedUser ?? []
+    }",0,,
+"    private func setupViews() {
+        gridView.dataSource = self
+        view.addSubview(gridView)
+
+        addToSelf(thumbnailViewController)
+
+        view.addSubview(networkConditionView)
+
+        networkConditionView.accessibilityIdentifier = ""network-conditions-indicator""
+    }",0,,
+"    private func increaseSecurityLevelIfNeeded(for cause: SecurityChangeCause) {
+        guard securityLevel != .secure &&
+            allUsersTrusted &&
+            allParticipantsHaveClients &&
+            conversationType != .connection else {
+                return
+        }
+
+        securityLevel = .secure
+        appendNewIsSecureSystemMessage(cause: cause)
+        notifyOnUI(name: ZMConversation.isVerifiedNotificationName)
+    }",1,"1,4,5",        guard securityLevel != .secure &&/~/            conversationType != .connection else {/~/                return
+"internal static func title(_ p1: Any) -> String {
+              return L10n.tr(""Localizable"", ""landing.custom_backend.more_info.alert.title"", String(describing: p1))
+            }",0,,
+"    static func == (lhs: URLQueryFragment, rhs: URLQueryFragment) -> Bool {
+        do {
+            return try lhs.asUrlDecoded() == rhs.asUrlDecoded()
+        } catch {
+            return false
+        }
+    }",0,,
+"private(set) var connectionManagerEvent: ConnectionManagerEvent?
+
+    
+    private(set) var maxConcurrentStreamsChange: Int?
+
+    
+    private(set) var idleTask: IdleTask?
+
+    
+    private(set) var sendGoAwayWithLastPeerInitiatedStreamID: HTTP2StreamID?
+
+    
+    private(set) var shouldCloseChannel: Bool
+
+    fileprivate static let none = Operations()
+
+    fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+      self.sendGoAwayWithLastPeerInitiatedStreamID = streamID
+    }",1,16,fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+"self.state = .operating(.init(role: role))
+    self.logger = logger
+  }
+
+  
+
+  
+  mutating func streamCreated(withID streamID: HTTP2StreamID) -> Operations {
+    var operations: Operations = .none
+
+    switch self.state {
+    case var .operating(state):
+      
+      state.streamCreated(streamID, logger: self.logger)
+      self.state = .operating(state)
+
+    case let .waitingToIdle(state):
+      var operating = Operating(fromWaitingToIdle: state)
+      operating.streamCreated(streamID, logger: self.logger)
+      self.state = .operating(operating)
+      operations.cancelIdleTask(state.idleTask)
+
+    case var .quiescing(state):
+      precondition(state.initiatedByUs)
+      precondition(state.role == .client)
+      
+      
+      
+      
+      state.openStreams += 1
+      self.state = .quiescing(state)
+
+    case .closing, .closed:
+      ()
+    }
+
+    return operations
+  }",1,"23,24,25,26,27,28",precondition(state.initiatedByUs)/~/      precondition(state.role == .client)/~/      // If we're a client and we initiated shutdown then it's possible for streams to be created in/~/      // the quiescing state as there's a delay between stream channels (i.e. `HTTP2StreamChannel`)/~/      // being created and us being notified about their creation (via a user event fired by/~/      // the `HTTP2Handler`).
+"    private func setCallingSettings() {
+        sessionManager.updateCallNotificationStyleFromSettings()
+        sessionManager.useConstantBitRateAudio = SecurityFlags.forceConstantBitRateCalls.isEnabled
+            ? true
+            : Settings.shared[.callingConstantBitRate] ?? false
+    }",0,,
+"private(set) var connectionManagerEvent: ConnectionManagerEvent?
+
+    
+    private(set) var maxConcurrentStreamsChange: Int?
+
+    
+    private(set) var idleTask: IdleTask?
+
+    
+    private(set) var sendGoAwayWithLastPeerInitiatedStreamID: HTTP2StreamID?
+
+    
+    private(set) var shouldCloseChannel: Bool
+
+    fileprivate static let none = Operations()
+
+    fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+      self.sendGoAwayWithLastPeerInitiatedStreamID = streamID
+    }",1,16,fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+"    fileprivate mutating func closeChannel() {
+      self.shouldCloseChannel = true
+    }",0,,
+"    public init(buffer: ByteBuffer) throws {
+        self.buffer = buffer
+    }",0,,
+"self.state = .operating(.init(role: role))
+    self.logger = logger
+  }
+
+  
+
+  
+  mutating func streamCreated(withID streamID: HTTP2StreamID) -> Operations {
+    var operations: Operations = .none
+
+    switch self.state {
+    case var .operating(state):
+      
+      state.streamCreated(streamID, logger: self.logger)
+      self.state = .operating(state)
+
+    case let .waitingToIdle(state):
+      var operating = Operating(fromWaitingToIdle: state)
+      operating.streamCreated(streamID, logger: self.logger)
+      self.state = .operating(operating)
+      operations.cancelIdleTask(state.idleTask)
+
+    case var .quiescing(state):
+      precondition(state.initiatedByUs)
+      precondition(state.role == .client)
+      
+      
+      
+      
+      state.openStreams += 1
+      self.state = .quiescing(state)
+
+    case .closing, .closed:
+      ()
+    }
+
+    return operations
+  }",1,"23,24,25,26,27,28",precondition(state.initiatedByUs)/~/      precondition(state.role == .client)/~/      // If we're a client and we initiated shutdown then it's possible for streams to be created in/~/      // the quiescing state as there's a delay between stream channels (i.e. `HTTP2StreamChannel`)/~/      // being created and us being notified about their creation (via a user event fired by/~/      // the `HTTP2Handler`).
+"internal func sign(digest: ByteBuffer) throws -> ByteBuffer {
+        let bio = BIO_new(BIO_s_mem())
+        defer { BIO_free(bio) }
+        let res = buffer.withUnsafeReadableBytes { ptr in
+            Int(BIO_puts(bio, ptr.baseAddress?.assumingMemoryBound(to: Int8.self)))
+        }
+        assert(res >= 0, ""BIO_puts failed"")
+
+        guard let opaquePointer = OpaquePointer.make(optional: PEM_read_bio_ECPrivateKey(bio!, nil, nil, nil)) else {
+            throw APNSwiftError.SigningError.invalidAuthKey
+        }
+        defer { EC_KEY_free(opaquePointer) }
+        
+        let sig = digest.withUnsafeReadableBytes { ptr in
+            ECDSA_do_sign(ptr.baseAddress?.assumingMemoryBound(to: UInt8.self), Int32(digest.readableBytes), opaquePointer)
+        }
+        defer { ECDSA_SIG_free(sig) }
+
+        var derEncodedSignature: UnsafeMutablePointer<UInt8>?
+        let derLength = i2d_ECDSA_SIG(sig, &derEncodedSignature)
+        guard let derCopy = derEncodedSignature, derLength > 0 else {
+            throw APNSwiftError.SigningError.invalidASN1
+        }
+
+        var derBytes = ByteBufferAllocator().buffer(capacity: Int(derLength))
+        for b in 0 ..< Int(derLength) {
+            derBytes.writeBytes([derCopy[b]])
+        }
+
+        return derBytes
+    }",1,"4,6,18,25,26,27,28","Int(BIO_puts(bio, ptr.baseAddress?.assumingMemoryBound(to: Int8.self)))/~/        assert(res >= 0, ""BIO_puts failed"")/~/        var derEncodedSignature: UnsafeMutablePointer<UInt8>?/~/        for b in 0 ..< Int(derLength) {/~/            derBytes.writeBytes([derCopy[b]])/~/        }/~/"
+"internal func sign(digest: ByteBuffer) throws -> ByteBuffer {
+        let bio = BIO_new(BIO_s_mem())
+        defer { BIO_free(bio) }
+        let res = buffer.withUnsafeReadableBytes { ptr in
+            Int(BIO_puts(bio, ptr.baseAddress?.assumingMemoryBound(to: Int8.self)))
+        }
+        assert(res >= 0, ""BIO_puts failed"")
+
+        guard let opaquePointer = OpaquePointer.make(optional: PEM_read_bio_ECPrivateKey(bio!, nil, nil, nil)) else {
+            throw APNSwiftError.SigningError.invalidAuthKey
+        }
+        defer { EC_KEY_free(opaquePointer) }
+        
+        let sig = digest.withUnsafeReadableBytes { ptr in
+            ECDSA_do_sign(ptr.baseAddress?.assumingMemoryBound(to: UInt8.self), Int32(digest.readableBytes), opaquePointer)
+        }
+        defer { ECDSA_SIG_free(sig) }
+
+        var derEncodedSignature: UnsafeMutablePointer<UInt8>?
+        let derLength = i2d_ECDSA_SIG(sig, &derEncodedSignature)
+        guard let derCopy = derEncodedSignature, derLength > 0 else {
+            throw APNSwiftError.SigningError.invalidASN1
+        }
+
+        var derBytes = ByteBufferAllocator().buffer(capacity: Int(derLength))
+        for b in 0 ..< Int(derLength) {
+            derBytes.writeBytes([derCopy[b]])
+        }
+
+        return derBytes
+    }",1,"4,6,18,25,26,27,28","Int(BIO_puts(bio, ptr.baseAddress?.assumingMemoryBound(to: Int8.self)))/~/        assert(res >= 0, ""BIO_puts failed"")/~/        var derEncodedSignature: UnsafeMutablePointer<UInt8>?/~/        for b in 0 ..< Int(derLength) {/~/            derBytes.writeBytes([derCopy[b]])/~/        }/~/"
+"    public func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
+        
+        var path = request.url.path
+
+        
+        while path.hasPrefix(""/"") {
+            path = String(path.dropFirst())
+        }
+
+        
+        guard !path.contains(""../"") else {
+            return request.eventLoop.makeFailedFuture(Abort(.forbidden))
+        }
+
+        
+        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+
+        
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: filePath, isDirectory: &isDir), !isDir.boolValue else {
+            return next.respond(to: request)
+        }
+
+        
+        let res = request.fileio.streamFile(at: filePath)
+        return request.eventLoop.makeSucceededFuture(res)
+    }",1,"1,2,15",        // make a copy of the path/~/        var path = request.url.path/~/        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+"    public func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
+        
+        var path = request.url.path
+
+        
+        while path.hasPrefix(""/"") {
+            path = String(path.dropFirst())
+        }
+
+        
+        guard !path.contains(""../"") else {
+            return request.eventLoop.makeFailedFuture(Abort(.forbidden))
+        }
+
+        
+        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+
+        
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: filePath, isDirectory: &isDir), !isDir.boolValue else {
+            return next.respond(to: request)
+        }
+
+        
+        let res = request.fileio.streamFile(at: filePath)
+        return request.eventLoop.makeSucceededFuture(res)
+    }",1,"1,2,15",        // make a copy of the path/~/        var path = request.url.path/~/        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+"private(set) var connectionManagerEvent: ConnectionManagerEvent?
+
+    
+    private(set) var maxConcurrentStreamsChange: Int?
+
+    
+    private(set) var idleTask: IdleTask?
+
+    
+    private(set) var sendGoAwayWithLastPeerInitiatedStreamID: HTTP2StreamID?
+
+    
+    private(set) var shouldCloseChannel: Bool
+
+    fileprivate static let none = Operations()
+
+    fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+      self.sendGoAwayWithLastPeerInitiatedStreamID = streamID
+    }",1,16,fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+"internal static func peopleStartedUsing(_ p1: Any, _ p2: Int, _ p3: Int) -> String {
+          return L10n.tr(""Localizable"", ""content.system.people_started_using"", String(describing: p1), p2, p3)
+        }",0,,
+"self.state = .operating(.init(role: role))
+    self.logger = logger
+  }
+
+  
+
+  
+  mutating func streamCreated(withID streamID: HTTP2StreamID) -> Operations {
+    var operations: Operations = .none
+
+    switch self.state {
+    case var .operating(state):
+      
+      state.streamCreated(streamID, logger: self.logger)
+      self.state = .operating(state)
+
+    case let .waitingToIdle(state):
+      var operating = Operating(fromWaitingToIdle: state)
+      operating.streamCreated(streamID, logger: self.logger)
+      self.state = .operating(operating)
+      operations.cancelIdleTask(state.idleTask)
+
+    case var .quiescing(state):
+      precondition(state.initiatedByUs)
+      precondition(state.role == .client)
+      
+      
+      
+      
+      state.openStreams += 1
+      self.state = .quiescing(state)
+
+    case .closing, .closed:
+      ()
+    }
+
+    return operations
+  }",1,"23,24,25,26,27,28",precondition(state.initiatedByUs)/~/      precondition(state.role == .client)/~/      // If we're a client and we initiated shutdown then it's possible for streams to be created in/~/      // the quiescing state as there's a delay between stream channels (i.e. `HTTP2StreamChannel`)/~/      // being created and us being notified about their creation (via a user event fired by/~/      // the `HTTP2Handler`).
+"    public func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
+        
+        var path = request.url.path
+
+        
+        while path.hasPrefix(""/"") {
+            path = String(path.dropFirst())
+        }
+
+        
+        guard !path.contains(""../"") else {
+            return request.eventLoop.makeFailedFuture(Abort(.forbidden))
+        }
+
+        
+        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+
+        
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: filePath, isDirectory: &isDir), !isDir.boolValue else {
+            return next.respond(to: request)
+        }
+
+        
+        let res = request.fileio.streamFile(at: filePath)
+        return request.eventLoop.makeSucceededFuture(res)
+    }",1,"1,2,15",        // make a copy of the path/~/        var path = request.url.path/~/        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+"    private func updateGridViewAxis() {
+        let newAxis = gridAxis(for: traitCollection)
+        guard newAxis != gridView.layoutDirection else { return }
+        gridView.layoutDirection = newAxis
+    }",0,,
+"    private func setupURLActionRouter() {
+        urlActionRouter.delegate = self
+    }",0,,
+"    public func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
+        
+        var path = request.url.path
+
+        
+        while path.hasPrefix(""/"") {
+            path = String(path.dropFirst())
+        }
+
+        
+        guard !path.contains(""../"") else {
+            return request.eventLoop.makeFailedFuture(Abort(.forbidden))
+        }
+
+        
+        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+
+        
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: filePath, isDirectory: &isDir), !isDir.boolValue else {
+            return next.respond(to: request)
+        }
+
+        
+        let res = request.fileio.streamFile(at: filePath)
+        return request.eventLoop.makeSucceededFuture(res)
+    }",1,"1,2,15",        // make a copy of the path/~/        var path = request.url.path/~/        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+"internal static func otherRemovedYou(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""content.system.other_removed_you"", String(describing: p1))
+        }",0,,
+"self.state = .operating(.init(role: role))
+    self.logger = logger
+  }
+
+  
+
+  
+  mutating func streamCreated(withID streamID: HTTP2StreamID) -> Operations {
+    var operations: Operations = .none
+
+    switch self.state {
+    case var .operating(state):
+      
+      state.streamCreated(streamID, logger: self.logger)
+      self.state = .operating(state)
+
+    case let .waitingToIdle(state):
+      var operating = Operating(fromWaitingToIdle: state)
+      operating.streamCreated(streamID, logger: self.logger)
+      self.state = .operating(operating)
+      operations.cancelIdleTask(state.idleTask)
+
+    case var .quiescing(state):
+      precondition(state.initiatedByUs)
+      precondition(state.role == .client)
+      
+      
+      
+      
+      state.openStreams += 1
+      self.state = .quiescing(state)
+
+    case .closing, .closed:
+      ()
+    }
+
+    return operations
+  }",1,"23,24,25,26,27,28",precondition(state.initiatedByUs)/~/      precondition(state.role == .client)/~/      // If we're a client and we initiated shutdown then it's possible for streams to be created in/~/      // the quiescing state as there's a delay between stream channels (i.e. `HTTP2StreamChannel`)/~/      // being created and us being notified about their creation (via a user event fired by/~/      // the `HTTP2Handler`).
+"private mutating func handlePing(_ pingData: HTTP2PingData) -> Action {
+    
+    if let maximumPingStrikes = self.maximumPingStrikes {
+      
+      if self.isPingStrike {
+        self.pingStrikes += 1
+
+        
+        if maximumPingStrikes != 0, self.pingStrikes > maximumPingStrikes {
+          return .reply(PingHandler.goAwayFrame)
+        } else {
+          return .none
+        }
+      } else {
+        
+        self.pingStrikes = 0
+        self.lastReceivedPingDate = self.now()
+        return .reply(self.generatePingFrame(code: pingData.integer, ack: true))
+      }
+    } else {
+      
+      
+      
+      
+      return .reply(self.generatePingFrame(code: pingData.integer, ack: true))
+    }
+  }",1,"17,24","        return .reply(self.generatePingFrame(code: pingData.integer, ack: true))/~/      return .reply(self.generatePingFrame(code: pingData.integer, ack: true))"

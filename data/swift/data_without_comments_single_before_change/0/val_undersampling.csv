@@ -1,0 +1,221 @@
+processed_func,target,flaw_line_index,flaw_line
+"private mutating func handlePing(_ pingData: HTTP2PingData) -> Action {
+    
+    if let maximumPingStrikes = self.maximumPingStrikes {
+      
+      if self.isPingStrike {
+        self.pingStrikes += 1
+
+        
+        if maximumPingStrikes != 0, self.pingStrikes > maximumPingStrikes {
+          return .reply(PingHandler.goAwayFrame)
+        } else {
+          return .none
+        }
+      } else {
+        
+        self.pingStrikes = 0
+        self.lastReceivedPingDate = self.now()
+        return .reply(self.generatePingFrame(code: pingData.integer, ack: true))
+      }
+    } else {
+      
+      
+      
+      
+      return .reply(self.generatePingFrame(code: pingData.integer, ack: true))
+    }
+  }",1,"17,24","        return .reply(self.generatePingFrame(code: pingData.integer, ack: true))/~/      return .reply(self.generatePingFrame(code: pingData.integer, ack: true))"
+"    private func increaseSecurityLevelIfNeeded(for cause: SecurityChangeCause) {
+        guard securityLevel != .secure &&
+            allUsersTrusted &&
+            allParticipantsHaveClients &&
+            conversationType != .connection else {
+                return
+        }
+
+        securityLevel = .secure
+        appendNewIsSecureSystemMessage(cause: cause)
+        notifyOnUI(name: ZMConversation.isVerifiedNotificationName)
+    }",1,"1,4,5",        guard securityLevel != .secure &&/~/            conversationType != .connection else {/~/                return
+"  func channelRead(context: ChannelHandlerContext, data: NIOAny) {
+    let frame = self.unwrapInboundIn(data)
+
+    switch frame.payload {
+    case .goAway:
+      self.perform(operations: self.stateMachine.receiveGoAway())
+    case let .settings(.settings(settings)):
+      self.perform(operations: self.stateMachine.receiveSettings(settings))
+    case let .ping(data, ack):
+      self.handlePingAction(self.pingHandler.read(pingData: data, ack: ack))
+    default:
+      
+      ()
+    }
+
+    context.fireChannelRead(data)
+  }",0,,
+"    public func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
+        
+        var path = request.url.path
+
+        
+        while path.hasPrefix(""/"") {
+            path = String(path.dropFirst())
+        }
+
+        
+        guard !path.contains(""../"") else {
+            return request.eventLoop.makeFailedFuture(Abort(.forbidden))
+        }
+
+        
+        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+
+        
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: filePath, isDirectory: &isDir), !isDir.boolValue else {
+            return next.respond(to: request)
+        }
+
+        
+        let res = request.fileio.streamFile(at: filePath)
+        return request.eventLoop.makeSucceededFuture(res)
+    }",1,"1,2,15",        // make a copy of the path/~/        var path = request.url.path/~/        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+"    @NSManaged public internal(set) var membership: Member?
+
+    
+    @NSManaged var reactions: Set<Reaction>
+    
+    
+    @NSManaged var systemMessages: Set<ZMSystemMessage>
+    
+    @NSManaged var expiresAt: Date?
+    
+    
+    @NSManaged public internal(set) var isAccountDeleted: Bool
+    
+    @NSManaged public var usesCompanyLogin: Bool
+    
+    
+    @NSManaged public var needsToRefetchLabels: Bool
+    
+    @NSManaged public var domain: String?
+    
+    @objc(setImageData:size:)
+    public func setImage(data: Data?, size: ProfileImageSize) {
+        guard let imageData = data else {
+            managedObjectContext?.zm_userImageCache?.removeAllUserImages(self)
+            return
+        }
+        managedObjectContext?.zm_userImageCache?.setUserImage(self, imageData: imageData, size: size)
+        
+        if let uiContext = managedObjectContext?.zm_userInterface {
+            let changedKey = size == .preview ? #keyPath(ZMUser.previewImageData) : #keyPath(ZMUser.completeImageData)
+            NotificationDispatcher.notifyNonCoreDataChanges(objectID: objectID, changedKeys: [changedKey], uiContext: uiContext)
+        }
+    }",0,,
+"internal static func started(_ p1: Any, _ p2: Any) -> String {
+              return L10n.tr(""Localizable"", ""content.system.conversation.other.started"", String(describing: p1), String(describing: p2))
+            }",0,,
+"    private func appendLegalHoldDisabledSystemMessageForConversationAfterReceivingMessage(at timestamp: Date) {
+        appendSystemMessage(type: .legalHoldDisabled,
+                            sender: ZMUser.selfUser(in: self.managedObjectContext!),
+                            users: nil,
+                            clients: nil,
+                            timestamp: timestamp.previousNearestTimestamp)
+    }",0,,
+"self.state = .operating(.init(role: role))
+    self.logger = logger
+  }
+
+  
+
+  
+  mutating func streamCreated(withID streamID: HTTP2StreamID) -> Operations {
+    var operations: Operations = .none
+
+    switch self.state {
+    case var .operating(state):
+      
+      state.streamCreated(streamID, logger: self.logger)
+      self.state = .operating(state)
+
+    case let .waitingToIdle(state):
+      var operating = Operating(fromWaitingToIdle: state)
+      operating.streamCreated(streamID, logger: self.logger)
+      self.state = .operating(operating)
+      operations.cancelIdleTask(state.idleTask)
+
+    case var .quiescing(state):
+      precondition(state.initiatedByUs)
+      precondition(state.role == .client)
+      
+      
+      
+      
+      state.openStreams += 1
+      self.state = .quiescing(state)
+
+    case .closing, .closed:
+      ()
+    }
+
+    return operations
+  }",1,"23,24,25,26,27,28",precondition(state.initiatedByUs)/~/      precondition(state.role == .client)/~/      // If we're a client and we initiated shutdown then it's possible for streams to be created in/~/      // the quiescing state as there's a delay between stream channels (i.e. `HTTP2StreamChannel`)/~/      // being created and us being notified about their creation (via a user event fired by/~/      // the `HTTP2Handler`).
+"    func addObserverToken(_ token: NSObjectProtocol) {
+        observerTokens.append(token)
+    }",0,,
+"private(set) var connectionManagerEvent: ConnectionManagerEvent?
+
+    
+    private(set) var maxConcurrentStreamsChange: Int?
+
+    
+    private(set) var idleTask: IdleTask?
+
+    
+    private(set) var sendGoAwayWithLastPeerInitiatedStreamID: HTTP2StreamID?
+
+    
+    private(set) var shouldCloseChannel: Bool
+
+    fileprivate static let none = Operations()
+
+    fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+      self.sendGoAwayWithLastPeerInitiatedStreamID = streamID
+    }",1,16,fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+"internal static func outgoing(_ p1: Any) -> String {
+            return L10n.tr(""Localizable"", ""voice.status.one_to_one.outgoing"", String(describing: p1))
+          }",0,,
+"internal func sign(digest: ByteBuffer) throws -> ByteBuffer {
+        let bio = BIO_new(BIO_s_mem())
+        defer { BIO_free(bio) }
+        let res = buffer.withUnsafeReadableBytes { ptr in
+            Int(BIO_puts(bio, ptr.baseAddress?.assumingMemoryBound(to: Int8.self)))
+        }
+        assert(res >= 0, ""BIO_puts failed"")
+
+        guard let opaquePointer = OpaquePointer.make(optional: PEM_read_bio_ECPrivateKey(bio!, nil, nil, nil)) else {
+            throw APNSwiftError.SigningError.invalidAuthKey
+        }
+        defer { EC_KEY_free(opaquePointer) }
+        
+        let sig = digest.withUnsafeReadableBytes { ptr in
+            ECDSA_do_sign(ptr.baseAddress?.assumingMemoryBound(to: UInt8.self), Int32(digest.readableBytes), opaquePointer)
+        }
+        defer { ECDSA_SIG_free(sig) }
+
+        var derEncodedSignature: UnsafeMutablePointer<UInt8>?
+        let derLength = i2d_ECDSA_SIG(sig, &derEncodedSignature)
+        guard let derCopy = derEncodedSignature, derLength > 0 else {
+            throw APNSwiftError.SigningError.invalidASN1
+        }
+
+        var derBytes = ByteBufferAllocator().buffer(capacity: Int(derLength))
+        for b in 0 ..< Int(derLength) {
+            derBytes.writeBytes([derCopy[b]])
+        }
+
+        return derBytes
+    }",1,"4,6,18,25,26,27,28","Int(BIO_puts(bio, ptr.baseAddress?.assumingMemoryBound(to: Int8.self)))/~/        assert(res >= 0, ""BIO_puts failed"")/~/        var derEncodedSignature: UnsafeMutablePointer<UInt8>?/~/        for b in 0 ..< Int(derLength) {/~/            derBytes.writeBytes([derCopy[b]])/~/        }/~/"

@@ -1,0 +1,184 @@
+processed_func,target
+"    private fun initRxJavaSettings() {
+        RxJavaPlugins.setErrorHandler {
+            if (BuildConfig.DEBUG)
+                it.printStackTrace()
+        }
+    }",0
+"    fun write(baseline: Baseline, path: Path) {
+        try {
+            Files.newBufferedWriter(path).addFinalNewLine().use {
+                it.streamXml().prettyPrinter().save(baseline)
+            }
+        } catch (error: XMLStreamException) {
+            val (line, column) = error.positions
+            throw InvalidState(""Error on position $line:$column while writing the baseline xml file!"", error)
+        }
+    }",0
+"        fun start(context: Context) {
+            start(context, getRandomDelay(), ExistingWorkPolicy.KEEP)
+        }",1
+"fun sampleFromStandard(): Double {
+            val random = SecureRandom()
+            return -ln(1.0 - random.nextDouble())
+        }",0
+"    override fun decodeNotNullMark(): Boolean {
+        if (!haveStartedReadingEntries) {
+            return true
+        }
+
+        return fromCurrentValue { decodeNotNullMark() }
+    }",0
+"private fun start(
+            context: Context,
+            tDummy: Long,
+            existingWorkPolicy: ExistingWorkPolicy
+        ) {
+
+            val now = clock.currentTimeMillis()
+            val executionDelay = 0L.coerceAtLeast(tDummy - now)
+            val executionDelayDays =
+                executionDelay / FACTOR_DAY_MILLIS
+
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+            val work =
+                OneTimeWorkRequest
+                    .Builder(FakeInfectionReportWorker::class.java)
+                    .setInitialDelay(executionDelayDays, TimeUnit.MILLISECONDS)
+                    .setConstraints(constraints)
+                    .setInputData(Data.Builder().putLong(KEY_T_DUMMY, tDummy).build())
+                    .build()
+            WorkManager.getInstance(context)
+                .enqueueUniqueWork(TAG, existingWorkPolicy, work)
+        }",1
+"override fun checkClientTrusted(
+                                    chain: Array<X509Certificate>,
+                                    authType: String
+                            ) {
+                            }",1
+"        override fun syncInterval(): Long {
+            val newDelayDays: Double =
+                ExponentialDistribution.sampleFromStandard() / SAMPLING_RATE
+            return (newDelayDays * FACTOR_DAY_MILLIS).toLong()
+        }",0
+"override fun checkServerTrusted(
+                                    chain: Array<X509Certificate>,
+                                    authType: String
+                            ) {
+                            }",1
+"private fun getRandomDelay(): Long = Random.nextLong(180, 360)
+
+    }",1
+"        override fun currentTimeMillis(): Long {
+            return System.currentTimeMillis()
+        }",0
+"fun sampleFromStandard(): Double {
+            val random = SecureRandom()
+            return -ln(1.0 - random.nextDouble())
+        }",0
+"    override fun beginStructure(descriptor: SerialDescriptor): CompositeDecoder {
+        if (haveStartedReadingElements) {
+            return currentElementDecoder
+        }
+
+        return super.beginStructure(descriptor)
+    }",0
+"    protected fun <T> fromCurrentValue(action: YamlInput.() -> T): T {
+        try {
+            return action(currentValueDecoder)
+        } catch (e: YamlException) {
+            if (currentlyReadingValue) {
+                throw InvalidPropertyValueException(propertyName, e.message, e.path, e)
+            } else {
+                throw e
+            }
+        }
+    }",0
+"override fun onCreate() {
+        super.onCreate()
+
+        initRxJavaSettings()
+
+        DP3T.init(
+            this,
+            ApplicationInfo(packageName, BuildConfig.REPORT_URL, BuildConfig.BUCKET_URL),
+            SignatureUtil.getPublicKeyFromBase64OrThrow(BuildConfig.PUBLIC_KEY),
+            BuildConfig.DEBUG
+        )
+        DP3T.setCertificatePinner(certificatePinner)
+        DP3T.setUserAgent(userAgent)
+
+        registerReceiver(ExposureStatusChangeBroadcastReceiver(), DP3T.getUpdateIntentFilter())
+
+    }",1
+"override fun getAcceptedIssuers(): Array<X509Certificate?> {
+                                return arrayOfNulls(0)
+                            }",1
+"override fun doWork(): Result {
+        val now = clock.currentTimeMillis()
+        var tDummy = inputData.getLong(KEY_T_DUMMY, now)
+        while (tDummy < now) {
+            if (tDummy >= now - FACTOR_HOUR_MILLIS * MAX_DELAY_HOURS) {
+                if (BuildConfig.DEBUG)
+                    DP3T.addWorkerStartedToHistory(applicationContext, TAG)
+                reportFakeInfectionUseCase.reportFakeInfection().subscribe()
+            }
+            tDummy += clock.syncInterval();
+            preferencesRepository.setTDummy(tDummy)
+        }
+
+        start(applicationContext, tDummy, ExistingWorkPolicy.APPEND)
+        return Result.success()
+    }",0
+"override fun notifyFakeInfected(authCode: String): Completable =
+        Completable.create {
+            if (BuildConfig.isMock) {
+                it.onComplete()
+            } else {
+                DP3T.sendFakeInfectedRequest(context,
+                    ExposeeAuthMethodAuthorization(""Bearer $authCode""),
+                    { it.onComplete() },
+                    { it.onError(Exception(""Error notifying fake infection"")) }
+                )
+            }",0
+"    fun read(path: Path): Baseline {
+        try {
+            Files.newInputStream(path).use {
+                val reader = SAXParserFactory.newInstance().newSAXParser()
+                val handler = BaselineHandler()
+                reader.parse(it, handler)
+                return handler.createBaseline()
+            }
+        } catch (error: SAXParseException) {
+            val (line, column) = error.lineNumber to error.columnNumber
+            throw InvalidState(""Error on position $line:$column while reading the baseline xml file!"", error)
+        }
+    }",1
+"        override fun syncInterval(): Long {
+            val newDelayDays: Double =
+                ExponentialDistribution.sampleFromStandard() / SAMPLING_RATE
+            return (newDelayDays * FACTOR_DAY_MILLIS) as Long
+        }",1
+"override fun doWork(): Result {
+        val now = clock.currentTimeMillis()
+        var tDummy = inputData.getLong(KEY_T_DUMMY, now)
+        while (tDummy < now) {
+            if (tDummy >= now - FACTOR_HOUR_MILLIS * MAX_DELAY_HOURS) {
+                if (BuildConfig.DEBUG)
+                    DP3T.addWorkerStartedToHistory(applicationContext, TAG)
+                reportFakeInfectionUseCase.reportFakeInfection().subscribe()
+            }
+            tDummy += clock.syncInterval();
+            preferencesRepository.setTDummy(tDummy)
+        }
+
+        start(applicationContext, tDummy, ExistingWorkPolicy.APPEND)
+        return Result.success()
+    }",1
+"    override fun exampleRequest(): Either<Throwable, String> = callService {
+        apiInterface.test()
+    }
+
+}",1

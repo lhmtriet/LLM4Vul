@@ -1,0 +1,431 @@
+processed_func,target,flaw_line_index,flaw_line
+"fun sampleFromStandard(): Double {
+            val random = SecureRandom()
+            return -ln(1.0 - random.nextDouble())
+        }",0,,
+"private fun start(
+            context: Context,
+            tDummy: Long,
+            existingWorkPolicy: ExistingWorkPolicy
+        ) {
+
+            val now = clock.currentTimeMillis()
+            val executionDelay = 0L.coerceAtLeast(tDummy - now)
+
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+            val work =
+                OneTimeWorkRequest
+                    .Builder(FakeInfectionReportWorker::class.java)
+                    .setInitialDelay(executionDelay, TimeUnit.MILLISECONDS)
+                    .setConstraints(constraints)
+                    .setInputData(Data.Builder().putLong(KEY_T_DUMMY, tDummy).build())
+                    .build()
+            WorkManager.getInstance(context)
+                .enqueueUniqueWork(TAG, existingWorkPolicy, work)
+        }",0,,
+"override fun decodeElementIndex(descriptor: SerialDescriptor): Int = 0
+}",1,0,override fun decodeElementIndex(descriptor: SerialDescriptor): Int = 0
+"            override fun <T : Any> contextual(kClass: KClass<T>, provider: (typeArgumentsSerializers: List<KSerializer<*>>) -> KSerializer<*>) {}",0,,
+"        override fun syncInterval(): Long {
+            val newDelayDays: Double =
+                ExponentialDistribution.sampleFromStandard() / SAMPLING_RATE
+            return (newDelayDays * FACTOR_DAY_MILLIS) as Long
+        }",1,3,            return (newDelayDays * FACTOR_DAY_MILLIS) as Long
+"    override fun setSelectedRegion(region: String) {
+        preferences.edit()
+            .putString(KEY_CURRENT_REGION, region)
+            .apply()
+    }",0,,
+"private fun start(
+            context: Context,
+            tDummy: Long,
+            existingWorkPolicy: ExistingWorkPolicy
+        ) {
+
+            val now = clock.currentTimeMillis()
+            val executionDelay = 0L.coerceAtLeast(tDummy - now)
+            val executionDelayDays =
+                executionDelay / FACTOR_DAY_MILLIS
+
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+            val work =
+                OneTimeWorkRequest
+                    .Builder(FakeInfectionReportWorker::class.java)
+                    .setInitialDelay(executionDelayDays, TimeUnit.MINUTES)
+                    .setConstraints(constraints)
+                    .setInputData(Data.Builder().putLong(KEY_T_DUMMY, tDummy).build())
+                    .build()
+            WorkManager.getInstance(context)
+                .enqueueUniqueWork(TAG, existingWorkPolicy, work)
+        }",1,17,"                    .setInitialDelay(executionDelayDays, TimeUnit.MINUTES)"
+"private fun start(
+            context: Context,
+            tDummy: Long,
+            existingWorkPolicy: ExistingWorkPolicy
+        ) {
+
+            val now = clock.currentTimeMillis()
+            val executionDelay = 0L.coerceAtLeast(tDummy - now)
+            val executionDelayDays =
+                executionDelay / FACTOR_DAY_MILLIS
+
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+            val work =
+                OneTimeWorkRequest
+                    .Builder(FakeInfectionReportWorker::class.java)
+                    .setInitialDelay(executionDelayDays, TimeUnit.MINUTES)
+                    .setConstraints(constraints)
+                    .setInputData(Data.Builder().putLong(KEY_T_DUMMY, tDummy).build())
+                    .build()
+            WorkManager.getInstance(context)
+                .enqueueUniqueWork(TAG, existingWorkPolicy, work)
+        }",0,,
+"        get() = currentKey.content
+}",0,,
+"        override fun currentTimeMillis(): Long {
+            return System.currentTimeMillis()
+        }",0,,
+"        private fun createPolymorphicMapDeserializer(node: YamlMap, context: SerializersModule, configuration: YamlConfiguration): YamlPolymorphicInput {
+            val desiredKey = configuration.polymorphismPropertyName
+            when (val typeName = node.getValue(desiredKey)) {
+                is YamlList -> throw InvalidPropertyValueException(desiredKey, ""expected a string, but got a list"", typeName.path)
+                is YamlMap -> throw InvalidPropertyValueException(desiredKey, ""expected a string, but got a map"", typeName.path)
+                is YamlNull -> throw InvalidPropertyValueException(desiredKey, ""expected a string, but got a null value"", typeName.path)
+                is YamlTaggedNode -> throw InvalidPropertyValueException(desiredKey, ""expected a string, but got a tagged value"", typeName.path)
+                is YamlScalar -> {
+                    val remainingProperties = node.withoutKey(desiredKey)
+
+                    return YamlPolymorphicInput(typeName.content, typeName.path, remainingProperties, context, configuration)
+                }
+            }
+        }",0,,
+"fun sampleFromStandard(): Double {
+            val random = SecureRandom()
+            return -ln(1.0 - random.nextDouble())
+        }",0,,
+"        override fun syncInterval(): Long {
+            val newDelayDays: Double =
+                ExponentialDistribution.sampleFromStandard() / SAMPLING_RATE
+            return (newDelayDays * FACTOR_DAY_MILLIS).toLong()
+        }",0,,
+"    override fun getCurrentPath(): YamlPath {
+        return if (haveStartedReadingElements) {
+            currentElementDecoder.node.path
+        } else {
+            list.path
+        }
+    }",0,,
+"    override fun getCurrentPath(): YamlPath = node.path
+}",0,,
+"    override fun setExposed(exposed: Boolean) {
+        preferences.edit()
+            .putBoolean(KEY_WAS_EXPOSED, exposed)
+            .apply()
+    }",0,,
+"        override fun syncInterval(): Long {
+            val newDelayDays: Double =
+                ExponentialDistribution.sampleFromStandard() / SAMPLING_RATE
+            return (newDelayDays * FACTOR_DAY_MILLIS).toLong()
+        }",0,,
+"    override fun applicationInjector(): AndroidInjector<out DaggerApplication> =
+        DaggerApplicationComponent.builder()
+            .applicationContext(this)
+            .build()
+
+    private fun initRxJavaSettings() {
+        RxJavaPlugins.setErrorHandler {
+            if (BuildConfig.DEBUG)
+                it.printStackTrace()
+        }
+    }
+
+}",0,,
+"override fun getInfectionReportDate(): Date? {
+        val infectionReportDateMillis = preferences.getLong(KEY_INFECTION_REPORT_DATE, 0)
+        return if (infectionReportDateMillis == 0L)
+            null
+        else
+            Date(infectionReportDateMillis)
+    }",0,,
+"override fun checkServerTrusted(
+                                    chain: Array<X509Certificate>,
+                                    authType: String
+                            ) {
+                            }",1,"0,1,2,3,4","override fun checkServerTrusted(/~/                                    chain: Array<X509Certificate>,/~/                                    authType: String/~/                            ) {/~/                            }"
+"    override fun beginStructure(descriptor: SerialDescriptor): CompositeDecoder {
+        if (haveStartedReadingElements) {
+            return currentElementDecoder
+        }
+
+        return super.beginStructure(descriptor)
+    }",0,,
+"private fun throwIfMissingRequiredPropertyException(e: SerializationException) {
+        val match = missingFieldExceptionMessage.matchEntire(e.message!!) ?: return
+
+        throw MissingRequiredPropertyException(match.groupValues[1], node.path, e)
+    }",0,,
+"fun start(context: Context, preferencesRepository: PreferencesRepository) {
+            var tDummy: Long = preferencesRepository.getTDummy()
+            if (tDummy == -1L) {
+                tDummy = clock.currentTimeMillis() + clock.syncInterval()
+                preferencesRepository.setTDummy(tDummy)
+            }
+            start(context, tDummy, ExistingWorkPolicy.KEEP)
+        }",0,,
+"    override fun applicationInjector(): AndroidInjector<out DaggerApplication> =
+        DaggerApplicationComponent.builder()
+            .applicationContext(this)
+            .build()
+
+    private fun initRxJavaSettings() {
+        RxJavaPlugins.setErrorHandler {
+            if (BuildConfig.DEBUG)
+                it.printStackTrace()
+        }
+    }
+
+}",0,,
+"fun start(context: Context, preferencesRepository: PreferencesRepository) {
+            var tDummy: Long = preferencesRepository.getTDummy()
+            if (tDummy == -1L) {
+                tDummy = clock.currentTimeMillis() + clock.syncInterval()
+                preferencesRepository.setTDummy(tDummy)
+            }
+            start(context, tDummy, ExistingWorkPolicy.KEEP)
+        }",0,,
+"    override fun setHealingTime(healingTime: HealingTime) {
+        preferences.edit()
+            .putString(KEY_HEALING_TIME, healingTime.toJson())
+            .apply()
+    }",0,,
+"    override fun setRegions(regions: List<Region>) {
+        preferences.edit()
+            .putString(KEY_REGIONS, regions.toJson())
+            .apply()
+    }",0,,
+"    override fun decodeNotNullMark(): Boolean {
+        if (!haveStartedReadingElements) {
+            return true
+        }
+
+        return currentElementDecoder.decodeNotNullMark()
+    }",0,,
+"override fun getAcceptedIssuers(): Array<X509Certificate?> {
+                                return arrayOfNulls(0)
+                            }",1,"0,1,2",override fun getAcceptedIssuers(): Array<X509Certificate?> {/~/                                return arrayOfNulls(0)/~/                            }
+"    override fun <T> decodeSerializableValue(deserializer: DeserializationStrategy<T>): T {
+        try {
+            return super.decodeSerializableValue(deserializer)
+        } catch (e: SerializationException) {
+            throwIfUnknownPolymorphicTypeException(e, deserializer)
+
+            throw e
+        }
+    }",0,,
+"override fun decodeEnum(enumDescriptor: SerialDescriptor): Int {
+        val index = enumDescriptor.getElementIndex(scalar.content)
+
+        if (index != UNKNOWN_NAME) {
+            return index
+        }
+
+        val choices = (0..enumDescriptor.elementsCount - 1)
+            .map { enumDescriptor.getElementName(it) }
+            .sorted()
+            .joinToString("", "")
+
+        throw YamlScalarFormatException(""Value ${scalar.contentToString()} is not a valid option, permitted choices are: $choices"", scalar.path, scalar.content)
+    }",0,,
+"    private inline fun <T> maybeCallOnContent(blockOnType: () -> T, blockOnContent: YamlInput.() -> T): T {
+        return when (currentField) {
+            CurrentField.NotStarted, CurrentField.Type -> blockOnType()
+            CurrentField.Content -> contentDecoder.blockOnContent()
+        }
+    }",0,,
+"        override fun currentTimeMillis(): Long {
+            return System.currentTimeMillis()
+        }",0,,
+"    override fun beginStructure(descriptor: SerialDescriptor): CompositeDecoder {
+        if (haveStartedReadingEntries) {
+            return fromCurrentValue { beginStructure(descriptor) }
+        }
+
+        return super.beginStructure(descriptor)
+    }",0,,
+"override fun doWork(): Result {
+        val now = clock.currentTimeMillis()
+        var tDummy = inputData.getLong(KEY_T_DUMMY, now)
+        while (tDummy < now) {
+            // only do request if it was planned to do in the last 48h
+            if (tDummy >= now - FACTOR_HOUR_MILLIS * MAX_DELAY_HOURS) {
+                if (BuildConfig.DEBUG)
+                    DP3T.addWorkerStartedToHistory(applicationContext, TAG)
+                reportFakeInfectionUseCase.reportFakeInfection().subscribe()
+            }
+            tDummy += clock.syncInterval();
+            preferencesRepository.setTDummy(tDummy)
+        }
+
+        start(applicationContext, tDummy, ExistingWorkPolicy.APPEND)
+        return Result.success()
+    }",1,14,"        start(applicationContext, tDummy, ExistingWorkPolicy.APPEND)"
+"    override fun getLanguages(): List<Language> {
+        val itemType = object : TypeToken<List<Language>>() {}.type
+        return Gson().fromJson(
+            preferences.getString(
+                KEY_LANGUAGES, ""[]""
+            ),
+            itemType
+        )
+    }",0,,
+"    override fun setUuid(uuid: String) {
+        preferences
+            .edit()
+            .putString(KEY_UUID, uuid)
+            .apply()
+    }",0,,
+"    override fun exampleRequest(): Either<Throwable, String> = callService {
+        apiInterface.test()
+    }
+
+}",1,"0,1,2,3,4","    override fun exampleRequest(): Either<Throwable, String> = callService {/~/        apiInterface.test()/~/    }/~//~/}"
+"private fun getKnownTypesForOpenType(className: String): Set<String> {
+        val knownTypes = mutableSetOf<String>()
+
+        serializersModule.dumpTo(object : SerializersModuleCollector {
+            override fun <T : Any> contextual(kClass: KClass<T>, provider: (typeArgumentsSerializers: List<KSerializer<*>>) -> KSerializer<*>) {}
+
+            // FIXME: ideally we'd be able to get the name as used by the SerialModule (eg. the values in 'polyBase2NamedSerializers' in SerialModuleImpl, but these aren't exposed.
+            // The serializer's descriptor's name seems to be the same value.
+            override fun <Base : Any, Sub : Base> polymorphic(baseClass: KClass<Base>, actualClass: KClass<Sub>, actualSerializer: KSerializer<Sub>) {
+                if (baseClass.simpleName == className) {
+                    knownTypes.add(actualSerializer.descriptor.serialName)
+                }
+            }
+
+            override fun <Base : Any> polymorphicDefault(baseClass: KClass<Base>, defaultSerializerProvider: (className: String?) -> DeserializationStrategy<out Base>?) {
+                throw UnsupportedOperationException(""This method should never be called."")
+            }
+        })
+
+        return knownTypes
+    }",0,,
+"    fun providesApiRepository(repository: ApiRepositoryImpl): ApiRepository = repository
+
+}",0,,
+"        private fun start(
+            context: Context,
+            delayInMinutes: Long,
+            existingWorkPolicy: ExistingWorkPolicy
+        ) {
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+            val work =
+                OneTimeWorkRequest
+                    .Builder(FakeInfectionReportWorker::class.java)
+                    .setInitialDelay(delayInMinutes, TimeUnit.MINUTES)
+                    .setConstraints(constraints)
+                    .build()
+            WorkManager.getInstance(context)
+                .enqueueUniqueWork(TAG, existingWorkPolicy, work)
+        }",1,"2,11","            delayInMinutes: Long,/~/                    .setInitialDelay(delayInMinutes, TimeUnit.MINUTES)"
+"    override fun getCurrentPath(): YamlPath {
+        return if (haveStartedReadingEntries) {
+            currentValueDecoder.node.path
+        } else {
+            node.path
+        }
+    }",0,,
+"    override fun decodeNotNullMark(): Boolean {
+        if (!haveStartedReadingEntries) {
+            return true
+        }
+
+        return fromCurrentValue { decodeNotNullMark() }
+    }",0,,
+"    override fun getLabels(): Map<String, String> {
+        val itemType = object : TypeToken<HashMap<String, String>>() {}.type
+        return Gson().fromJson(
+            preferences.getString(
+                KEY_LABELS, ""{\""test\"":\""Hola Label\""}""
+            ),
+            itemType
+        )
+    }",0,,
+"    override fun getCurrentLocation(): Location = getCurrentPath().endLocation
+}",0,,
+"    override fun beginStructure(descriptor: SerialDescriptor): CompositeDecoder {
+        return when (currentField) {
+            CurrentField.NotStarted, CurrentField.Type -> super.beginStructure(descriptor)
+            CurrentField.Content -> {
+                contentDecoder = createFor(contentNode, serializersModule, configuration, descriptor)
+
+                return contentDecoder
+            }
+        }
+    }",0,,
+"fun start(context: Context, preferencesRepository: PreferencesRepository) {
+            var tDummy: Long = preferencesRepository.getTDummy()
+            if (tDummy == -1L) {
+                tDummy = clock.currentTimeMillis() + clock.syncInterval()
+                preferencesRepository.setTDummy(tDummy)
+            }
+            start(context, tDummy, ExistingWorkPolicy.KEEP)
+        }",0,,
+"    private fun XMLStreamWriter.save(baseline: Baseline) {
+        document {
+            tag(SMELL_BASELINE) {
+                tag(MANUALLY_SUPPRESSED_ISSUES) {
+                    baseline.manuallySuppressedIssues.forEach { tag(ID, it) }
+                }
+                tag(CURRENT_ISSUES) {
+                    baseline.currentIssues.forEach { tag(ID, it) }
+                }
+            }
+        }
+    }
+}",0,,
+"        override fun syncInterval(): Long {
+            val newDelayDays: Double =
+                ExponentialDistribution.sampleFromStandard() / SAMPLING_RATE
+            return (newDelayDays * FACTOR_DAY_MILLIS).toLong()
+        }",0,,
+"override fun doWork(): Result {
+        if (BuildConfig.DEBUG)
+            DP3T.addWorkerStartedToHistory(applicationContext, TAG)
+        reportFakeInfectionUseCase.reportFakeInfection().subscribe()
+        start(applicationContext, getRandomDelay(), ExistingWorkPolicy.APPEND)
+        return Result.success()
+    }",1,"1,2,3,4","if (BuildConfig.DEBUG)/~/            DP3T.addWorkerStartedToHistory(applicationContext, TAG)/~/        reportFakeInfectionUseCase.reportFakeInfection().subscribe()/~/        start(applicationContext, getRandomDelay(), ExistingWorkPolicy.APPEND)"
+"    override fun setSelectedLanguage(language: String) {
+        preferences.edit()
+            .putString(KEY_CURRENT_LANGUAGE, language)
+            .apply()
+    }",0,,
+"    override fun setOnboardingCompleted(onboardingCompleted: Boolean) {
+        preferences
+            .edit()
+            .putBoolean(KEY_ONBOARDING_COMPLETED, onboardingCompleted)
+            .apply()
+    }",0,,
+"fun sampleFromStandard(): Double {
+            val random = SecureRandom()
+            return -ln(1.0 - random.nextDouble())
+        }",0,,
+"    fun reportInfected(reportCode: String): Completable {
+
+        return getVerifyToken(reportCode).flatMapCompletable {
+            contactTracingRepository.notifyInfected(it.token, jwtTokenUtils.getOnset(it.token))
+        }.concatWith {
+            preferencesRepository.setInfectionReportDate(Date())
+            it.onComplete()
+        }
+
+    }",1,"0,1,2,3,4,5,6,9","    fun reportInfected(reportCode: String): Completable {/~//~/        return getVerifyToken(reportCode).flatMapCompletable {/~/            contactTracingRepository.notifyInfected(it.token, jwtTokenUtils.getOnset(it.token))/~/        }.concatWith {/~/            preferencesRepository.setInfectionReportDate(Date())/~/            it.onComplete()/~/    }"

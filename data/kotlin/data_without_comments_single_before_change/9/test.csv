@@ -1,0 +1,188 @@
+processed_func,target,flaw_line_index,flaw_line
+"override fun doWork(): Result {
+        val now = clock.currentTimeMillis()
+        var tDummy = inputData.getLong(KEY_T_DUMMY, now)
+        while (tDummy < now) {
+            if (tDummy >= now - FACTOR_HOUR_MILLIS * MAX_DELAY_HOURS) {
+                if (BuildConfig.DEBUG)
+                    DP3T.addWorkerStartedToHistory(applicationContext, TAG)
+                reportFakeInfectionUseCase.reportFakeInfection().subscribe()
+            }
+            tDummy += clock.syncInterval();
+            preferencesRepository.setTDummy(tDummy)
+        }
+
+        start(applicationContext, tDummy, ExistingWorkPolicy.APPEND)
+        return Result.success()
+    }",0,,
+"    private fun XMLStreamWriter.save(baseline: Baseline) {
+        document {
+            tag(SMELL_BASELINE) {
+                tag(MANUALLY_SUPPRESSED_ISSUES) {
+                    baseline.manuallySuppressedIssues.forEach { tag(ID, it) }
+                }
+                tag(CURRENT_ISSUES) {
+                    baseline.currentIssues.forEach { tag(ID, it) }
+                }
+            }
+        }
+    }
+}",0,,
+"    override fun decodeNotNullMark(): Boolean {
+        if (!haveStartedReadingEntries) {
+            return true
+        }
+
+        return fromCurrentValue { decodeNotNullMark() }
+    }",0,,
+"private fun start(
+            context: Context,
+            tDummy: Long,
+            existingWorkPolicy: ExistingWorkPolicy
+        ) {
+
+            val now = clock.currentTimeMillis()
+            val executionDelay = 0L.coerceAtLeast(tDummy - now)
+
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+            val work =
+                OneTimeWorkRequest
+                    .Builder(FakeInfectionReportWorker::class.java)
+                    .setInitialDelay(executionDelay, TimeUnit.MILLISECONDS)
+                    .setConstraints(constraints)
+                    .setInputData(Data.Builder().putLong(KEY_T_DUMMY, tDummy).build())
+                    .build()
+            WorkManager.getInstance(context)
+                .enqueueUniqueWork(TAG, existingWorkPolicy, work)
+        }",0,,
+"    override fun setExposed(exposed: Boolean) {
+        preferences.edit()
+            .putBoolean(KEY_WAS_EXPOSED, exposed)
+            .apply()
+    }",0,,
+"private fun start(
+            context: Context,
+            tDummy: Long,
+            existingWorkPolicy: ExistingWorkPolicy
+        ) {
+
+            val now = clock.currentTimeMillis()
+            val executionDelay = 0L.coerceAtLeast(tDummy - now)
+
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+            val work =
+                OneTimeWorkRequest
+                    .Builder(FakeInfectionReportWorker::class.java)
+                    .setInitialDelay(executionDelay, TimeUnit.MILLISECONDS)
+                    .setConstraints(constraints)
+                    .setInputData(Data.Builder().putLong(KEY_T_DUMMY, tDummy).build())
+                    .build()
+            WorkManager.getInstance(context)
+                .enqueueUniqueWork(TAG, existingWorkPolicy, work)
+        }",0,,
+"        override fun currentTimeMillis(): Long {
+            return System.currentTimeMillis()
+        }",0,,
+"    override fun applicationInjector(): AndroidInjector<out DaggerApplication> =
+        DaggerApplicationComponent.builder()
+            .applicationContext(this)
+            .build()
+
+    private fun initRxJavaSettings() {
+        RxJavaPlugins.setErrorHandler {
+            if (BuildConfig.DEBUG)
+                it.printStackTrace()
+        }
+    }
+
+}",0,,
+"    fun read(path: Path): Baseline {
+        try {
+            Files.newInputStream(path).use {
+                val reader = SAXParserFactory.newInstance().newSAXParser()
+                val handler = BaselineHandler()
+                reader.parse(it, handler)
+                return handler.createBaseline()
+            }
+        } catch (error: SAXParseException) {
+            val (line, column) = error.lineNumber to error.columnNumber
+            throw InvalidState(""Error on position $line:$column while reading the baseline xml file!"", error)
+        }
+    }",1,3,                val reader = SAXParserFactory.newInstance().newSAXParser()
+"        override fun currentTimeMillis(): Long {
+            return System.currentTimeMillis()
+        }",0,,
+"    protected fun <T> fromCurrentValue(action: YamlInput.() -> T): T {
+        try {
+            return action(currentValueDecoder)
+        } catch (e: YamlException) {
+            if (currentlyReadingValue) {
+                throw InvalidPropertyValueException(propertyName, e.message, e.path, e)
+            } else {
+                throw e
+            }
+        }
+    }",0,,
+"        override fun currentTimeMillis(): Long {
+            return System.currentTimeMillis()
+        }",0,,
+"    private inline fun <T> maybeCallOnContent(blockOnType: () -> T, blockOnContent: YamlInput.() -> T): T {
+        return when (currentField) {
+            CurrentField.NotStarted, CurrentField.Type -> blockOnType()
+            CurrentField.Content -> contentDecoder.blockOnContent()
+        }
+    }",0,,
+"override fun checkServerTrusted(
+                                    chain: Array<X509Certificate>,
+                                    authType: String
+                            ) {
+                            }",1,"0,1,2,3,4","override fun checkServerTrusted(/~/                                    chain: Array<X509Certificate>,/~/                                    authType: String/~/                            ) {/~/                            }"
+"        private fun createPolymorphicMapDeserializer(node: YamlMap, context: SerializersModule, configuration: YamlConfiguration): YamlPolymorphicInput {
+            val desiredKey = configuration.polymorphismPropertyName
+            when (val typeName = node.getValue(desiredKey)) {
+                is YamlList -> throw InvalidPropertyValueException(desiredKey, ""expected a string, but got a list"", typeName.path)
+                is YamlMap -> throw InvalidPropertyValueException(desiredKey, ""expected a string, but got a map"", typeName.path)
+                is YamlNull -> throw InvalidPropertyValueException(desiredKey, ""expected a string, but got a null value"", typeName.path)
+                is YamlTaggedNode -> throw InvalidPropertyValueException(desiredKey, ""expected a string, but got a tagged value"", typeName.path)
+                is YamlScalar -> {
+                    val remainingProperties = node.withoutKey(desiredKey)
+
+                    return YamlPolymorphicInput(typeName.content, typeName.path, remainingProperties, context, configuration)
+                }
+            }
+        }",0,,
+"        override fun syncInterval(): Long {
+            val newDelayDays: Double =
+                ExponentialDistribution.sampleFromStandard() / SAMPLING_RATE
+            return (newDelayDays * FACTOR_DAY_MILLIS).toLong()
+        }",0,,
+"override fun doWork(): Result {
+        val now = clock.currentTimeMillis()
+        var tDummy = inputData.getLong(KEY_T_DUMMY, now)
+        while (tDummy < now) {
+            
+            if (tDummy >= now - FACTOR_HOUR_MILLIS * MAX_DELAY_HOURS) {
+                if (BuildConfig.DEBUG)
+                    DP3T.addWorkerStartedToHistory(applicationContext, TAG)
+                reportFakeInfectionUseCase.reportFakeInfection().subscribe()
+            }
+            tDummy += clock.syncInterval();
+            preferencesRepository.setTDummy(tDummy)
+        }
+
+        start(applicationContext, tDummy, ExistingWorkPolicy.APPEND)
+        return Result.success()
+    }",1,14,"        start(applicationContext, tDummy, ExistingWorkPolicy.APPEND)"
+"    override fun getLabels(): Map<String, String> {
+        val itemType = object : TypeToken<HashMap<String, String>>() {}.type
+        return Gson().fromJson(
+            preferences.getString(
+                KEY_LABELS, ""{\""test\"":\""Hola Label\""}""
+            ),
+            itemType
+        )
+    }",0,,

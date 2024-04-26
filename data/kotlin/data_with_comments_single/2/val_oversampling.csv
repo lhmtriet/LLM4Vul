@@ -1,0 +1,492 @@
+processed_func,target
+"override fun doWork(): Result {
+        val now = clock.currentTimeMillis()
+        var tDummy = inputData.getLong(KEY_T_DUMMY, now)
+        while (tDummy < now) {
+            if (tDummy >= now - FACTOR_HOUR_MILLIS * MAX_DELAY_HOURS) {
+                if (BuildConfig.DEBUG)
+                    DP3T.addWorkerStartedToHistory(applicationContext, TAG)
+                reportFakeInfectionUseCase.reportFakeInfection().subscribe()
+            }
+            tDummy += clock.syncInterval();
+            preferencesRepository.setTDummy(tDummy)
+        }
+
+        start(applicationContext, tDummy, ExistingWorkPolicy.APPEND)
+        return Result.success()
+    }",1
+"private fun start(
+            context: Context,
+            tDummy: Long,
+            existingWorkPolicy: ExistingWorkPolicy
+        ) {
+
+            val now = clock.currentTimeMillis()
+            val executionDelay = 0L.coerceAtLeast(tDummy - now)
+            val executionDelayDays =
+                executionDelay / FACTOR_DAY_MILLIS
+
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+            val work =
+                OneTimeWorkRequest
+                    .Builder(FakeInfectionReportWorker::class.java)
+                    .setInitialDelay(executionDelayDays, TimeUnit.MINUTES)
+                    .setConstraints(constraints)
+                    .setInputData(Data.Builder().putLong(KEY_T_DUMMY, tDummy).build())
+                    .build()
+            WorkManager.getInstance(context)
+                .enqueueUniqueWork(TAG, existingWorkPolicy, work)
+        }",1
+"    fun read(path: Path): Baseline {
+        try {
+            Files.newInputStream(path).use {
+                val reader = SAXParserFactory.newInstance().newSAXParser()
+                val handler = BaselineHandler()
+                reader.parse(it, handler)
+                return handler.createBaseline()
+            }
+        } catch (error: SAXParseException) {
+            val (line, column) = error.lineNumber to error.columnNumber
+            throw InvalidState(""Error on position $line:$column while reading the baseline xml file!"", error)
+        }
+    }",1
+"    fun read(path: Path): Baseline {
+        try {
+            Files.newInputStream(path).use {
+                val reader = SAXParserFactory.newInstance().newSAXParser()
+                val handler = BaselineHandler()
+                reader.parse(it, handler)
+                return handler.createBaseline()
+            }
+        } catch (error: SAXParseException) {
+            val (line, column) = error.lineNumber to error.columnNumber
+            throw InvalidState(""Error on position $line:$column while reading the baseline xml file!"", error)
+        }
+    }",1
+"private fun start(
+            context: Context,
+            tDummy: Long,
+            existingWorkPolicy: ExistingWorkPolicy
+        ) {
+
+            val now = clock.currentTimeMillis()
+            val executionDelay = 0L.coerceAtLeast(tDummy - now)
+
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+            val work =
+                OneTimeWorkRequest
+                    .Builder(FakeInfectionReportWorker::class.java)
+                    .setInitialDelay(executionDelay, TimeUnit.MILLISECONDS)
+                    .setConstraints(constraints)
+                    .setInputData(Data.Builder().putLong(KEY_T_DUMMY, tDummy).build())
+                    .build()
+            WorkManager.getInstance(context)
+                .enqueueUniqueWork(TAG, existingWorkPolicy, work)
+        }",0
+"override fun getInfectionReportDate(): Date? {
+        val infectionReportDateMillis = preferences.getLong(KEY_INFECTION_REPORT_DATE, 0)
+        return if (infectionReportDateMillis == 0L)
+            null
+        else
+            Date(infectionReportDateMillis)
+    }",0
+"fun start(context: Context, preferencesRepository: PreferencesRepository) {
+            var tDummy: Long = preferencesRepository.getTDummy()
+            if (tDummy == -1L) {
+                tDummy = clock.currentTimeMillis() + clock.syncInterval()
+                preferencesRepository.setTDummy(tDummy)
+            }
+            start(context, tDummy, ExistingWorkPolicy.KEEP)
+        }",0
+"private fun start(
+            context: Context,
+            tDummy: Long,
+            existingWorkPolicy: ExistingWorkPolicy
+        ) {
+
+            val now = clock.currentTimeMillis()
+            val executionDelay = 0L.coerceAtLeast(tDummy - now)
+
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+            val work =
+                OneTimeWorkRequest
+                    .Builder(FakeInfectionReportWorker::class.java)
+                    .setInitialDelay(executionDelay, TimeUnit.MILLISECONDS)
+                    .setConstraints(constraints)
+                    .setInputData(Data.Builder().putLong(KEY_T_DUMMY, tDummy).build())
+                    .build()
+            WorkManager.getInstance(context)
+                .enqueueUniqueWork(TAG, existingWorkPolicy, work)
+        }",0
+"    fun read(path: Path): Baseline {
+        try {
+            Files.newInputStream(path).use {
+                val reader = SAXParserFactory.newInstance().newSAXParser()
+                val handler = BaselineHandler()
+                reader.parse(it, handler)
+                return handler.createBaseline()
+            }
+        } catch (error: SAXParseException) {
+            val (line, column) = error.lineNumber to error.columnNumber
+            throw InvalidState(""Error on position $line:$column while reading the baseline xml file!"", error)
+        }
+    }",1
+"        private fun start(
+            context: Context,
+            delayInMinutes: Long,
+            existingWorkPolicy: ExistingWorkPolicy
+        ) {
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+            val work =
+                OneTimeWorkRequest
+                    .Builder(FakeInfectionReportWorker::class.java)
+                    .setInitialDelay(delayInMinutes, TimeUnit.MINUTES)
+                    .setConstraints(constraints)
+                    .build()
+            WorkManager.getInstance(context)
+                .enqueueUniqueWork(TAG, existingWorkPolicy, work)
+        }",0
+"override fun onCreate() {
+        super.onCreate()
+
+        initRxJavaSettings()
+
+        DP3T.init(
+            this,
+            ApplicationInfo(packageName, BuildConfig.REPORT_URL, BuildConfig.BUCKET_URL),
+            SignatureUtil.getPublicKeyFromBase64OrThrow(BuildConfig.PUBLIC_KEY),
+            BuildConfig.DEBUG
+        )
+        DP3T.setCertificatePinner(certificatePinner)
+        DP3T.setUserAgent(userAgent)
+
+        FakeInfectionReportWorker.start(this, preferencesRepository)
+
+        registerReceiver(ExposureStatusChangeBroadcastReceiver(), DP3T.getUpdateIntentFilter())
+
+    }",0
+"    override fun setSelectedLanguage(language: String) {
+        preferences.edit()
+            .putString(KEY_CURRENT_LANGUAGE, language)
+            .apply()
+    }",0
+"override fun doWork(): Result {
+        if (BuildConfig.DEBUG)
+            DP3T.addWorkerStartedToHistory(applicationContext, TAG)
+        reportFakeInfectionUseCase.reportFakeInfection().subscribe()
+        start(applicationContext, getRandomDelay(), ExistingWorkPolicy.APPEND)
+        return Result.success()
+    }",0
+"    override fun applicationInjector(): AndroidInjector<out DaggerApplication> =
+        DaggerApplicationComponent.builder()
+            .applicationContext(this)
+            .build()
+
+    private fun initRxJavaSettings() {
+        RxJavaPlugins.setErrorHandler {
+            if (BuildConfig.DEBUG)
+                it.printStackTrace()
+        }
+    }
+
+}",0
+"fun sampleFromStandard(): Double {
+            val random = SecureRandom()
+            return -ln(1.0 - random.nextDouble())
+        }",0
+"private fun throwIfMissingRequiredPropertyException(e: SerializationException) {
+        val match = missingFieldExceptionMessage.matchEntire(e.message!!) ?: return
+
+        throw MissingRequiredPropertyException(match.groupValues[1], node.path, e)
+    }",0
+"    fun read(path: Path): Baseline {
+        try {
+            Files.newInputStream(path).use {
+                val reader = SAXParserFactory.newInstance().newSAXParser()
+                val handler = BaselineHandler()
+                reader.parse(it, handler)
+                return handler.createBaseline()
+            }
+        } catch (error: SAXParseException) {
+            val (line, column) = error.lineNumber to error.columnNumber
+            throw InvalidState(""Error on position $line:$column while reading the baseline xml file!"", error)
+        }
+    }",1
+"    fun providesApiRepository(repository: ApiRepositoryImpl): ApiRepository = repository
+
+}",0
+"    override fun exampleRequest(): Either<Throwable, String> = callService {
+        apiInterface.test()
+    }
+
+}",1
+"override fun doWork(): Result {
+        val now = clock.currentTimeMillis()
+        var tDummy = inputData.getLong(KEY_T_DUMMY, now)
+        while (tDummy < now) {
+            // only do request if it was planned to do in the last 48h
+            if (tDummy >= now - FACTOR_HOUR_MILLIS * MAX_DELAY_HOURS) {
+                if (BuildConfig.DEBUG)
+                    DP3T.addWorkerStartedToHistory(applicationContext, TAG)
+                reportFakeInfectionUseCase.reportFakeInfection().subscribe()
+            }
+            tDummy += clock.syncInterval();
+            preferencesRepository.setTDummy(tDummy)
+        }
+
+        start(applicationContext, tDummy, ExistingWorkPolicy.APPEND)
+        return Result.success()
+    }",0
+"override fun doWork(): Result {
+        val now = clock.currentTimeMillis()
+        var tDummy = inputData.getLong(KEY_T_DUMMY, now)
+        while (tDummy < now) {
+            if (tDummy >= now - FACTOR_HOUR_MILLIS * MAX_DELAY_HOURS) {
+                if (BuildConfig.DEBUG)
+                    DP3T.addWorkerStartedToHistory(applicationContext, TAG)
+                reportFakeInfectionUseCase.reportFakeInfection().subscribe()
+            }
+            tDummy += clock.syncInterval();
+            preferencesRepository.setTDummy(tDummy)
+        }
+
+        start(applicationContext, tDummy, ExistingWorkPolicy.APPEND)
+        return Result.success()
+    }",1
+"    fun read(path: Path): Baseline {
+        try {
+            Files.newInputStream(path).use {
+                val reader = SAXParserFactory.newInstance().newSAXParser()
+                val handler = BaselineHandler()
+                reader.parse(it, handler)
+                return handler.createBaseline()
+            }
+        } catch (error: SAXParseException) {
+            val (line, column) = error.lineNumber to error.columnNumber
+            throw InvalidState(""Error on position $line:$column while reading the baseline xml file!"", error)
+        }
+    }",1
+"    override fun beginStructure(descriptor: SerialDescriptor): CompositeDecoder {
+        if (haveStartedReadingElements) {
+            return currentElementDecoder
+        }
+
+        return super.beginStructure(descriptor)
+    }",0
+"fun sampleFromStandard(): Double {
+            val random = SecureRandom()
+            return -ln(1.0 - random.nextDouble())
+        }",0
+"private fun start(
+            context: Context,
+            tDummy: Long,
+            existingWorkPolicy: ExistingWorkPolicy
+        ) {
+
+            val now = clock.currentTimeMillis()
+            val executionDelay = 0L.coerceAtLeast(tDummy - now)
+            val executionDelayDays =
+                executionDelay / FACTOR_DAY_MILLIS
+
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+            val work =
+                OneTimeWorkRequest
+                    .Builder(FakeInfectionReportWorker::class.java)
+                    .setInitialDelay(executionDelayDays, TimeUnit.MINUTES)
+                    .setConstraints(constraints)
+                    .setInputData(Data.Builder().putLong(KEY_T_DUMMY, tDummy).build())
+                    .build()
+            WorkManager.getInstance(context)
+                .enqueueUniqueWork(TAG, existingWorkPolicy, work)
+        }",1
+"    fun read(path: Path): Baseline {
+        try {
+            Files.newInputStream(path).use {
+                val reader = SAXParserFactory.newInstance().newSAXParser()
+                val handler = BaselineHandler()
+                reader.parse(it, handler)
+                return handler.createBaseline()
+            }
+        } catch (error: SAXParseException) {
+            val (line, column) = error.lineNumber to error.columnNumber
+            throw InvalidState(""Error on position $line:$column while reading the baseline xml file!"", error)
+        }
+    }",1
+"    fun read(path: Path): Baseline {
+        try {
+            Files.newInputStream(path).use {
+                val reader = SAXParserFactory.newInstance().newSAXParser()
+                val handler = BaselineHandler()
+                reader.parse(it, handler)
+                return handler.createBaseline()
+            }
+        } catch (error: SAXParseException) {
+            val (line, column) = error.lineNumber to error.columnNumber
+            throw InvalidState(""Error on position $line:$column while reading the baseline xml file!"", error)
+        }
+    }",1
+"    override fun setUuid(uuid: String) {
+        preferences
+            .edit()
+            .putString(KEY_UUID, uuid)
+            .apply()
+    }",0
+"override fun doWork(): Result {
+        val now = clock.currentTimeMillis()
+        var tDummy = inputData.getLong(KEY_T_DUMMY, now)
+        while (tDummy < now) {
+            if (tDummy >= now - FACTOR_HOUR_MILLIS * MAX_DELAY_HOURS) {
+                if (BuildConfig.DEBUG)
+                    DP3T.addWorkerStartedToHistory(applicationContext, TAG)
+                reportFakeInfectionUseCase.reportFakeInfection().subscribe()
+            }
+            tDummy += clock.syncInterval();
+            preferencesRepository.setTDummy(tDummy)
+        }
+
+        start(applicationContext, tDummy, ExistingWorkPolicy.APPEND)
+        return Result.success()
+    }",1
+"override fun doWork(): Result {
+        val now = clock.currentTimeMillis()
+        var tDummy = inputData.getLong(KEY_T_DUMMY, now)
+        while (tDummy < now) {
+            if (tDummy >= now - FACTOR_HOUR_MILLIS * MAX_DELAY_HOURS) {
+                if (BuildConfig.DEBUG)
+                    DP3T.addWorkerStartedToHistory(applicationContext, TAG)
+                reportFakeInfectionUseCase.reportFakeInfection().subscribe()
+            }
+            tDummy += clock.syncInterval();
+            preferencesRepository.setTDummy(tDummy)
+        }
+
+        start(applicationContext, tDummy, ExistingWorkPolicy.APPEND)
+        return Result.success()
+    }",0
+"private fun start(
+            context: Context,
+            tDummy: Long,
+            existingWorkPolicy: ExistingWorkPolicy
+        ) {
+
+            val now = clock.currentTimeMillis()
+            val executionDelay = 0L.coerceAtLeast(tDummy - now)
+            val executionDelayDays =
+                executionDelay / FACTOR_DAY_MILLIS
+
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+            val work =
+                OneTimeWorkRequest
+                    .Builder(FakeInfectionReportWorker::class.java)
+                    .setInitialDelay(executionDelayDays, TimeUnit.MINUTES)
+                    .setConstraints(constraints)
+                    .setInputData(Data.Builder().putLong(KEY_T_DUMMY, tDummy).build())
+                    .build()
+            WorkManager.getInstance(context)
+                .enqueueUniqueWork(TAG, existingWorkPolicy, work)
+        }",1
+"override fun doWork(): Result {
+        val now = clock.currentTimeMillis()
+        var tDummy = inputData.getLong(KEY_T_DUMMY, now)
+        while (tDummy < now) {
+            if (tDummy >= now - FACTOR_HOUR_MILLIS * MAX_DELAY_HOURS) {
+                if (BuildConfig.DEBUG)
+                    DP3T.addWorkerStartedToHistory(applicationContext, TAG)
+                reportFakeInfectionUseCase.reportFakeInfection().subscribe()
+            }
+            tDummy += clock.syncInterval();
+            preferencesRepository.setTDummy(tDummy)
+        }
+
+        start(applicationContext, tDummy, ExistingWorkPolicy.APPEND)
+        return Result.success()
+    }",1
+"    fun read(path: Path): Baseline {
+        try {
+            Files.newInputStream(path).use {
+                val reader = SAXParserFactory.newInstance().newSAXParser()
+                val handler = BaselineHandler()
+                reader.parse(it, handler)
+                return handler.createBaseline()
+            }
+        } catch (error: SAXParseException) {
+            val (line, column) = error.lineNumber to error.columnNumber
+            throw InvalidState(""Error on position $line:$column while reading the baseline xml file!"", error)
+        }
+    }",1
+"        fun start(context: Context) {
+            start(context, getRandomDelay(), ExistingWorkPolicy.KEEP)
+        }",0
+"override fun doWork(): Result {
+        val now = clock.currentTimeMillis()
+        var tDummy = inputData.getLong(KEY_T_DUMMY, now)
+        while (tDummy < now) {
+            if (tDummy >= now - FACTOR_HOUR_MILLIS * MAX_DELAY_HOURS) {
+                if (BuildConfig.DEBUG)
+                    DP3T.addWorkerStartedToHistory(applicationContext, TAG)
+                reportFakeInfectionUseCase.reportFakeInfection().subscribe()
+            }
+            tDummy += clock.syncInterval();
+            preferencesRepository.setTDummy(tDummy)
+        }
+
+        start(applicationContext, tDummy, ExistingWorkPolicy.APPEND)
+        return Result.success()
+    }",1
+"private fun start(
+            context: Context,
+            tDummy: Long,
+            existingWorkPolicy: ExistingWorkPolicy
+        ) {
+
+            val now = clock.currentTimeMillis()
+            val executionDelay = 0L.coerceAtLeast(tDummy - now)
+            val executionDelayDays =
+                executionDelay / FACTOR_DAY_MILLIS
+
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+            val work =
+                OneTimeWorkRequest
+                    .Builder(FakeInfectionReportWorker::class.java)
+                    .setInitialDelay(executionDelayDays, TimeUnit.MINUTES)
+                    .setConstraints(constraints)
+                    .setInputData(Data.Builder().putLong(KEY_T_DUMMY, tDummy).build())
+                    .build()
+            WorkManager.getInstance(context)
+                .enqueueUniqueWork(TAG, existingWorkPolicy, work)
+        }",1
+"    override fun setSelectedRegion(region: String) {
+        preferences.edit()
+            .putString(KEY_CURRENT_REGION, region)
+            .apply()
+    }",0
+"override fun doWork(): Result {
+        val now = clock.currentTimeMillis()
+        var tDummy = inputData.getLong(KEY_T_DUMMY, now)
+        while (tDummy < now) {
+            if (tDummy >= now - FACTOR_HOUR_MILLIS * MAX_DELAY_HOURS) {
+                if (BuildConfig.DEBUG)
+                    DP3T.addWorkerStartedToHistory(applicationContext, TAG)
+                reportFakeInfectionUseCase.reportFakeInfection().subscribe()
+            }
+            tDummy += clock.syncInterval();
+            preferencesRepository.setTDummy(tDummy)
+        }
+
+        start(applicationContext, tDummy, ExistingWorkPolicy.APPEND)
+        return Result.success()
+    }",1

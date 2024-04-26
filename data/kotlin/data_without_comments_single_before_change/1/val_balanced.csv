@@ -1,0 +1,54 @@
+processed_func,target
+"override fun onCreate() {
+        super.onCreate()
+
+        initRxJavaSettings()
+
+        DP3T.init(
+            this,
+            ApplicationInfo(packageName, BuildConfig.REPORT_URL, BuildConfig.BUCKET_URL),
+            SignatureUtil.getPublicKeyFromBase64OrThrow(BuildConfig.PUBLIC_KEY),
+            BuildConfig.DEBUG
+        )
+        DP3T.setCertificatePinner(certificatePinner)
+        DP3T.setUserAgent(userAgent)
+
+        FakeInfectionReportWorker.start(this)
+
+        registerReceiver(ExposureStatusChangeBroadcastReceiver(), DP3T.getUpdateIntentFilter())
+
+    }",1
+"fun start(context: Context, preferencesRepository: PreferencesRepository) {
+            var tDummy: Long = preferencesRepository.getTDummy()
+            if (tDummy == -1L) {
+                tDummy = clock.currentTimeMillis() + clock.syncInterval()
+                preferencesRepository.setTDummy(tDummy)
+            }
+            start(context, tDummy, ExistingWorkPolicy.KEEP)
+        }",0
+"            override fun <T : Any> contextual(kClass: KClass<T>, provider: (typeArgumentsSerializers: List<KSerializer<*>>) -> KSerializer<*>) {}",0
+"override fun checkServerTrusted(
+                                    chain: Array<X509Certificate>,
+                                    authType: String
+                            ) {
+                            }",1
+"        fun start(context: Context) {
+            start(context, getRandomDelay(), ExistingWorkPolicy.KEEP)
+        }",1
+"        override fun syncInterval(): Long {
+            val newDelayDays: Double =
+                ExponentialDistribution.sampleFromStandard() / SAMPLING_RATE
+            return (newDelayDays * FACTOR_DAY_MILLIS).toLong()
+        }",0
+"    override fun decodeNotNullMark(): Boolean {
+        if (!haveStartedReadingElements) {
+            return true
+        }
+
+        return currentElementDecoder.decodeNotNullMark()
+    }",0
+"    override fun exampleRequest(): Either<Throwable, String> = callService {
+        apiInterface.test()
+    }
+
+}",1

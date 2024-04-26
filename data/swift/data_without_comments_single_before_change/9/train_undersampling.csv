@@ -1,0 +1,516 @@
+processed_func,target,flaw_line_index,flaw_line
+"self.state = .operating(.init(role: role))
+    self.logger = logger
+  }
+
+  
+
+  
+  mutating func streamCreated(withID streamID: HTTP2StreamID) -> Operations {
+    var operations: Operations = .none
+
+    switch self.state {
+    case var .operating(state):
+      
+      state.streamCreated(streamID, logger: self.logger)
+      self.state = .operating(state)
+
+    case let .waitingToIdle(state):
+      var operating = Operating(fromWaitingToIdle: state)
+      operating.streamCreated(streamID, logger: self.logger)
+      self.state = .operating(operating)
+      operations.cancelIdleTask(state.idleTask)
+
+    case var .quiescing(state):
+      precondition(state.initiatedByUs)
+      precondition(state.role == .client)
+      
+      
+      
+      
+      state.openStreams += 1
+      self.state = .quiescing(state)
+
+    case .closing, .closed:
+      ()
+    }
+
+    return operations
+  }",1,"23,24,25,26,27,28",precondition(state.initiatedByUs)/~/      precondition(state.role == .client)/~/      // If we're a client and we initiated shutdown then it's possible for streams to be created in/~/      // the quiescing state as there's a delay between stream channels (i.e. `HTTP2StreamChannel`)/~/      // being created and us being notified about their creation (via a user event fired by/~/      // the `HTTP2Handler`).
+"    fileprivate func expireAllPendingMessagesBecauseOfSecurityLevelDegradation() {
+        for message in undeliveredMessages {
+            if let clientMessage = message as? ZMClientMessage,
+                let genericMessage = clientMessage.underlyingMessage,
+                genericMessage.hasConfirmation {
+                
+                message.expire()
+            } else {
+                
+                message.expire()
+                message.causedSecurityLevelDegradation = true
+            }
+        }
+    }",0,,
+"    func scheduleNotification(expositionInfo: ExpositionInfo) {
+        var title, body: String?
+        var sound: UNNotificationSound?
+        formatter.dateFormat = ""dd.MM.YYYY""
+
+        switch expositionInfo.level {
+        case .exposed:
+            title = ""NOTIFICATION_TITLE_EXPOSURE_HIGH"".localized
+            body = ""NOTIFICATION_MESSAGE_EXPOSURE_HIGH"".localized
+            sound = .defaultCritical
+        default:
+            debugPrint(""No notification for exposition: \(expositionInfo.level.rawValue)"")
+        }
+
+        if let title = title, let body = body, let sound = sound {
+            scheduleNotification(title: title, body: body, sound: sound)
+        }
+    }",1,4,
+"result.set(value: .urlEncoded(value), forPath: [])
+            case 2:
+                let key = kv[0]
+                let value = String(kv[1])
+                result.set(value: .urlEncoded(value), forPath: try parseKey(key: Substring(key)))
+            default:
+                
+                continue
+            }
+        }
+        return result
+    }
+
+    func parseKey(key: Substring) throws -> [String] {
+        guard let percentDecodedKey = key.removingPercentEncoding else {
+            throw URLEncodedFormError.malformedKey(key: key)
+        }
+        return try percentDecodedKey.split(separator: ""["").enumerated().map { (i, part) in 
+            switch i {
+            case 0:
+                return String(part)
+            default:
+                guard part.last == ""]"" else {
+                    throw URLEncodedFormError.malformedKey(key: key)
+                }
+                return String(part.dropLast())
+            }
+        }
+    }",1,"0,4","                result.set(value: .urlEncoded(value), forPath: [])/~/                result.set(value: .urlEncoded(value), forPath: try parseKey(key: Substring(key)))"
+"internal static func message(_ p1: Int) -> String {
+            return L10n.tr(""Localizable"", ""conversation.input_bar.message_too_long.message"", p1)
+          }",0,,
+"internal static func detail(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""legalhold_request.alert.detail"", String(describing: p1))
+        }",0,,
+"init(
+    pingCode: UInt64,
+    interval: TimeAmount,
+    timeout: TimeAmount,
+    permitWithoutCalls: Bool,
+    maximumPingsWithoutData: UInt,
+    minimumSentPingIntervalWithoutData: TimeAmount,
+    minimumReceivedPingIntervalWithoutData: TimeAmount? = nil,
+    maximumPingStrikes: UInt? = nil
+  ) {
+    self.pingCode = pingCode
+    self.interval = interval
+    self.timeout = timeout
+    self.permitWithoutCalls = permitWithoutCalls
+    self.maximumPingsWithoutData = maximumPingsWithoutData
+    self.minimumSentPingIntervalWithoutData = minimumSentPingIntervalWithoutData
+    self.minimumReceivedPingIntervalWithoutData = minimumReceivedPingIntervalWithoutData
+    self.maximumPingStrikes = maximumPingStrikes
+  }",1,10,    self.pingCode = pingCode
+"    private func increaseSecurityLevelIfNeeded(for cause: SecurityChangeCause) {
+        guard securityLevel != .secure &&
+            allUsersTrusted &&
+            allParticipantsHaveClients &&
+            conversationType != .connection else {
+                return
+        }
+
+        securityLevel = .secure
+        appendNewIsSecureSystemMessage(cause: cause)
+        notifyOnUI(name: ZMConversation.isVerifiedNotificationName)
+    }",1,"1,4,5",        guard securityLevel != .secure &&/~/            conversationType != .connection else {/~/                return
+"internal static func incoming(_ p1: Any) -> String {
+            return L10n.tr(""Localizable"", ""voice.status.group_call.incoming"", String(describing: p1))
+          }",0,,
+"    func fromOffset(_ offset: Int) -> UnsafeBufferPointer<Element> {
+        return UnsafeBufferPointer<Element>(start: baseAddress?.advanced(by: offset), count: count - offset)
+    }",0,,
+"fileprivate mutating func streamCreated(_ streamID: HTTP2StreamID, logger: Logger) {
+    self.openStreams += 1
+
+    switch self.role {
+    case .client where streamID.isServerInitiated:
+      self.lastPeerInitiatedStreamID = streamID
+    case .server where streamID.isClientInitiated:
+      self.lastPeerInitiatedStreamID = streamID
+    default:
+      ()
+    }
+
+    logger.debug(""HTTP2 stream created"", metadata: [
+      MetadataKey.h2StreamID: ""\(streamID)"",
+      MetadataKey.h2ActiveStreams: ""\(self.openStreams)"",
+    ])
+
+    if self.openStreams == self.maxConcurrentStreams {
+      logger.warning(""HTTP2 max concurrent stream limit reached"", metadata: [
+        MetadataKey.h2ActiveStreams: ""\(self.openStreams)"",
+      ])
+    }
+  }",0,,
+"fileprivate func asByteBufferBounds(withMaxSize size: Int) -> (offset: Int64, byteCount: Int) {
+        switch self {
+            case .start(let value):
+                return (offset: numericCast(value), byteCount: size - value)
+            case .tail(let value):
+                return (offset: numericCast(size - value), byteCount: value)
+            case .within(let start, let end):
+                return (offset: numericCast(start), byteCount: end - start + 1)
+        }
+    }",1,"0,7","fileprivate func asByteBufferBounds(withMaxSize size: Int) -> (offset: Int64, byteCount: Int) {/~/                return (offset: numericCast(start), byteCount: end - start + 1)"
+"internal static func youStartedConversation(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""content.system.you_started_conversation"", String(describing: p1))
+        }",0,,
+"internal static func startedConversation(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""conversation.status.started_conversation"", String(describing: p1))
+        }",0,,
+"    override func updateUserDetails() {
+        userDetailsView.microphoneIconStyle = MicrophoneIconStyle(state: stream.microphoneState,
+                                                                  shouldPulse: stream.isParticipantActiveSpeaker)
+        
+        guard let name = stream.participantName else {
+            return
+        }
+        userDetailsView.name = name + ""user_cell.title.you_suffix"".localized
+    }",0,,
+"    public func respond(to request: Request) -> EventLoopFuture<Response> {
+        let startTime = DispatchTime.now().uptimeNanoseconds
+        let response: EventLoopFuture<Response>
+        let path: String
+        if let cachedRoute = self.getRoute(for: request) {
+            path = cachedRoute.route.description
+            request.route = cachedRoute.route
+            response = cachedRoute.responder.respond(to: request)
+        } else {
+            path = request.url.path
+            response = self.notFoundResponder.respond(to: request)
+        }
+        return response.always { result in
+            let status: HTTPStatus
+            switch result {
+            case .success(let response):
+                status = response.status
+            case .failure:
+                status = .internalServerError
+            }
+            self.updateMetrics(
+                for: request,
+                path: path,
+                startTime: startTime,
+                statusCode: status.code
+            )
+        }
+    }",1,"3,5,9,22","        let path: String/~/            path = cachedRoute.route.description/~/            path = request.url.path/~/                path: path,"
+"internal static func title(_ p1: Any) -> String {
+              return L10n.tr(""Localizable"", ""landing.custom_backend.more_info.alert.title"", String(describing: p1))
+            }",0,,
+"internal static func others(_ p1: Any) -> String {
+              return L10n.tr(""Localizable"", ""content.system.started_conversation.truncated_people.others"", String(describing: p1))
+            }",0,,
+"private mutating func handlePing(_ pingData: HTTP2PingData) -> Action {
+    
+    if let maximumPingStrikes = self.maximumPingStrikes {
+      
+      if self.isPingStrike {
+        self.pingStrikes += 1
+
+        
+        if maximumPingStrikes != 0, self.pingStrikes > maximumPingStrikes {
+          return .reply(PingHandler.goAwayFrame)
+        } else {
+          return .none
+        }
+      } else {
+        
+        self.pingStrikes = 0
+        self.lastReceivedPingDate = self.now()
+        return .reply(self.generatePingFrame(code: pingData.integer, ack: true))
+      }
+    } else {
+      
+      
+      
+      
+      return .reply(self.generatePingFrame(code: pingData.integer, ack: true))
+    }
+  }",1,"17,24","        return .reply(self.generatePingFrame(code: pingData.integer, ack: true))/~/      return .reply(self.generatePingFrame(code: pingData.integer, ack: true))"
+"    private func appendLegalHoldEnabledSystemMessageForConversationAfterReceivingMessage(at timestamp: Date) {
+        appendSystemMessage(type: .legalHoldEnabled,
+                            sender: ZMUser.selfUser(in: self.managedObjectContext!),
+                            users: nil,
+                            clients: nil,
+                            timestamp: timestamp.previousNearestTimestamp)
+    }",0,,
+"private func updateMetrics(
+        for request: Request,
+        path: String,
+        startTime: UInt64,
+        statusCode: UInt
+    ) {
+        let counterDimensions = [
+            (""method"", request.method.string),
+            (""path"", path),
+            (""status"", statusCode.description),
+        ]
+        Counter(label: ""http_requests_total"", dimensions: counterDimensions).increment()
+        if statusCode >= 500 {
+            Counter(label: ""http_request_errors_total"", dimensions: counterDimensions).increment()
+        }
+        Timer(
+            label: ""http_request_duration_seconds"",
+            dimensions: [
+                (""method"", request.method.string),
+                (""path"", path)
+            ],
+            preferredDisplayUnit: .seconds
+        ).recordNanoseconds(DispatchTime.now().uptimeNanoseconds - startTime)
+    }",1,"2,6,7,8,11,13,17,18,19,20","        path: String,/~/        let counterDimensions = [/~/            (""method"", request.method.string),/~/            (""path"", path),/~/        Counter(label: ""http_requests_total"", dimensions: counterDimensions).increment()/~/            Counter(label: ""http_request_errors_total"", dimensions: counterDimensions).increment()/~/            dimensions: [/~/                (""method"", request.method.string),/~/                (""path"", path)/~/            ],"
+"private func initStreamsWithData(_ data: Data, _ port: Int) {
+        
+        
+
+        
+        disconnectStream(nil, runDelegate: false)
+
+        var readStream: Unmanaged<CFReadStream>?
+        var writeStream: Unmanaged<CFWriteStream>?
+        let h = url.host! as NSString
+        CFStreamCreatePairWithSocketToHost(nil, h, UInt32(port), &readStream, &writeStream)
+        inputStream = readStream!.takeRetainedValue()
+        outputStream = writeStream!.takeRetainedValue()
+        guard let inStream = inputStream, let outStream = outputStream else { return }
+        inStream.delegate = self
+        outStream.delegate = self
+        if supportedSSLSchemes.contains(url.scheme!) {
+            inStream.setProperty(StreamSocketSecurityLevel.negotiatedSSL as AnyObject, forKey: Stream.PropertyKey.socketSecurityLevelKey)
+            outStream.setProperty(StreamSocketSecurityLevel.negotiatedSSL as AnyObject, forKey: Stream.PropertyKey.socketSecurityLevelKey)
+            if disableSSLCertValidation {
+                let settings: [NSObject: NSObject] = [kCFStreamSSLValidatesCertificateChain: NSNumber(value: false), kCFStreamSSLPeerName: kCFNull]
+                inStream.setProperty(settings, forKey: kCFStreamPropertySSLSettings as Stream.PropertyKey)
+                outStream.setProperty(settings, forKey: kCFStreamPropertySSLSettings as Stream.PropertyKey)
+            }
+            if let cipherSuites = self.enabledSSLCipherSuites {
+                if let sslContextIn = CFReadStreamCopyProperty(inputStream, CFStreamPropertyKey(rawValue: kCFStreamPropertySSLContext)) as! SSLContext?,
+                    let sslContextOut = CFWriteStreamCopyProperty(outputStream, CFStreamPropertyKey(rawValue: kCFStreamPropertySSLContext)) as! SSLContext? {
+                    let resIn = SSLSetEnabledCiphers(sslContextIn, cipherSuites, cipherSuites.count)
+                    let resOut = SSLSetEnabledCiphers(sslContextOut, cipherSuites, cipherSuites.count)
+                    if resIn != errSecSuccess {
+                        let error = self.errorWithDetail(""Error setting ingoing cypher suites"", code: UInt16(resIn))
+                        disconnectStream(error)
+                        return
+                    }
+                    if resOut != errSecSuccess {
+                        let error = self.errorWithDetail(""Error setting outgoing cypher suites"", code: UInt16(resOut))
+                        disconnectStream(error)
+                        return
+                    }
+                }
+            }
+        } else {
+            certValidated = true 
+        }
+        if voipEnabled {
+            inStream.setProperty(StreamNetworkServiceTypeValue.voIP as AnyObject, forKey: Stream.PropertyKey.networkServiceType)
+            outStream.setProperty(StreamNetworkServiceTypeValue.voIP as AnyObject, forKey: Stream.PropertyKey.networkServiceType)
+        }
+        
+        CFReadStreamSetDispatchQueue(inStream, WebSocket.sharedWorkQueue)
+        CFWriteStreamSetDispatchQueue(outStream, WebSocket.sharedWorkQueue)
+        inStream.open()
+        outStream.open()
+
+        self.mutex.lock()
+        self.readyToWrite = true
+        self.mutex.unlock()
+        
+        let bytes = UnsafeRawPointer((data as NSData).bytes).assumingMemoryBound(to: UInt8.self)
+        var out = timeout * 1_000_000 
+        let operation = BlockOperation()
+        operation.addExecutionBlock { [weak self, weak operation] in
+            guard let sOperation = operation else { return }
+            while !outStream.hasSpaceAvailable && !sOperation.isCancelled {
+                usleep(100) 
+                guard !sOperation.isCancelled else { return }
+                out -= 100
+                if out < 0 {
+                    self?.cleanupStream()
+                    self?.doDisconnect(self?.errorWithDetail(""write wait timed out"", code: 2))
+                    return
+                } else if outStream.streamError != nil {
+                    return 
+                }
+            }
+            guard !sOperation.isCancelled else { return }
+            outStream.write(bytes, maxLength: data.count)
+        }
+        writeQueue.addOperation(operation)
+    }",1,"68,75",                    self?.cleanupStream()/~/            guard !sOperation.isCancelled else { return }
+"    class func nameColor(for accentColor: ZMAccentColor, variant: ColorSchemeVariant) -> UIColor {
+
+        assert(accentColor.rawValue <= ZMAccentColor.max.rawValue)
+
+        let coefficientsArray = variant == .dark ? accentColorNameColorBlendingCoefficientsDark : accentColorNameColorBlendingCoefficientsLight
+        let coefficient = coefficientsArray[Int(accentColor.rawValue)]
+
+        let background: UIColor = variant == .dark ? .black : .white
+        return background.mix(UIColor(fromZMAccentColor: accentColor), amount: coefficient)
+    }",1,"1,2,3,6,8","/~/        assert(accentColor.rawValue <= ZMAccentColor.max.rawValue)/~//~//~/        return background.mix(UIColor(fromZMAccentColor: accentColor), amount: coefficient)"
+"    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        
+        if window != nil {
+            startCapture()
+        }
+    }",1,4,            startCapture()
+"    public func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
+        
+        var path = request.url.path
+
+        
+        while path.hasPrefix(""/"") {
+            path = String(path.dropFirst())
+        }
+
+        
+        guard !path.contains(""../"") else {
+            return request.eventLoop.makeFailedFuture(Abort(.forbidden))
+        }
+
+        
+        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+
+        
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: filePath, isDirectory: &isDir), !isDir.boolValue else {
+            return next.respond(to: request)
+        }
+
+        
+        let res = request.fileio.streamFile(at: filePath)
+        return request.eventLoop.makeSucceededFuture(res)
+    }",1,"1,2,15",        // make a copy of the path/~/        var path = request.url.path/~/        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+"internal func sign(digest: ByteBuffer) throws -> ByteBuffer {
+        let bio = BIO_new(BIO_s_mem())
+        defer { BIO_free(bio) }
+        let res = buffer.withUnsafeReadableBytes { ptr in
+            Int(BIO_puts(bio, ptr.baseAddress?.assumingMemoryBound(to: Int8.self)))
+        }
+        assert(res >= 0, ""BIO_puts failed"")
+
+        guard let opaquePointer = OpaquePointer.make(optional: PEM_read_bio_ECPrivateKey(bio!, nil, nil, nil)) else {
+            throw APNSwiftError.SigningError.invalidAuthKey
+        }
+        defer { EC_KEY_free(opaquePointer) }
+        
+        let sig = digest.withUnsafeReadableBytes { ptr in
+            ECDSA_do_sign(ptr.baseAddress?.assumingMemoryBound(to: UInt8.self), Int32(digest.readableBytes), opaquePointer)
+        }
+        defer { ECDSA_SIG_free(sig) }
+
+        var derEncodedSignature: UnsafeMutablePointer<UInt8>?
+        let derLength = i2d_ECDSA_SIG(sig, &derEncodedSignature)
+        guard let derCopy = derEncodedSignature, derLength > 0 else {
+            throw APNSwiftError.SigningError.invalidASN1
+        }
+
+        var derBytes = ByteBufferAllocator().buffer(capacity: Int(derLength))
+        for b in 0 ..< Int(derLength) {
+            derBytes.writeBytes([derCopy[b]])
+        }
+
+        return derBytes
+    }",1,"4,6,18,25,26,27,28","Int(BIO_puts(bio, ptr.baseAddress?.assumingMemoryBound(to: Int8.self)))/~/        assert(res >= 0, ""BIO_puts failed"")/~/        var derEncodedSignature: UnsafeMutablePointer<UInt8>?/~/        for b in 0 ..< Int(derLength) {/~/            derBytes.writeBytes([derCopy[b]])/~/        }/~/"
+"internal static func number(_ p1: Int) -> String {
+            return L10n.tr(""Localizable"", ""registration.password.rules.number"", p1)
+          }",0,,
+"    private func transition(to appState: AppState, completion: @escaping () -> Void) {
+        applicationWillTransition(to: appState)
+
+        resetAuthenticationCoordinatorIfNeeded(for: appState)
+
+        let completionBlock = { [weak self] in
+            completion()
+            self?.applicationDidTransition(to: appState)
+        }
+
+        switch appState {
+        case .blacklisted:
+            showBlacklisted(completion: completionBlock)
+        case .jailbroken:
+            showJailbroken(completion: completionBlock)
+        case .databaseFailure:
+            showDatabaseLoadingFailure(completion: completionBlock)
+        case .migrating:
+            showLaunchScreen(isLoading: true, completion: completionBlock)
+        case .unauthenticated(error: let error):
+            screenCurtain.delegate = nil
+            configureUnauthenticatedAppearance()
+            showUnauthenticatedFlow(error: error, completion: completionBlock)
+        case .authenticated(completedRegistration: let completedRegistration):
+            configureAuthenticatedAppearance()
+            executeAuthenticatedBlocks()
+            
+            screenCurtain.delegate = ZMUserSession.shared()
+            showAuthenticated(isComingFromRegistration: completedRegistration,
+                              completion: completionBlock)
+        case .headless:
+            showLaunchScreen(completion: completionBlock)
+        case .loading(account: let toAccount, from: let fromAccount):
+            showSkeleton(fromAccount: fromAccount,
+                         toAccount: toAccount,
+                         completion: completionBlock)
+        case .locked:
+            
+            screenCurtain.delegate = ZMUserSession.shared()
+            showAppLock(completion: completionBlock)
+        }
+    }",0,,
+"internal static func ephemeralTimeRemaining(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""content.system.ephemeral_time_remaining"", String(describing: p1))
+        }",0,,
+"private func checkIfVerificationLevelChanged(addedUsers: Set<ZMUser>) {
+        self.decreaseSecurityLevelIfNeededAfterDiscovering(clients: Set(addedUsers.flatMap { $0.clients }), causedBy: addedUsers)
+    }",1,"0,1","private func checkIfVerificationLevelChanged(addedUsers: Set<ZMUser>) {/~/        self.decreaseSecurityLevelIfNeededAfterDiscovering(clients: Set(addedUsers.flatMap { $0.clients }), causedBy: addedUsers)"
+"private(set) var connectionManagerEvent: ConnectionManagerEvent?
+
+    
+    private(set) var maxConcurrentStreamsChange: Int?
+
+    
+    private(set) var idleTask: IdleTask?
+
+    
+    private(set) var sendGoAwayWithLastPeerInitiatedStreamID: HTTP2StreamID?
+
+    
+    private(set) var shouldCloseChannel: Bool
+
+    fileprivate static let none = Operations()
+
+    fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+      self.sendGoAwayWithLastPeerInitiatedStreamID = streamID
+    }",1,16,fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+"    private func resetAuthenticationCoordinatorIfNeeded(for state: AppState) {
+        switch state {
+        case .authenticated:
+            authenticationCoordinator = nil
+        default:
+            break
+        }
+    }",0,,

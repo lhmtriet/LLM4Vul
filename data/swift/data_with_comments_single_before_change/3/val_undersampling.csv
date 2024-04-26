@@ -1,0 +1,177 @@
+processed_func,target,flaw_line_index,flaw_line
+"    private func increaseSecurityLevelIfNeeded(for cause: SecurityChangeCause) {
+        guard securityLevel != .secure &&
+            allUsersTrusted &&
+            allParticipantsHaveClients &&
+            conversationType != .connection else {
+                return
+        }
+
+        securityLevel = .secure
+        appendNewIsSecureSystemMessage(cause: cause)
+        notifyOnUI(name: ZMConversation.isVerifiedNotificationName)
+    }",1,"1,4,5",        guard securityLevel != .secure &&/~/            conversationType != .connection else {/~/                return
+"private func checkIfVerificationLevelChanged(addedUsers: Set<ZMUser>) {
+        self.decreaseSecurityLevelIfNeededAfterDiscovering(clients: Set(addedUsers.flatMap { $0.clients }), causedBy: addedUsers)
+    }",1,"0,1","private func checkIfVerificationLevelChanged(addedUsers: Set<ZMUser>) {/~/        self.decreaseSecurityLevelIfNeededAfterDiscovering(clients: Set(addedUsers.flatMap { $0.clients }), causedBy: addedUsers)"
+"    public func increaseSecurityLevelIfNeededAfterRemoving(users: Set<ZMUser>) {
+        applySecurityChanges(cause: .removedUsers(users))
+    }",0,,
+"    private func updateSelfPreview() {
+        guard
+            let selfStreamId = ZMUser.selfUser()?.selfStreamId,
+            let selfStream = stream(with: selfStreamId)
+        else {
+            return
+        }
+
+        if let view = viewCache[selfStreamId] as? SelfVideoPreviewView {
+            view.stream = selfStream
+            view.shouldShowActiveSpeakerFrame = configuration.shouldShowActiveSpeakerFrame
+        } else {
+            viewCache[selfStreamId] = SelfVideoPreviewView(
+                stream: selfStream,
+                isCovered: isCovered,
+                shouldShowActiveSpeakerFrame: configuration.shouldShowActiveSpeakerFrame
+            )
+        }
+    }",1,"1,2,3,4","        guard/~/            let selfStreamId = ZMUser.selfUser()?.selfStreamId,/~/            let selfStream = stream(with: selfStreamId)/~/        else {"
+"    func appendSystemMessage(type: ZMSystemMessageType,
+                                         sender: ZMUser,
+                                         users: Set<ZMUser>?,
+                                         addedUsers: Set<ZMUser> = Set(),
+                                         clients: Set<UserClient>?,
+                                         timestamp: Date,
+                                         duration: TimeInterval? = nil,
+                                         messageTimer: Double? = nil,
+                                         relevantForStatus: Bool = true) -> ZMSystemMessage {
+        let systemMessage = ZMSystemMessage(nonce: UUID(), managedObjectContext: managedObjectContext!)
+        systemMessage.systemMessageType = type
+        systemMessage.sender = sender
+        systemMessage.users = users ?? Set()
+        systemMessage.addedUsers = addedUsers
+        systemMessage.clients = clients ?? Set()
+        systemMessage.serverTimestamp = timestamp
+        if let duration = duration {
+            systemMessage.duration = duration
+        }
+        
+        if let messageTimer = messageTimer {
+            systemMessage.messageTimer = NSNumber(value: messageTimer)
+        }
+        
+        systemMessage.relevantForConversationStatus = relevantForStatus
+        
+        self.append(systemMessage)
+        
+        return systemMessage
+    }",0,,
+"internal static func fileMessage(_ p1: Any) -> String {
+              return L10n.tr(""Localizable"", ""conversation.input_bar.message_preview.accessibility.file_message"", String(describing: p1))
+            }",0,,
+"    init(stringLiteral: String) {
+        self.values = [.urlDecoded(stringLiteral)]
+        self.children = [:]
+    }",0,,
+"    public func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
+        // make a copy of the path
+        var path = request.url.path
+
+        // path must be relative.
+        while path.hasPrefix(""/"") {
+            path = String(path.dropFirst())
+        }
+
+        // protect against relative paths
+        guard !path.contains(""../"") else {
+            return request.eventLoop.makeFailedFuture(Abort(.forbidden))
+        }
+
+        // create absolute file path
+        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+
+        // check if file exists and is not a directory
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: filePath, isDirectory: &isDir), !isDir.boolValue else {
+            return next.respond(to: request)
+        }
+
+        // stream the file
+        let res = request.fileio.streamFile(at: filePath)
+        return request.eventLoop.makeSucceededFuture(res)
+    }",1,"1,2,15",        // make a copy of the path/~/        var path = request.url.path/~/        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+"    @objc public func verifyLegalHoldSubjects() {
+        needsToVerifyLegalHold = true
+        managedObjectContext?.saveOrRollback()
+    }",0,,
+"private mutating func generatePingFrame(code: UInt64, ack: Bool) -> HTTP2Frame.FramePayload {
+    if self.activeStreams == 0 {
+      self.sentPingsWithoutData += 1
+    }
+
+    self.lastSentPingDate = self.now()
+    return HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: code), ack: ack)
+  }",1,"0,6","private mutating func generatePingFrame(code: UInt64, ack: Bool) -> HTTP2Frame.FramePayload {/~/    return HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: code), ack: ack)"
+"private func animateNetworkConditionView() {
+        UIView.animate(
+            withDuration: 0.2,
+            delay: 0,
+            options: [.curveEaseInOut, .beginFromCurrentState],
+            animations: { self.networkConditionView.alpha = self.isCovered ? 0.0 : 1.0 }
+        )
+    }",0,,
+"private func perform(operations: GRPCIdleHandlerStateMachine.Operations) {
+    // Prod the connection manager.
+    if let event = operations.connectionManagerEvent, let manager = self.mode.connectionManager {
+      switch event {
+      case .idle:
+        manager.idle()
+      case .inactive:
+        manager.channelInactive()
+      case .ready:
+        manager.ready()
+      case .quiescing:
+        manager.beginQuiescing()
+      }
+    }
+
+    // Max concurrent streams changed.
+    if let manager = self.mode.connectionManager,
+      let maxConcurrentStreams = operations.maxConcurrentStreamsChange {
+      manager.maxConcurrentStreamsChanged(maxConcurrentStreams)
+    }
+
+    // Handle idle timeout creation/cancellation.
+    if let idleTask = operations.idleTask {
+      switch idleTask {
+      case let .cancel(task):
+        task.cancel()
+
+      case .schedule:
+        if self.idleTimeout != .nanoseconds(.max), let context = self.context {
+          let task = context.eventLoop.scheduleTask(in: self.idleTimeout) {
+            self.idleTimeoutFired()
+          }
+          self.perform(operations: self.stateMachine.scheduledIdleTimeoutTask(task))
+        }
+      }
+    }
+
+    // Send a GOAWAY frame.
+    if let streamID = operations.sendGoAwayWithLastPeerInitiatedStreamID {
+      let goAwayFrame = HTTP2Frame(
+        streamID: .rootStream,
+        payload: .goAway(lastStreamID: streamID, errorCode: .noError, opaqueData: nil)
+      )
+      self.context?.writeAndFlush(self.wrapOutboundOut(goAwayFrame), promise: nil)
+    }
+
+    // Close the channel, if necessary.
+    if operations.shouldCloseChannel, let context = self.context {
+      // Close on the next event-loop tick so we don't drop any events which are
+      // currently being processed.
+      context.eventLoop.execute {
+        context.close(mode: .all, promise: nil)
+      }
+    }
+  }",1,43,"      self.context?.writeAndFlush(self.wrapOutboundOut(goAwayFrame), promise: nil)"

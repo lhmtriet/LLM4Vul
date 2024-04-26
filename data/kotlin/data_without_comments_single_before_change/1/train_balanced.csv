@@ -1,0 +1,241 @@
+processed_func,target
+"    override fun decodeNotNullMark(): Boolean {
+        if (!haveStartedReadingEntries) {
+            return true
+        }
+
+        return fromCurrentValue { decodeNotNullMark() }
+    }",0
+"private fun start(
+            context: Context,
+            tDummy: Long,
+            existingWorkPolicy: ExistingWorkPolicy
+        ) {
+
+            val now = clock.currentTimeMillis()
+            val executionDelay = 0L.coerceAtLeast(tDummy - now)
+            val executionDelayDays =
+                executionDelay / FACTOR_DAY_MILLIS
+
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+            val work =
+                OneTimeWorkRequest
+                    .Builder(FakeInfectionReportWorker::class.java)
+                    .setInitialDelay(executionDelayDays, TimeUnit.MINUTES)
+                    .setConstraints(constraints)
+                    .setInputData(Data.Builder().putLong(KEY_T_DUMMY, tDummy).build())
+                    .build()
+            WorkManager.getInstance(context)
+                .enqueueUniqueWork(TAG, existingWorkPolicy, work)
+        }",1
+"override fun doWork(): Result {
+        if (BuildConfig.DEBUG)
+            DP3T.addWorkerStartedToHistory(applicationContext, TAG)
+        reportFakeInfectionUseCase.reportFakeInfection().subscribe()
+        start(applicationContext, getRandomDelay(), ExistingWorkPolicy.APPEND)
+        return Result.success()
+    }",1
+"        private fun start(
+            context: Context,
+            delayInMinutes: Long,
+            existingWorkPolicy: ExistingWorkPolicy
+        ) {
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+            val work =
+                OneTimeWorkRequest
+                    .Builder(FakeInfectionReportWorker::class.java)
+                    .setInitialDelay(delayInMinutes, TimeUnit.MINUTES)
+                    .setConstraints(constraints)
+                    .build()
+            WorkManager.getInstance(context)
+                .enqueueUniqueWork(TAG, existingWorkPolicy, work)
+        }",1
+"    override fun setLanguages(languages: List<Language>) {
+        preferences.edit()
+            .putString(KEY_LANGUAGES, languages.toJson())
+            .apply()
+    }",0
+"private fun start(
+            context: Context,
+            tDummy: Long,
+            existingWorkPolicy: ExistingWorkPolicy
+        ) {
+
+            val now = clock.currentTimeMillis()
+            val executionDelay = 0L.coerceAtLeast(tDummy - now)
+            val executionDelayDays =
+                executionDelay / FACTOR_DAY_MILLIS
+
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+            val work =
+                OneTimeWorkRequest
+                    .Builder(FakeInfectionReportWorker::class.java)
+                    .setInitialDelay(executionDelayDays, TimeUnit.MILLISECONDS)
+                    .setConstraints(constraints)
+                    .setInputData(Data.Builder().putLong(KEY_T_DUMMY, tDummy).build())
+                    .build()
+            WorkManager.getInstance(context)
+                .enqueueUniqueWork(TAG, existingWorkPolicy, work)
+        }",1
+"    get() {
+        return when (this) {
+            is StructureKind.MAP -> ""a map""
+            is StructureKind.CLASS -> ""an object""
+            is StructureKind.OBJECT -> ""an object""
+            is StructureKind.LIST -> ""a list""
+            is PrimitiveKind.STRING -> ""a string""
+            is PrimitiveKind.BOOLEAN -> ""a boolean""
+            is PrimitiveKind.BYTE -> ""a byte""
+            is PrimitiveKind.CHAR -> ""a character""
+            is PrimitiveKind.DOUBLE -> ""a double""
+            is PrimitiveKind.FLOAT -> ""a float""
+            is PrimitiveKind.INT -> ""an integer""
+            is PrimitiveKind.SHORT -> ""a short""
+            is PrimitiveKind.LONG -> ""a long""
+            is SerialKind.ENUM -> ""an enumeration value""
+            else -> ""a $this value""
+        }
+    }",0
+"    fun write(baseline: Baseline, path: Path) {
+        try {
+            Files.newBufferedWriter(path).addFinalNewLine().use {
+                it.streamXml().prettyPrinter().save(baseline)
+            }
+        } catch (error: XMLStreamException) {
+            val (line, column) = error.positions
+            throw InvalidState(""Error on position $line:$column while writing the baseline xml file!"", error)
+        }
+    }",0
+"    fun read(path: Path): Baseline {
+        try {
+            Files.newInputStream(path).use {
+                val reader = SAXParserFactory.newInstance().newSAXParser()
+                val handler = BaselineHandler()
+                reader.parse(it, handler)
+                return handler.createBaseline()
+            }
+        } catch (error: SAXParseException) {
+            val (line, column) = error.lineNumber to error.columnNumber
+            throw InvalidState(""Error on position $line:$column while reading the baseline xml file!"", error)
+        }
+    }",1
+"        override fun syncInterval(): Long {
+            val newDelayDays: Double =
+                ExponentialDistribution.sampleFromStandard() / SAMPLING_RATE
+            return (newDelayDays * FACTOR_DAY_MILLIS) as Long
+        }",1
+"fun start(context: Context, preferencesRepository: PreferencesRepository) {
+            var tDummy: Long = preferencesRepository.getTDummy()
+            if (tDummy == -1L) {
+                tDummy = clock.currentTimeMillis() + clock.syncInterval()
+                preferencesRepository.setTDummy(tDummy)
+            }
+            start(context, tDummy, ExistingWorkPolicy.KEEP)
+        }",0
+"    override fun setExposed(exposed: Boolean) {
+        preferences.edit()
+            .putBoolean(KEY_WAS_EXPOSED, exposed)
+            .apply()
+    }",0
+"    override fun applicationInjector(): AndroidInjector<out DaggerApplication> =
+        DaggerApplicationComponent.builder()
+            .applicationContext(this)
+            .build()
+
+    private fun initRxJavaSettings() {
+        RxJavaPlugins.setErrorHandler {
+            if (BuildConfig.DEBUG)
+                it.printStackTrace()
+        }
+    }
+
+}",0
+"override fun checkClientTrusted(
+                                    chain: Array<X509Certificate>,
+                                    authType: String
+                            ) {
+                            }",1
+"    override fun setHealingTime(healingTime: HealingTime) {
+        preferences.edit()
+            .putString(KEY_HEALING_TIME, healingTime.toJson())
+            .apply()
+    }",0
+"override fun doWork(): Result {
+        val now = clock.currentTimeMillis()
+        var tDummy = inputData.getLong(KEY_T_DUMMY, now)
+        while (tDummy < now) {
+            if (tDummy >= now - FACTOR_HOUR_MILLIS * MAX_DELAY_HOURS) {
+                if (BuildConfig.DEBUG)
+                    DP3T.addWorkerStartedToHistory(applicationContext, TAG)
+                reportFakeInfectionUseCase.reportFakeInfection().subscribe()
+            }
+            tDummy += clock.syncInterval();
+            preferencesRepository.setTDummy(tDummy)
+        }
+
+        start(applicationContext, tDummy, ExistingWorkPolicy.APPEND)
+        return Result.success()
+    }",1
+"override fun onCreate() {
+        super.onCreate()
+
+        initRxJavaSettings()
+
+        DP3T.init(
+            this,
+            ApplicationInfo(packageName, BuildConfig.REPORT_URL, BuildConfig.BUCKET_URL),
+            SignatureUtil.getPublicKeyFromBase64OrThrow(BuildConfig.PUBLIC_KEY),
+            BuildConfig.DEBUG
+        )
+        DP3T.setCertificatePinner(certificatePinner)
+        DP3T.setUserAgent(userAgent)
+
+        registerReceiver(ExposureStatusChangeBroadcastReceiver(), DP3T.getUpdateIntentFilter())
+
+    }",1
+"        override fun syncInterval(): Long {
+            val newDelayDays: Double =
+                ExponentialDistribution.sampleFromStandard() / SAMPLING_RATE
+            return (newDelayDays * FACTOR_DAY_MILLIS).toLong()
+        }",0
+"override fun doWork(): Result {
+        val now = clock.currentTimeMillis()
+        var tDummy = inputData.getLong(KEY_T_DUMMY, now)
+        while (tDummy < now) {
+            
+            if (tDummy >= now - FACTOR_HOUR_MILLIS * MAX_DELAY_HOURS) {
+                if (BuildConfig.DEBUG)
+                    DP3T.addWorkerStartedToHistory(applicationContext, TAG)
+                reportFakeInfectionUseCase.reportFakeInfection().subscribe()
+            }
+            tDummy += clock.syncInterval();
+            preferencesRepository.setTDummy(tDummy)
+        }
+
+        start(applicationContext, tDummy, ExistingWorkPolicy.APPEND)
+        return Result.success()
+    }",1
+"override fun getAcceptedIssuers(): Array<X509Certificate?> {
+                                return arrayOfNulls(0)
+                            }",1
+"override fun getHealingTime(): HealingTime {
+        val healingTimeJson = preferences.getString(
+            KEY_HEALING_TIME,
+            ""{\n"" +
+                    ""        \""exposureHighMinutes\"": 20160,\n"" +
+                    ""        \""infectedMinutes\"": 43200\n"" +
+                    ""    }""
+        )
+        return Gson().fromJson(healingTimeJson, HealingTime::class.java)
+    }",0
+"    override fun setSelectedRegion(region: String) {
+        preferences.edit()
+            .putString(KEY_CURRENT_REGION, region)
+            .apply()
+    }",0

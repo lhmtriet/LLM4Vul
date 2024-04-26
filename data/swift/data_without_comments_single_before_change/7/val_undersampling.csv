@@ -1,0 +1,135 @@
+processed_func,target,flaw_line_index,flaw_line
+"  mutating func pingFired() -> Action {
+    if self.shouldBlockPing {
+      return .none
+    } else {
+      return .reply(self.generatePingFrame(code: self.pingCode, ack: false))
+    }
+  }",1,4,"      return .reply(self.generatePingFrame(code: self.pingCode, ack: false))"
+"internal static func message(_ p1: Any) -> String {
+              return L10n.tr(""Localizable"", ""conversation.input_bar.audio_message.too_long.message"", String(describing: p1))
+            }",0,,
+"private func perform(operations: GRPCIdleHandlerStateMachine.Operations) {
+    
+    if let event = operations.connectionManagerEvent, let manager = self.mode.connectionManager {
+      switch event {
+      case .idle:
+        manager.idle()
+      case .inactive:
+        manager.channelInactive()
+      case .ready:
+        manager.ready()
+      case .quiescing:
+        manager.beginQuiescing()
+      }
+    }
+
+    
+    if let manager = self.mode.connectionManager,
+      let maxConcurrentStreams = operations.maxConcurrentStreamsChange {
+      manager.maxConcurrentStreamsChanged(maxConcurrentStreams)
+    }
+
+    
+    if let idleTask = operations.idleTask {
+      switch idleTask {
+      case let .cancel(task):
+        task.cancel()
+
+      case .schedule:
+        if self.idleTimeout != .nanoseconds(.max), let context = self.context {
+          let task = context.eventLoop.scheduleTask(in: self.idleTimeout) {
+            self.idleTimeoutFired()
+          }
+          self.perform(operations: self.stateMachine.scheduledIdleTimeoutTask(task))
+        }
+      }
+    }
+
+    
+    if let streamID = operations.sendGoAwayWithLastPeerInitiatedStreamID {
+      let goAwayFrame = HTTP2Frame(
+        streamID: .rootStream,
+        payload: .goAway(lastStreamID: streamID, errorCode: .noError, opaqueData: nil)
+      )
+      self.context?.writeAndFlush(self.wrapOutboundOut(goAwayFrame), promise: nil)
+    }
+
+    
+    if operations.shouldCloseChannel, let context = self.context {
+      
+      
+      context.eventLoop.execute {
+        context.close(mode: .all, promise: nil)
+      }
+    }
+  }",1,43,"      self.context?.writeAndFlush(self.wrapOutboundOut(goAwayFrame), promise: nil)"
+"    public func openDeepLinkURL(_ deepLinkURL: URL) -> Bool {
+        return urlActionRouter.open(url: deepLinkURL)
+    }",0,,
+"    private func increaseSecurityLevelIfNeeded(for cause: SecurityChangeCause) {
+        guard securityLevel != .secure &&
+            allUsersTrusted &&
+            allParticipantsHaveClients &&
+            conversationType != .connection else {
+                return
+        }
+
+        securityLevel = .secure
+        appendNewIsSecureSystemMessage(cause: cause)
+        notifyOnUI(name: ZMConversation.isVerifiedNotificationName)
+    }",1,"1,4,5",        guard securityLevel != .secure &&/~/            conversationType != .connection else {/~/                return
+"internal static func message(_ p1: Any) -> String {
+                return L10n.tr(""Localizable"", ""login.sso.error.alert.invalid_status.message"", String(describing: p1))
+              }",0,,
+"    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        
+        if window != nil {
+            startCapture()
+        }
+    }",1,4,            startCapture()
+"    @NSManaged public internal(set) var membership: Member?
+
+    
+    @NSManaged var reactions: Set<Reaction>
+    
+    
+    @NSManaged var systemMessages: Set<ZMSystemMessage>
+    
+    @NSManaged var expiresAt: Date?
+    
+    
+    @NSManaged public internal(set) var isAccountDeleted: Bool
+    
+    @NSManaged public var usesCompanyLogin: Bool
+    
+    
+    @NSManaged public var needsToRefetchLabels: Bool
+    
+    @NSManaged public var domain: String?
+    
+    @objc(setImageData:size:)
+    public func setImage(data: Data?, size: ProfileImageSize) {
+        guard let imageData = data else {
+            managedObjectContext?.zm_userImageCache?.removeAllUserImages(self)
+            return
+        }
+        managedObjectContext?.zm_userImageCache?.setUserImage(self, imageData: imageData, size: size)
+        
+        if let uiContext = managedObjectContext?.zm_userInterface {
+            let changedKey = size == .preview ? #keyPath(ZMUser.previewImageData) : #keyPath(ZMUser.completeImageData)
+            NotificationDispatcher.notifyNonCoreDataChanges(objectID: objectID, changedKeys: [changedKey], uiContext: uiContext)
+        }
+    }",0,,
+"internal static func plural(_ p1: Int) -> String {
+            return L10n.tr(""Localizable"", ""peoplepicker.group.title.plural"", p1)
+          }",0,,
+"private mutating func generatePingFrame(code: UInt64, ack: Bool) -> HTTP2Frame.FramePayload {
+    if self.activeStreams == 0 {
+      self.sentPingsWithoutData += 1
+    }
+
+    self.lastSentPingDate = self.now()
+    return HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: code), ack: ack)
+  }",1,"0,6","private mutating func generatePingFrame(code: UInt64, ack: Bool) -> HTTP2Frame.FramePayload {/~/    return HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: code), ack: ack)"

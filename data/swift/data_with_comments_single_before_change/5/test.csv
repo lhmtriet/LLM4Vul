@@ -1,0 +1,980 @@
+processed_func,target,flaw_line_index,flaw_line
+"    fileprivate func timestamp(before: ZMMessage?) -> Date? {
+        guard let timestamp = before?.serverTimestamp ?? self.lastModifiedDate else { return nil }
+        return timestamp.previousNearestTimestamp
+    }",0,,
+"    class func nameColor(for accentColor: ZMAccentColor, variant: ColorSchemeVariant) -> UIColor {
+
+        assert(accentColor.rawValue <= ZMAccentColor.max.rawValue)
+
+        let coefficientsArray = variant == .dark ? accentColorNameColorBlendingCoefficientsDark : accentColorNameColorBlendingCoefficientsLight
+        let coefficient = coefficientsArray[Int(accentColor.rawValue)]
+
+        let background: UIColor = variant == .dark ? .black : .white
+        return background.mix(UIColor(fromZMAccentColor: accentColor), amount: coefficient)
+    }",1,"1,2,3,6,8","/~/        assert(accentColor.rawValue <= ZMAccentColor.max.rawValue)/~//~//~/        return background.mix(UIColor(fromZMAccentColor: accentColor), amount: coefficient)"
+"internal static func genericMessage(_ p1: Int) -> String {
+              return L10n.tr(""Localizable"", ""conversation.silenced.status.message.generic_message"", p1)
+            }",0,,
+"internal static func instructions(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""registration.verify_phone_number.instructions"", String(describing: p1))
+        }",0,,
+"self.state = .operating(.init(role: role))
+    self.logger = logger
+  }
+
+  // MARK: Stream Events
+
+  /// An HTTP/2 stream was created.
+  mutating func streamCreated(withID streamID: HTTP2StreamID) -> Operations {
+    var operations: Operations = .none
+
+    switch self.state {
+    case var .operating(state):
+      // Create the stream.
+      state.streamCreated(streamID, logger: self.logger)
+      self.state = .operating(state)
+
+    case let .waitingToIdle(state):
+      var operating = Operating(fromWaitingToIdle: state)
+      operating.streamCreated(streamID, logger: self.logger)
+      self.state = .operating(operating)
+      operations.cancelIdleTask(state.idleTask)
+
+    case var .quiescing(state):
+      precondition(state.initiatedByUs)
+      precondition(state.role == .client)
+      // If we're a client and we initiated shutdown then it's possible for streams to be created in
+      // the quiescing state as there's a delay between stream channels (i.e. `HTTP2StreamChannel`)
+      // being created and us being notified about their creation (via a user event fired by
+      // the `HTTP2Handler`).
+      state.openStreams += 1
+      self.state = .quiescing(state)
+
+    case .closing, .closed:
+      ()
+    }
+
+    return operations
+  }",1,"23,24,25,26,27,28",precondition(state.initiatedByUs)/~/      precondition(state.role == .client)/~/      // If we're a client and we initiated shutdown then it's possible for streams to be created in/~/      // the quiescing state as there's a delay between stream channels (i.e. `HTTP2StreamChannel`)/~/      // being created and us being notified about their creation (via a user event fired by/~/      // the `HTTP2Handler`).
+"    private func setupURLActionRouter() {
+        urlActionRouter.delegate = self
+    }",0,,
+"  mutating func pingFired() -> Action {
+    if self.shouldBlockPing {
+      return .none
+    } else {
+      return .reply(self.generatePingFrame(code: self.pingCode, ack: false))
+    }
+  }",1,4,"      return .reply(self.generatePingFrame(code: self.pingCode, ack: false))"
+"    public class func keyPathsForValuesAffectingLocalParticipants() -> Set<String> {
+        return Set(participantRolesKeys)
+    }",0,,
+"internal static func added(_ p1: Any, _ p2: Any) -> String {
+              return L10n.tr(""Localizable"", ""content.system.conversation.other.added"", String(describing: p1), String(describing: p2))
+            }",0,,
+"    public init(publicDirectory: String) {
+        self.publicDirectory = publicDirectory.hasSuffix(""/"") ? publicDirectory : publicDirectory + ""/""
+    }",0,,
+"internal static func message(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""guest_room.share.message"", String(describing: p1))
+        }",0,,
+"    open func write(ping: Data, completion: (() -> ())? = nil) {
+        guard isConnected else { return }
+        dequeueWrite(ping, code: .ping, writeCompletion: completion)
+    }",0,,
+"internal static func accessibilityDescription(_ p1: Any) -> String {
+            return L10n.tr(""Localizable"", ""conversation.input_bar.message_preview.accessibility_description"", String(describing: p1))
+          }",0,,
+"internal static func mention(_ p1: Int) -> String {
+              return L10n.tr(""Localizable"", ""conversation.silenced.status.message.mention"", p1)
+            }",0,,
+"internal static func peopleStartedUsing(_ p1: Any, _ p2: Int, _ p3: Int) -> String {
+          return L10n.tr(""Localizable"", ""content.system.people_started_using"", String(describing: p1), p2, p3)
+        }",0,,
+"internal static func likes(_ p1: Int) -> String {
+          return L10n.tr(""Localizable"", ""message_details.tabs.likes"", p1)
+        }",0,,
+"    public func imageData(for size: ProfileImageSize, queue: DispatchQueue, completion: @escaping (_ imageData: Data?) -> Void) {
+        managedObjectContext?.zm_userImageCache?.userImage(self, size: size, queue: queue, completion: completion)
+    }",0,,
+"internal static func messageReadReceiptOnYou(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""content.system.message_read_receipt_on-you"", String(describing: p1))
+        }",0,,
+"    func urlActionRouterWillShowCompanyLoginError() {
+        authenticationCoordinator?.cancelCompanyLogin()
+    }",0,,
+"internal static func leaving(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""voice.status.leaving"", String(describing: p1))
+        }",0,,
+"    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        guard traitCollection.horizontalSizeClass != previousTraitCollection?.horizontalSizeClass else { return }
+        thumbnailViewController.updateThumbnailContentSize(.previewSize(for: traitCollection), animated: false)
+        updateGridViewAxis()
+    }",0,,
+"internal static func reply(_ p1: Int) -> String {
+              return L10n.tr(""Localizable"", ""conversation.silenced.status.message.reply"", p1)
+            }",0,,
+"    private func videoConfigurationDescription() -> String {
+        return """"""
+        showing self preview: \(selfPreviewView != nil)
+        videos in grid: [\(dataSource)]\n
+        """"""
+    }",0,,
+"internal static func deletedMessagePrefixTimestamp(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""content.system.deleted_message_prefix_timestamp"", String(describing: p1))
+        }",0,,
+"    static func previewSize(for traitCollection: UITraitCollection) -> CGSize {
+        switch traitCollection.horizontalSizeClass {
+        case .regular:
+            return .floatingPreviewLarge
+        case .compact, .unspecified:
+            return .floatingPreviewSmall
+        @unknown default:
+            return .floatingPreviewSmall
+        }
+    }",0,,
+"    public class func keyPathsForValuesAffectingLocalParticipantRoles() -> Set<String> {
+        return Set(participantRolesKeys + [#keyPath(ZMConversation.participantRoles.role)])
+    }",0,,
+"        self.init(bytes: buffer.baseAddress!, count: buffer.count)
+    }
+
+}
+
+private extension UnsafeBufferPointer {
+
+    func fromOffset(_ offset: Int) -> UnsafeBufferPointer<Element> {
+        return UnsafeBufferPointer<Element>(start: baseAddress?.advanced(by: offset), count: count - offset)
+    }
+    
+}",0,,
+"private func generateWebSocketKey() -> String {
+        var key = """"
+        let seed = 16
+        for _ in 0..<seed {
+            let uni = UnicodeScalar(UInt32(97 + arc4random_uniform(25)))
+            key += ""\(Character(uni!))""
+        }
+        let data = key.data(using: String.Encoding.utf8)
+        let baseKey = data?.base64EncodedString(options: NSData.Base64EncodingOptions(rawValue: 0))
+        return baseKey!
+    }",0,,
+"internal static func knowsMore(_ p1: Any, _ p2: Int) -> String {
+          return L10n.tr(""Localizable"", ""peoplepicker.suggested.knows_more"", String(describing: p1), p2)
+        }",0,,
+"    private func enqueueTransition(to appState: AppState, completion: @escaping () -> Void = {}) {
+        // Perform the wait on a background queue so we don't cause a
+        // deadlock on the main queue.
+        appStateTransitionQueue.async { [weak self] in
+            guard let `self` = self else { return }
+
+            self.appStateTransitionGroup.wait()
+
+            DispatchQueue.main.async {
+                self.transition(to: appState, completion: completion)
+            }
+        }
+    }",0,,
+"private func validateResponse(_ buffer: UnsafePointer<UInt8>, bufferLen: Int) -> Int {
+        let response = CFHTTPMessageCreateEmpty(kCFAllocatorDefault, false).takeRetainedValue()
+        CFHTTPMessageAppendBytes(response, buffer, bufferLen)
+        let code = CFHTTPMessageGetResponseStatusCode(response)
+        if code != httpSwitchProtocolCode {
+            return code
+        }
+        if let cfHeaders = CFHTTPMessageCopyAllHeaderFields(response) {
+            let headers = cfHeaders.takeRetainedValue() as NSDictionary
+            if let acceptKey = headers[headerWSAcceptName as NSString] as? NSString {
+                if acceptKey.length > 0 {
+                    return 0
+                }
+            }
+        }
+        return -1
+    }",0,,
+"    public func decreaseSecurityLevelIfNeededAfterIgnoring(clients: Set<UserClient>) {
+        applySecurityChanges(cause: .ignoredClients(clients))
+    }",0,,
+"    public func isGroupAdmin(in conversation: ConversationLike) -> Bool {
+        return role(in: conversation)?.name == ZMConversation.defaultAdminRoleName
+    }",0,,
+"internal static func verifyMessage(_ p1: Any) -> String {
+            return L10n.tr(""Localizable"", ""profile.devices.detail.verify_message"", String(describing: p1))
+          }",0,,
+"fileprivate func colorPair(accentColor: UIColor) -> ColorPair {
+        switch self {
+        case .textForeground:
+            return ColorPair(light: .graphite, dark: .white)
+        case .textBackground:
+            return ColorPair(light: .white, dark: .backgroundGraphite)
+        case .textDimmed:
+            return ColorPair(both: .lightGraphite)
+        case .textPlaceholder:
+            return ColorPair(both: .lightGraphiteAlpha64)
+        case .separator:
+            return ColorPair(light: .lightGraphiteAlpha48, dark: .lightGraphiteAlpha24)
+        case .barBackground:
+            return ColorPair(light: .white, dark: .backgroundLightGraphite)
+        case .background:
+            return ColorPair(light: .white, dark: .backgroundGraphite)
+        case .contentBackground:
+            return ColorPair(light: .white97, dark: .backgroundGraphite)
+        case .iconNormal:
+            return ColorPair(light: .graphite, dark: .white)
+        case .iconSelected:
+            return ColorPair(light: .white, dark: .black)
+        case .iconHighlighted:
+            return ColorPair(both: .white)
+        case .iconShadow:
+            return ColorPair(light: .blackAlpha8, dark: .blackAlpha24)
+        case .iconHighlight:
+            return ColorPair(light: .white, dark: .whiteAlpha16)
+        case .iconBackgroundSelected:
+            return ColorPair(light: accentColor, dark: .white)
+        case .iconBackgroundSelectedNoAccent:
+            return ColorPair(light: .graphite, dark: .white)
+        case .popUpButtonOverlayShadow:
+            return ColorPair(light: .blackAlpha24, dark: .black)
+        case .buttonHighlighted:
+            return ColorPair(light: .whiteAlpha24, dark: .blackAlpha24)
+        case .buttonEmptyText:
+            return ColorPair(light: accentColor, dark: .white)
+        case .buttonFaded:
+            return ColorPair(light: .graphiteAlpha40, dark: .whiteAlpha40)
+        case .tabNormal:
+            return ColorPair(light: .blackAlpha48, dark: .whiteAlpha56)
+        case .tabSelected:
+            return ColorPair(light: .graphite, dark: .white)
+        case .tabHighlighted:
+            return ColorPair(light: .lightGraphite, dark: .lightGraphiteAlpha48)
+        case .backgroundOverlay:
+            return ColorPair(light: .blackAlpha24, dark: .blackAlpha48)
+        case .backgroundOverlayWithoutPicture:
+            return ColorPair(both: .blackAlpha80)
+        case .avatarBorder:
+            return ColorPair(light: .blackAlpha8, dark: .whiteAlpha16)
+        case .audioButtonOverlay:
+            return ColorPair(both: .lightGraphiteAlpha24)
+        case .placeholderBackground:
+            return ColorPair(light: .lightGraphiteWhite, dark: .lightGraphiteDark)
+        case .loadingDotActive:
+            return ColorPair(light: .graphiteAlpha40, dark: .whiteAlpha40)
+        case .loadingDotInactive:
+            return ColorPair(light: .graphiteAlpha16, dark: .whiteAlpha16)
+        case .paleSeparator:
+            return ColorPair(both: .lightGraphiteAlpha24)
+        case .listAvatarInitials:
+            return ColorPair(both: .blackAlpha40)
+        case .sectionBackground:
+            return ColorPair(both: .clear)
+        case .sectionBackgroundHighlighted:
+            return ColorPair(light: .graphiteAlpha4, dark: .backgroundLightGraphite)
+        case .sectionText:
+            return ColorPair(light: .blackAlpha40, dark: .whiteAlpha40)
+        case .tokenFieldBackground:
+            return ColorPair(light: .blackAlpha4, dark: .whiteAlpha16)
+        case .tokenFieldTextPlaceHolder:
+            return ColorPair(light: .lightGraphite, dark: .whiteAlpha40)
+        case .cellSeparator:
+            return ColorPair(light: .graphiteAlpha8, dark: .whiteAlpha8)
+        case .searchBarBackground:
+            return ColorPair(light: .white, dark: .whiteAlpha8)
+        case .iconGuest:
+            return ColorPair(light: .backgroundGraphiteAlpha40, dark: .whiteAlpha64)
+        case .selfMentionHighlight:
+            return ColorPair(light: .amberAlpha48, dark: .amberAlpha80)
+        case .cellHighlight:
+            return ColorPair(light: .white97, dark: .whiteAlpha16)
+        case .replyBorder:
+            return ColorPair(light: UIColor(white: 233.0/255.0, alpha: 1),
+                             dark: UIColor(white: 114.0/255.0, alpha: 1))
+        case .replyHighlight:
+            return ColorPair(light: UIColor(rgb: 0x33373A, alpha: 0.24),
+                             dark: UIColor(white: 1, alpha: 0.24))
+
+        case .secondaryAction:
+            return ColorPair(light: UIColor(rgb: 0xE8ECEE), dark: .backgroundLightGraphite)
+        case .secondaryActionDimmed:
+            return ColorPair(light: UIColor(rgb: 0xE8ECEE, alpha: 0.24), dark: UIColor.backgroundLightGraphite.withAlphaComponent(0.24))
+
+        case .errorIndicator:
+            return ColorPair(light: UIColor(rgb: 0xE60606), dark: UIColor(rgb: 0xFC3E37))
+
+        case .landingScreen:
+            return ColorPair(light: .graphiteDark, dark: .white)
+
+        case .utilityError:
+            return ColorPair(light: UIColor(rgb: 0xE41734), dark: UIColor(rgb: 0xFC7887))
+        case .utilityNeutral:
+            return ColorPair(light: UIColor(rgb: 0x0772DE), dark: UIColor(rgb: 0x26BDFF))
+        case .utilitySuccess:
+            return ColorPair(light: UIColor(rgb: 0x148545), dark: UIColor(rgb: 0x35C763))
+
+        case .textSecurityNotClassified:
+            return ColorPair(light: .white, dark: .graphite)
+        case .backgroundSecurityNotClassified:
+            return ColorPair(light: .graphite, dark: .white)
+
+        }
+    }",0,,
+"internal static func singular(_ p1: Any) -> String {
+            return L10n.tr(""Localizable"", ""meta.degraded.degradation_reason_message.singular"", String(describing: p1))
+          }",0,,
+"    private func setupAdditionalWindows() {
+        screenCurtain.makeKeyAndVisible()
+        screenCurtain.isHidden = true
+    }",0,,
+"    public func refreshMembership() {
+        membership?.needsToBeUpdatedFromBackend = true
+    }",0,,
+"internal static func otherRenamedConvToNothing(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""content.system.other_renamed_conv_to_nothing"", String(describing: p1))
+        }",0,,
+"    private func setupNotifications() {
+        setupApplicationNotifications()
+        setupContentSizeCategoryNotifications()
+        setupAudioPermissionsNotifications()
+    }",0,,
+"internal static func inConversation(_ p1: Any, _ p2: Any) -> String {
+        return L10n.tr(""Localizable"", ""notifications.in_conversation"", String(describing: p1), String(describing: p2))
+      }",0,,
+"    public func updateSecurityLevelIfNeededAfterReceiving(message: GenericMessage, timestamp: Date) {
+        updateLegalHoldIfNeededWithHint(from: message, timestamp: timestamp)
+    }",0,,
+"    private func enumerateReverseMessagesThatCausedDegradationUntilFirstSystemMessageOnSyncContext(block: @escaping (ZMOTRMessage)->()) {
+        guard let syncMOC = self.managedObjectContext?.zm_sync else { return }
+        syncMOC.performGroupedBlock {
+            guard let conversation = (try? syncMOC.existingObject(with: self.objectID)) as? ZMConversation else { return }
+            conversation.messagesThatCausedSecurityLevelDegradation.forEach(block)
+            syncMOC.saveOrRollback()
+        }
+    }",0,,
+"internal static func ephemeralTimeRemaining(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""content.system.ephemeral_time_remaining"", String(describing: p1))
+        }",0,,
+"private func processOneRawMessage(inBuffer buffer: UnsafeBufferPointer<UInt8>) -> UnsafeBufferPointer<UInt8> {
+        let response = readStack.last
+        guard let baseAddress = buffer.baseAddress else {return emptyBuffer}
+        let bufferLen = buffer.count
+        if response != nil && bufferLen < 2 {
+            fragBuffer = Data(buffer: buffer)
+            return emptyBuffer
+        }
+        if let response = response, response.bytesLeft > 0 {
+            var len = response.bytesLeft
+            var extra = bufferLen - response.bytesLeft
+            if response.bytesLeft > bufferLen {
+                len = bufferLen
+                extra = 0
+            }
+            response.bytesLeft -= len
+            response.buffer?.append(Data(bytes: baseAddress, count: len))
+            _ = processResponse(response)
+            return buffer.fromOffset(bufferLen - extra)
+        } else {
+            let isFin = (FinMask & baseAddress[0])
+            let receivedOpcode = OpCode(rawValue: (OpCodeMask & baseAddress[0]))
+            let isMasked = (MaskMask & baseAddress[1])
+            let payloadLen = (PayloadLenMask & baseAddress[1])
+            var offset = 2
+            if (isMasked > 0 || (RSVMask & baseAddress[0]) > 0) && receivedOpcode != .pong {
+                let errCode = CloseCode.protocolError.rawValue
+                doDisconnect(errorWithDetail(""masked and rsv data is not currently supported"", code: errCode))
+                writeError(errCode)
+                return emptyBuffer
+            }
+            let isControlFrame = (receivedOpcode == .connectionClose || receivedOpcode == .ping)
+            if !isControlFrame && (receivedOpcode != .binaryFrame && receivedOpcode != .continueFrame &&
+                receivedOpcode != .textFrame && receivedOpcode != .pong) {
+                    let errCode = CloseCode.protocolError.rawValue
+                    doDisconnect(errorWithDetail(""unknown opcode: \(receivedOpcode)"", code: errCode))
+                    writeError(errCode)
+                    return emptyBuffer
+            }
+            if isControlFrame && isFin == 0 {
+                let errCode = CloseCode.protocolError.rawValue
+                doDisconnect(errorWithDetail(""control frames can't be fragmented"", code: errCode))
+                writeError(errCode)
+                return emptyBuffer
+            }
+            var closeCode = CloseCode.normal.rawValue
+            if receivedOpcode == .connectionClose {
+                if payloadLen == 1 {
+                    closeCode = CloseCode.protocolError.rawValue
+                } else if payloadLen > 1 {
+                    closeCode = WebSocket.readUint16(baseAddress, offset: offset)
+                    if closeCode < 1000 || (closeCode > 1003 && closeCode < 1007) || (closeCode > 1011 && closeCode < 3000) {
+                        closeCode = CloseCode.protocolError.rawValue
+                    }
+                }
+                if payloadLen < 2 {
+                    doDisconnect(errorWithDetail(""connection closed by server"", code: closeCode))
+                    writeError(closeCode)
+                    return emptyBuffer
+                }
+            } else if isControlFrame && payloadLen > 125 {
+                writeError(CloseCode.protocolError.rawValue)
+                return emptyBuffer
+            }
+            var dataLength = UInt64(payloadLen)
+            if dataLength == 127 {
+                dataLength = WebSocket.readUint64(baseAddress, offset: offset)
+                offset += MemoryLayout<UInt64>.size
+            } else if dataLength == 126 {
+                dataLength = UInt64(WebSocket.readUint16(baseAddress, offset: offset))
+                offset += MemoryLayout<UInt16>.size
+            }
+            if bufferLen < offset || UInt64(bufferLen - offset) < dataLength {
+                fragBuffer = Data(bytes: baseAddress, count: bufferLen)
+                return emptyBuffer
+            }
+            var len = dataLength
+            if dataLength > UInt64(bufferLen) {
+                len = UInt64(bufferLen-offset)
+            }
+            let data: Data
+            if len < 0 {
+                len = 0
+                data = Data()
+            } else {
+                if receivedOpcode == .connectionClose && len > 0 {
+                    let size = MemoryLayout<UInt16>.size
+                    offset += size
+                    len -= UInt64(size)
+                }
+                data = Data(bytes: baseAddress+offset, count: Int(len))
+            }
+            if receivedOpcode == .connectionClose {
+                var closeReason = ""connection closed by server""
+                if let customCloseReason = String(data: data, encoding: .utf8) {
+                    closeReason = customCloseReason
+                } else {
+                    closeCode = CloseCode.protocolError.rawValue
+                }
+                doDisconnect(errorWithDetail(closeReason, code: closeCode))
+                writeError(closeCode)
+                return emptyBuffer
+            }
+            if receivedOpcode == .pong {
+                if canDispatch {
+                    callbackQueue.async { [weak self] in
+                        guard let s = self else { return }
+                        let pongData: Data? = data.count > 0 ? data : nil
+                        s.onPong?(pongData)
+                        s.pongDelegate?.websocketDidReceivePong(socket: s, data: pongData)
+                    }
+                }
+                return buffer.fromOffset(offset + Int(len))
+            }
+            var response = readStack.last
+            if isControlFrame {
+                response = nil // Don't append pings.
+            }
+            if isFin == 0 && receivedOpcode == .continueFrame && response == nil {
+                let errCode = CloseCode.protocolError.rawValue
+                doDisconnect(errorWithDetail(""continue frame before a binary or text frame"", code: errCode))
+                writeError(errCode)
+                return emptyBuffer
+            }
+            var isNew = false
+            if response == nil {
+                if receivedOpcode == .continueFrame {
+                    let errCode = CloseCode.protocolError.rawValue
+                    doDisconnect(errorWithDetail(""first frame can't be a continue frame"",
+                        code: errCode))
+                    writeError(errCode)
+                    return emptyBuffer
+                }
+                isNew = true
+                response = WSResponse()
+                response!.code = receivedOpcode!
+                response!.bytesLeft = Int(dataLength)
+                response!.buffer = NSMutableData(data: data)
+            } else {
+                if receivedOpcode == .continueFrame {
+                    response!.bytesLeft = Int(dataLength)
+                } else {
+                    let errCode = CloseCode.protocolError.rawValue
+                    doDisconnect(errorWithDetail(""second and beyond of fragment message must be a continue frame"",
+                        code: errCode))
+                    writeError(errCode)
+                    return emptyBuffer
+                }
+                response!.buffer!.append(data)
+            }
+            if let response = response {
+                response.bytesLeft -= Int(len)
+                response.frameCount += 1
+                response.isFin = isFin > 0 ? true : false
+                if isNew {
+                    readStack.append(response)
+                }
+                _ = processResponse(response)
+            }
+
+            let step = Int(offset + numericCast(len))
+            return buffer.fromOffset(step)
+        }
+    }",0,,
+"    fileprivate func timestampAfterLastMessage() -> Date {
+        return timestamp(after: lastMessage) ?? Date()
+    }",0,,
+"    public func isGuest(in conversation: ConversationLike) -> Bool {
+        return _isGuest(in: conversation)
+    }",0,,
+"internal static func messageTimerOff(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""content.system.message_timer_off"", String(describing: p1))
+        }",0,,
+"private func updateLegalHoldState(cause: SecurityChangeCause) {
+        guard !needsToVerifyLegalHold, !localParticipants.any({ $0.clients.any(\.needsToBeUpdatedFromBackend) }) else {
+            // We don't update the legal hold status if we are still gathering information about which clients were added/deleted
+            return
+        }
+        
+        let detectedParticipantsUnderLegalHold = localParticipants.any(\.isUnderLegalHold)
+
+        switch (legalHoldStatus, detectedParticipantsUnderLegalHold) {
+        case (.disabled, true):
+            legalHoldStatus = .pendingApproval
+            appendLegalHoldEnabledSystemMessageForConversation(cause: cause)
+            expireAllPendingMessagesBecauseOfSecurityLevelDegradation()
+
+        case (.pendingApproval, false), (.enabled, false):
+            legalHoldStatus = .disabled
+            appendLegalHoldDisabledSystemMessageForConversation()
+
+        default:
+            // no changes required
+            break
+        }
+    }",0,,
+"private func initStreamsWithData(_ data: Data, _ port: Int) {
+        //higher level API we will cut over to at some point
+        //NSStream.getStreamsToHostWithName(url.host, port: url.port.integerValue, inputStream: &inputStream, outputStream: &outputStream)
+
+        // Disconnect and clean up any existing streams before setting up a new pair
+        disconnectStream(nil, runDelegate: false)
+
+        var readStream: Unmanaged<CFReadStream>?
+        var writeStream: Unmanaged<CFWriteStream>?
+        let h = url.host! as NSString
+        CFStreamCreatePairWithSocketToHost(nil, h, UInt32(port), &readStream, &writeStream)
+        inputStream = readStream!.takeRetainedValue()
+        outputStream = writeStream!.takeRetainedValue()
+        guard let inStream = inputStream, let outStream = outputStream else { return }
+        inStream.delegate = self
+        outStream.delegate = self
+        if supportedSSLSchemes.contains(url.scheme!) {
+            inStream.setProperty(StreamSocketSecurityLevel.negotiatedSSL as AnyObject, forKey: Stream.PropertyKey.socketSecurityLevelKey)
+            outStream.setProperty(StreamSocketSecurityLevel.negotiatedSSL as AnyObject, forKey: Stream.PropertyKey.socketSecurityLevelKey)
+            if disableSSLCertValidation {
+                let settings: [NSObject: NSObject] = [kCFStreamSSLValidatesCertificateChain: NSNumber(value: false), kCFStreamSSLPeerName: kCFNull]
+                inStream.setProperty(settings, forKey: kCFStreamPropertySSLSettings as Stream.PropertyKey)
+                outStream.setProperty(settings, forKey: kCFStreamPropertySSLSettings as Stream.PropertyKey)
+            }
+            if let cipherSuites = self.enabledSSLCipherSuites {
+                if let sslContextIn = CFReadStreamCopyProperty(inputStream, CFStreamPropertyKey(rawValue: kCFStreamPropertySSLContext)) as! SSLContext?,
+                    let sslContextOut = CFWriteStreamCopyProperty(outputStream, CFStreamPropertyKey(rawValue: kCFStreamPropertySSLContext)) as! SSLContext? {
+                    let resIn = SSLSetEnabledCiphers(sslContextIn, cipherSuites, cipherSuites.count)
+                    let resOut = SSLSetEnabledCiphers(sslContextOut, cipherSuites, cipherSuites.count)
+                    if resIn != errSecSuccess {
+                        let error = self.errorWithDetail(""Error setting ingoing cypher suites"", code: UInt16(resIn))
+                        disconnectStream(error)
+                        return
+                    }
+                    if resOut != errSecSuccess {
+                        let error = self.errorWithDetail(""Error setting outgoing cypher suites"", code: UInt16(resOut))
+                        disconnectStream(error)
+                        return
+                    }
+                }
+            }
+        } else {
+            certValidated = true //not a https session, so no need to check SSL pinning
+        }
+        if voipEnabled {
+            inStream.setProperty(StreamNetworkServiceTypeValue.voIP as AnyObject, forKey: Stream.PropertyKey.networkServiceType)
+            outStream.setProperty(StreamNetworkServiceTypeValue.voIP as AnyObject, forKey: Stream.PropertyKey.networkServiceType)
+        }
+        
+        CFReadStreamSetDispatchQueue(inStream, WebSocket.sharedWorkQueue)
+        CFWriteStreamSetDispatchQueue(outStream, WebSocket.sharedWorkQueue)
+        inStream.open()
+        outStream.open()
+
+        self.mutex.lock()
+        self.readyToWrite = true
+        self.mutex.unlock()
+        
+        let bytes = UnsafeRawPointer((data as NSData).bytes).assumingMemoryBound(to: UInt8.self)
+        var out = timeout * 1_000_000 // wait 5 seconds before giving up
+        let operation = BlockOperation()
+        operation.addExecutionBlock { [weak self, weak operation] in
+            guard let sOperation = operation else { return }
+            while !outStream.hasSpaceAvailable && !sOperation.isCancelled {
+                usleep(100) // wait until the socket is ready
+                guard !sOperation.isCancelled else { return }
+                out -= 100
+                if out < 0 {
+                    self?.cleanupStream()
+                    self?.doDisconnect(self?.errorWithDetail(""write wait timed out"", code: 2))
+                    return
+                } else if outStream.streamError != nil {
+                    return // disconnectStream will be called.
+                }
+            }
+            guard !sOperation.isCancelled else { return }
+            outStream.write(bytes, maxLength: data.count)
+        }
+        writeQueue.addOperation(operation)
+    }",1,"68,75",                    self?.cleanupStream()/~/            guard !sOperation.isCancelled else { return }
+"private mutating func handlePing(_ pingData: HTTP2PingData) -> Action {
+    // Do we support ping strikes (only servers support ping strikes)?
+    if let maximumPingStrikes = self.maximumPingStrikes {
+      // Is this a ping strike?
+      if self.isPingStrike {
+        self.pingStrikes += 1
+
+        // A maximum ping strike of zero indicates that we tolerate any number of strikes.
+        if maximumPingStrikes != 0, self.pingStrikes > maximumPingStrikes {
+          return .reply(PingHandler.goAwayFrame)
+        } else {
+          return .none
+        }
+      } else {
+        // This is a valid ping, reset our strike count and reply with a pong.
+        self.pingStrikes = 0
+        self.lastReceivedPingDate = self.now()
+        return .reply(self.generatePingFrame(code: pingData.integer, ack: true))
+      }
+    } else {
+      // We don't support ping strikes. We'll just reply with a pong.
+      //
+      // Note: we don't need to update `pingStrikes` or `lastReceivedPingDate` as we don't
+      // support ping strikes.
+      return .reply(self.generatePingFrame(code: pingData.integer, ack: true))
+    }
+  }",1,"17,24","        return .reply(self.generatePingFrame(code: pingData.integer, ack: true))/~/      return .reply(self.generatePingFrame(code: pingData.integer, ack: true))"
+"internal static func truncatedPeople(_ p1: Any) -> String {
+            return L10n.tr(""Localizable"", ""content.system.started_conversation.truncated_people"", String(describing: p1))
+          }",0,,
+"    private func cleanupStream() {
+        outputStream?.delegate = nil
+        inputStream?.delegate = nil
+        if let stream = inputStream {
+            CFReadStreamSetDispatchQueue(stream, nil)
+            stream.close()
+        }
+        if let stream = outputStream {
+            CFWriteStreamSetDispatchQueue(stream, nil)
+            stream.close()
+        }
+        outputStream = nil
+        inputStream = nil
+        fragBuffer = nil
+    }",0,,
+"    fileprivate mutating func cancelIdleTask(_ task: Scheduled<Void>) {
+      self.idleTask = .cancel(task)
+    }",0,,
+"response.body = .init(stream: { stream in
+            self.read(path: path, fromOffset: offset, byteCount: byteCount, chunkSize: chunkSize) { chunk in
+                return stream.write(.buffer(chunk))
+            }.whenComplete { result in
+                switch result {
+                case .failure(let error):
+                    stream.write(.error(error), promise: nil)
+                case .success:
+                    stream.write(.end, promise: nil)
+                }
+                onCompleted(result)
+            }
+        }, count: byteCount, byteBufferAllocator: request.byteBufferAllocator)
+        
+        return response
+    }
+
+    /// Private read method. `onRead` closure uses ByteBuffer and expects future return.
+    /// There may be use in publicizing this in the future for reads that must be async.
+    private func read(
+        path: String,
+        fromOffset offset: Int64,
+        byteCount: Int,
+        chunkSize: Int,
+        onRead: @escaping (ByteBuffer) -> EventLoopFuture<Void>
+    ) -> EventLoopFuture<Void> {
+        do {
+            let fd = try NIOFileHandle(path: path)
+            let done = self.io.readChunked(
+                fileHandle: fd,
+                fromOffset: offset,
+                byteCount: byteCount,
+                chunkSize: chunkSize,
+                allocator: allocator,
+                eventLoop: self.request.eventLoop
+            ) { chunk in
+                return onRead(chunk)
+            }
+            done.whenComplete { _ in
+                try? fd.close()
+            }
+            return done
+        } catch {
+            return self.request.eventLoop.makeFailedFuture(error)
+        }
+    }",0,,
+"    private func updateState() {
+        Log.calling.debug(""\nUpdating video configuration from:\n\(videoConfigurationDescription())"")
+
+        updateSelfPreview()
+        updateFloatingVideo(with: configuration.floatingVideoStream)
+        updateVideoGrid(with: videoStreams)
+        displayIndicatorViewsIfNeeded()
+        updateGridViewAxis()
+
+        Log.calling.debug(""\nUpdated video configuration to:\n\(videoConfigurationDescription())"")
+    }",0,,
+"internal static func subtitleEditDate(_ p1: Any) -> String {
+        return L10n.tr(""Localizable"", ""message_details.subtitle_edit_date"", String(describing: p1))
+      }",0,,
+"self.init(light: color, dark: color)
+    }
+}
+
+extension UIColor {
+
+    static func from(scheme: ColorSchemeColor, variant: ColorSchemeVariant? = nil) -> UIColor {
+        return ColorScheme.default.color(named: scheme, variant: variant)
+    }
+
+    /// Creates UIColor instance with color corresponding to @p accentColor that can be used to display the name.
+    // NB: the order of coefficients must match ZMAccentColor enum ordering
+    private static let accentColorNameColorBlendingCoefficientsDark: [CGFloat] = [0.8, 0.8, 0.72, 1.0, 0.8, 0.8, 0.8, 0.64]
+    private static let accentColorNameColorBlendingCoefficientsLight: [CGFloat] = [0.8, 0.8, 0.72, 1.0, 0.8, 0.8, 0.64, 1.0]
+
+    /// Creates UIColor instance with color corresponding to @p accentColor that can be used to display the name.
+    class func nameColor(for accentColor: ZMAccentColor, variant: ColorSchemeVariant) -> UIColor {
+
+        assert(accentColor.rawValue <= ZMAccentColor.max.rawValue)
+
+        let coefficientsArray = variant == .dark ? accentColorNameColorBlendingCoefficientsDark : accentColorNameColorBlendingCoefficientsLight
+        let coefficient = coefficientsArray[Int(accentColor.rawValue)]
+
+        let background: UIColor = variant == .dark ? .black : .white
+        return background.mix(UIColor(fromZMAccentColor: accentColor), amount: coefficient)
+    }
+}",1,"17,18,19,22,24","/~/        assert(accentColor.rawValue <= ZMAccentColor.max.rawValue)/~//~//~/        return background.mix(UIColor(fromZMAccentColor: accentColor), amount: coefficient)"
+"    public func imageData(for size: ProfileImageSize) -> Data? {
+        return managedObjectContext?.zm_userImageCache?.userImage(self, size: size)
+    }",0,,
+"    fileprivate func appendNewAddedClientSystemMessage(cause: SecurityChangeCause) {
+        var timestamp : Date?
+        var affectedUsers: Set<ZMUser> = []
+        var addedUsers: Set<ZMUser> = []
+        var addedClients: Set<UserClient> = []
+        
+        switch cause {
+        case .addedUsers(let users):
+            affectedUsers = users
+            addedUsers = users
+        case .addedClients(let clients, let message):
+            affectedUsers = Set(clients.compactMap(\.user))
+            addedClients = clients
+            if let message = message, message.conversation == self {
+                timestamp = self.timestamp(before: message)
+            } else {
+                timestamp = clients.compactMap(\.discoveryDate).first?.previousNearestTimestamp
+            }
+        default:
+            // unsupported cause
+            return
+        }
+        
+        guard !addedClients.isEmpty || !addedUsers.isEmpty else { return }
+        
+        self.appendSystemMessage(type: .newClient,
+                                 sender: ZMUser.selfUser(in: self.managedObjectContext!),
+                                 users: affectedUsers,
+                                 addedUsers: addedUsers,
+                                 clients: addedClients,
+                                 timestamp: timestamp ?? timestampAfterLastMessage())
+    }",0,,
+"internal static func messageFrom(_ p1: Any, _ p2: Any) -> String {
+              return L10n.tr(""Localizable"", ""conversation.input_bar.message_preview.accessibility.message_from"", String(describing: p1), String(describing: p2))
+            }",0,,
+"internal static func detail(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""legalhold_request.alert.detail"", String(describing: p1))
+        }",0,,
+"    private func applySecurityChanges(cause: SecurityChangeCause) {
+        updateLegalHoldState(cause: cause)
+        updateSecurityLevel(cause: cause)
+    }",0,,
+"    private func updateGridViewAxis() {
+        let newAxis = gridAxis(for: traitCollection)
+        guard newAxis != gridView.layoutDirection else { return }
+        gridView.layoutDirection = newAxis
+    }",0,,
+"internal static func removed(_ p1: Any, _ p2: Any) -> String {
+              return L10n.tr(""Localizable"", ""content.system.conversation.other.removed"", String(describing: p1), String(describing: p2))
+            }",0,,
+"internal static func noRequirements(_ p1: Any) -> String {
+            return L10n.tr(""Localizable"", ""registration.password.rules.no_requirements"", String(describing: p1))
+          }",0,,
+"internal static func tooManyMembersInConversation(_ p1: Int) -> String {
+          return L10n.tr(""Localizable"", ""error.group_call.too_many_members_in_conversation"", p1)
+        }",0,,
+"    private func setupAppStateCalculator() {
+        appStateCalculator.delegate = self
+    }",0,,
+"  mutating func channelInactive() -> Operations {
+    var operations: Operations = .none
+
+    switch self.state {
+    case let .operating(state):
+      self.state = .closed
+
+      // We unexpectedly became inactive.
+      if !state.hasSeenSettings || state.hasOpenStreams {
+        // Haven't seen settings, or we've seen settings and there are open streams.
+        operations.notifyConnectionManager(about: .inactive)
+      } else {
+        // Have seen settings and there are no open streams.
+        operations.notifyConnectionManager(about: .idle)
+      }
+
+    case let .waitingToIdle(state):
+      self.state = .closed
+
+      // We were going to idle anyway.
+      operations.notifyConnectionManager(about: .idle)
+      operations.cancelIdleTask(state.idleTask)
+
+    case let .quiescing(state):
+      self.state = .closed
+
+      if state.initiatedByUs || state.hasOpenStreams {
+        operations.notifyConnectionManager(about: .inactive)
+      } else {
+        operations.notifyConnectionManager(about: .idle)
+      }
+
+    case let .closing(state):
+      self.state = .closed
+
+      if state.shouldIdle {
+        operations.notifyConnectionManager(about: .idle)
+      } else {
+        operations.notifyConnectionManager(about: .inactive)
+      }
+
+    case .closed:
+      ()
+    }
+
+    return operations
+  }",0,,
+"    init(stringLiteral: String) {
+        self = .urlDecoded(stringLiteral)
+    }",0,,
+"internal static func unverifiedOtherDevices(_ p1: Any, _ p2: Any) -> String {
+          return L10n.tr(""Localizable"", ""content.system.unverified_other_devices"", String(describing: p1), String(describing: p2))
+        }",0,,
+"internal static func message(_ p1: Any) -> String {
+              return L10n.tr(""Localizable"", ""conversation.input_bar.audio_message.too_long.message"", String(describing: p1))
+            }",0,,
+"        didSet {
+            guard !configuration.isEqual(toConfiguration: oldValue) else { return }
+            updateState()
+        }",0,,
+"    private func appendLegalHoldEnabledSystemMessageForConversationAfterReceivingMessage(at timestamp: Date) {
+        appendSystemMessage(type: .legalHoldEnabled,
+                            sender: ZMUser.selfUser(in: self.managedObjectContext!),
+                            users: nil,
+                            clients: nil,
+                            timestamp: timestamp.previousNearestTimestamp)
+    }",0,,
+"internal static func title(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""landing.custom_backend.title"", String(describing: p1))
+        }",0,,
+"self.stateMachine = .init(role: .server, logger: logger)
+    self.idleTimeout = idleTimeout
+    self.pingHandler = PingHandler(
+      pingCode: 10,
+      interval: configuration.interval,
+      timeout: configuration.timeout,
+      permitWithoutCalls: configuration.permitWithoutCalls,
+      maximumPingsWithoutData: configuration.maximumPingsWithoutData,
+      minimumSentPingIntervalWithoutData: configuration.minimumSentPingIntervalWithoutData,
+      minimumReceivedPingIntervalWithoutData: configuration.minimumReceivedPingIntervalWithoutData,
+      maximumPingStrikes: configuration.maximumPingStrikes
+    )
+  }
+
+  private func sendGoAway(lastStreamID streamID: HTTP2StreamID) {
+    guard let context = self.context else {
+      return
+    }
+
+    let frame = HTTP2Frame(
+      streamID: .rootStream,
+      payload: .goAway(lastStreamID: streamID, errorCode: .noError, opaqueData: nil)
+    )
+
+    context.writeAndFlush(self.wrapOutboundOut(frame), promise: nil)
+  }",0,,
+"  func handlerAdded(context: ChannelHandlerContext) {
+    self.context = context
+  }",0,,
+"    public func getRoles() -> Set<Role> {
+        if let team = team {
+            return team.roles
+        }
+        return nonTeamRoles
+    }",0,,
+"internal static func missedCall(_ p1: Int) -> String {
+            return L10n.tr(""Localizable"", ""content.system.call.missed-call"", p1)
+          }",0,,
+"func userInboundEventTriggered(context: ChannelHandlerContext, event: Any) {
+    if let created = event as? NIOHTTP2StreamCreatedEvent {
+      self.perform(operations: self.stateMachine.streamCreated(withID: created.streamID))
+      self.handlePingAction(self.pingHandler.streamCreated())
+      context.fireUserInboundEventTriggered(event)
+    } else if let closed = event as? StreamClosedEvent {
+      self.perform(operations: self.stateMachine.streamClosed(withID: closed.streamID))
+      self.handlePingAction(self.pingHandler.streamClosed())
+      self.mode.connectionManager?.streamClosed()
+      context.fireUserInboundEventTriggered(event)
+    } else if event is ChannelShouldQuiesceEvent {
+      self.perform(operations: self.stateMachine.initiateGracefulShutdown())
+      // Swallow this event.
+    } else {
+      context.fireUserInboundEventTriggered(event)
+    }
+  }",0,,
+"    func appStateCalculator(_: AppStateCalculator,
+                            didCalculate appState: AppState,
+                            completion: @escaping () -> Void) {
+        enqueueTransition(to: appState, completion: completion)
+    }",0,,
+"internal static func text(_ p1: Any) -> String {
+            return L10n.tr(""Localizable"", ""conversation.status.message.text"", String(describing: p1))
+          }",0,,
+"internal static func seen(_ p1: Int) -> String {
+          return L10n.tr(""Localizable"", ""message_details.tabs.seen"", p1)
+        }",0,,
+"internal static func memberLeave(_ p1: Any) -> String {
+              return L10n.tr(""Localizable"", ""content.system.conversation.team.member-leave"", String(describing: p1))
+            }",0,,
+"internal static func unverifiedSelfDevices(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""content.system.unverified_self_devices"", String(describing: p1))
+        }",0,,
+"    private func createLifeCycleObserverTokens() {
+        sessionManagerLifeCycleObserver.createLifeCycleObserverTokens()
+    }",0,,
+"internal static func header(_ p1: Any) -> String {
+            return L10n.tr(""Localizable"", ""folder.creation.name.header"", String(describing: p1))
+          }",0,,
+"internal static func resend(_ p1: Any) -> String {
+                  return L10n.tr(""Localizable"", ""self.settings.account_section.email.change.verify.resend"", String(describing: p1))
+                }",0,,

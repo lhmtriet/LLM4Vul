@@ -1,0 +1,50 @@
+processed_func,target,flaw_line_index,flaw_line
+"fun sampleFromStandard(): Double {
+            val random = SecureRandom()
+            return -ln(1.0 - random.nextDouble())
+        }",0,,
+"    override fun getLabels(): Map<String, String> {
+        val itemType = object : TypeToken<HashMap<String, String>>() {}.type
+        return Gson().fromJson(
+            preferences.getString(
+                KEY_LABELS, ""{\""test\"":\""Hola Label\""}""
+            ),
+            itemType
+        )
+    }",0,,
+"private fun getRandomDelay(): Long = Random.nextLong(180, 360)
+
+    }",1,0,"private fun getRandomDelay(): Long = Random.nextLong(180, 360)"
+"    private fun initRxJavaSettings() {
+        RxJavaPlugins.setErrorHandler {
+            if (BuildConfig.DEBUG)
+                it.printStackTrace()
+        }
+    }",0,,
+"        private fun start(
+            context: Context,
+            delayInMinutes: Long,
+            existingWorkPolicy: ExistingWorkPolicy
+        ) {
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+            val work =
+                OneTimeWorkRequest
+                    .Builder(FakeInfectionReportWorker::class.java)
+                    .setInitialDelay(delayInMinutes, TimeUnit.MINUTES)
+                    .setConstraints(constraints)
+                    .build()
+            WorkManager.getInstance(context)
+                .enqueueUniqueWork(TAG, existingWorkPolicy, work)
+        }",1,"2,11","            delayInMinutes: Long,/~/                    .setInitialDelay(delayInMinutes, TimeUnit.MINUTES)"
+"    fun reportInfected(reportCode: String): Completable {
+
+        return getVerifyToken(reportCode).flatMapCompletable {
+            contactTracingRepository.notifyInfected(it.token, jwtTokenUtils.getOnset(it.token))
+        }.concatWith {
+            preferencesRepository.setInfectionReportDate(Date())
+            it.onComplete()
+        }
+
+    }",1,"0,1,2,3,4,5,6,9","    fun reportInfected(reportCode: String): Completable {/~//~/        return getVerifyToken(reportCode).flatMapCompletable {/~/            contactTracingRepository.notifyInfected(it.token, jwtTokenUtils.getOnset(it.token))/~/        }.concatWith {/~/            preferencesRepository.setInfectionReportDate(Date())/~/            it.onComplete()/~/    }"

@@ -1,0 +1,234 @@
+processed_func,target
+"        private fun start(
+            context: Context,
+            delayInMinutes: Long,
+            existingWorkPolicy: ExistingWorkPolicy
+        ) {
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+            val work =
+                OneTimeWorkRequest
+                    .Builder(FakeInfectionReportWorker::class.java)
+                    .setInitialDelay(delayInMinutes, TimeUnit.MINUTES)
+                    .setConstraints(constraints)
+                    .build()
+            WorkManager.getInstance(context)
+                .enqueueUniqueWork(TAG, existingWorkPolicy, work)
+        }",1
+"private fun start(
+            context: Context,
+            tDummy: Long,
+            existingWorkPolicy: ExistingWorkPolicy
+        ) {
+
+            val now = clock.currentTimeMillis()
+            val executionDelay = 0L.coerceAtLeast(tDummy - now)
+            val executionDelayDays =
+                executionDelay / FACTOR_DAY_MILLIS
+
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+            val work =
+                OneTimeWorkRequest
+                    .Builder(FakeInfectionReportWorker::class.java)
+                    .setInitialDelay(executionDelayDays, TimeUnit.MILLISECONDS)
+                    .setConstraints(constraints)
+                    .setInputData(Data.Builder().putLong(KEY_T_DUMMY, tDummy).build())
+                    .build()
+            WorkManager.getInstance(context)
+                .enqueueUniqueWork(TAG, existingWorkPolicy, work)
+        }",0
+"    override fun <T> decodeSerializableValue(deserializer: DeserializationStrategy<T>): T {
+        try {
+            return super.decodeSerializableValue(deserializer)
+        } catch (e: SerializationException) {
+            throwIfMissingRequiredPropertyException(e)
+
+            throw e
+        }
+    }",0
+"        override fun currentTimeMillis(): Long {
+            return System.currentTimeMillis()
+        }",0
+"override fun doWork(): Result {
+        val now = clock.currentTimeMillis()
+        var tDummy = inputData.getLong(KEY_T_DUMMY, now)
+        while (tDummy < now) {
+            if (tDummy >= now - FACTOR_HOUR_MILLIS * MAX_DELAY_HOURS) {
+                if (BuildConfig.DEBUG)
+                    DP3T.addWorkerStartedToHistory(applicationContext, TAG)
+                reportFakeInfectionUseCase.reportFakeInfection().subscribe()
+            }
+            tDummy += clock.syncInterval();
+            preferencesRepository.setTDummy(tDummy)
+        }
+
+        start(applicationContext, tDummy, ExistingWorkPolicy.APPEND)
+        return Result.success()
+    }",1
+"private fun start(
+            context: Context,
+            tDummy: Long,
+            existingWorkPolicy: ExistingWorkPolicy
+        ) {
+
+            val now = clock.currentTimeMillis()
+            val executionDelay = 0L.coerceAtLeast(tDummy - now)
+            val executionDelayDays =
+                executionDelay / FACTOR_DAY_MILLIS
+
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+            val work =
+                OneTimeWorkRequest
+                    .Builder(FakeInfectionReportWorker::class.java)
+                    .setInitialDelay(executionDelayDays, TimeUnit.MINUTES)
+                    .setConstraints(constraints)
+                    .setInputData(Data.Builder().putLong(KEY_T_DUMMY, tDummy).build())
+                    .build()
+            WorkManager.getInstance(context)
+                .enqueueUniqueWork(TAG, existingWorkPolicy, work)
+        }",0
+"fun sampleFromStandard(): Double {
+            val random = SecureRandom()
+            return -ln(1.0 - random.nextDouble())
+        }",0
+"    override fun getLanguages(): List<Language> {
+        val itemType = object : TypeToken<List<Language>>() {}.type
+        return Gson().fromJson(
+            preferences.getString(
+                KEY_LANGUAGES, ""[]""
+            ),
+            itemType
+        )
+    }",0
+"private fun throwIfUnknownPolymorphicTypeException(e: Exception, deserializer: DeserializationStrategy<*>) {
+        val message = e.message ?: return
+        val match = unknownPolymorphicTypeExceptionMessage.matchEntire(message) ?: return
+        val unknownType = match.groupValues[1]
+        val className = match.groupValues[2]
+
+        val knownTypes = when (deserializer.descriptor.kind) {
+            PolymorphicKind.SEALED -> getKnownTypesForSealedType(deserializer)
+            PolymorphicKind.OPEN -> getKnownTypesForOpenType(className)
+            else -> throw IllegalArgumentException(""Can't get known types for descriptor of kind ${deserializer.descriptor.kind}"")
+        }
+
+        throw UnknownPolymorphicTypeException(unknownType, knownTypes, typeNamePath, e)
+    }",0
+"    override fun exampleRequest(): Either<Throwable, String> = callService {
+        apiInterface.test()
+    }
+
+}",1
+"fun start(context: Context, preferencesRepository: PreferencesRepository) {
+            var tDummy: Long = preferencesRepository.getTDummy()
+            if (tDummy == -1L) {
+                tDummy = clock.currentTimeMillis() + clock.syncInterval()
+                preferencesRepository.setTDummy(tDummy)
+            }
+            start(context, tDummy, ExistingWorkPolicy.KEEP)
+        }",0
+"fun sampleFromStandard(): Double {
+            val random = SecureRandom()
+            return -ln(1.0 - random.nextDouble())
+        }",0
+"    override fun setUuid(uuid: String) {
+        preferences
+            .edit()
+            .putString(KEY_UUID, uuid)
+            .apply()
+    }",0
+"override fun doWork(): Result {
+        if (BuildConfig.DEBUG)
+            DP3T.addWorkerStartedToHistory(applicationContext, TAG)
+        reportFakeInfectionUseCase.reportFakeInfection().subscribe()
+        start(applicationContext, getRandomDelay(), ExistingWorkPolicy.APPEND)
+        return Result.success()
+    }",0
+"    override fun setSelectedLanguage(language: String) {
+        preferences.edit()
+            .putString(KEY_CURRENT_LANGUAGE, language)
+            .apply()
+    }",0
+"    override fun decodeElementIndex(descriptor: SerialDescriptor): Int = DECODE_DONE
+}",0
+"    private fun XMLStreamWriter.save(baseline: Baseline) {
+        document {
+            tag(SMELL_BASELINE) {
+                tag(MANUALLY_SUPPRESSED_ISSUES) {
+                    baseline.manuallySuppressedIssues.forEach { tag(ID, it) }
+                }
+                tag(CURRENT_ISSUES) {
+                    baseline.currentIssues.forEach { tag(ID, it) }
+                }
+            }
+        }
+    }
+}",0
+"fun sampleFromStandard(): Double {
+            val random = SecureRandom()
+            return -ln(1.0 - random.nextDouble())
+        }",0
+"        override fun currentTimeMillis(): Long {
+            return System.currentTimeMillis()
+        }",0
+"    override fun applicationInjector(): AndroidInjector<out DaggerApplication> =
+        DaggerApplicationComponent.builder()
+            .applicationContext(this)
+            .build()
+
+    private fun initRxJavaSettings() {
+        RxJavaPlugins.setErrorHandler {
+            if (BuildConfig.DEBUG)
+                it.printStackTrace()
+        }
+    }
+
+}",0
+"private fun start(
+            context: Context,
+            tDummy: Long,
+            existingWorkPolicy: ExistingWorkPolicy
+        ) {
+
+            val now = clock.currentTimeMillis()
+            val executionDelay = 0L.coerceAtLeast(tDummy - now)
+
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+            val work =
+                OneTimeWorkRequest
+                    .Builder(FakeInfectionReportWorker::class.java)
+                    .setInitialDelay(executionDelay, TimeUnit.MILLISECONDS)
+                    .setConstraints(constraints)
+                    .setInputData(Data.Builder().putLong(KEY_T_DUMMY, tDummy).build())
+                    .build()
+            WorkManager.getInstance(context)
+                .enqueueUniqueWork(TAG, existingWorkPolicy, work)
+        }",0
+"override fun decodeElementIndex(descriptor: SerialDescriptor): Int = 0
+}",1
+"override fun onCreate() {
+        super.onCreate()
+
+        initRxJavaSettings()
+
+        DP3T.init(
+            this,
+            ApplicationInfo(packageName, BuildConfig.REPORT_URL, BuildConfig.BUCKET_URL),
+            SignatureUtil.getPublicKeyFromBase64OrThrow(BuildConfig.PUBLIC_KEY),
+            BuildConfig.DEBUG
+        )
+        DP3T.setCertificatePinner(certificatePinner)
+        DP3T.setUserAgent(userAgent)
+
+        FakeInfectionReportWorker.start(this, preferencesRepository)
+
+        registerReceiver(ExposureStatusChangeBroadcastReceiver(), DP3T.getUpdateIntentFilter())
+
+    }",0

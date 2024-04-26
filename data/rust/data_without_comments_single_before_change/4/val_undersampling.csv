@@ -1,0 +1,1136 @@
+processed_func,target,flaw_line_index,flaw_line
+"fn show_config(config: &config::Config, writer: &mut dyn Write) -> std::io::Result<()> {
+    
+    writeln!(
+        writer,
+        ""    commit-style                  = {commit_style}
+    file-style                    = {file_style}
+    hunk-header-style             = {hunk_header_style}
+    minus-style                   = {minus_style}
+    minus-non-emph-style          = {minus_non_emph_style}
+    minus-emph-style              = {minus_emph_style}
+    minus-empty-line-marker-style = {minus_empty_line_marker_style}
+    zero-style                    = {zero_style}
+    plus-style                    = {plus_style}
+    plus-non-emph-style           = {plus_non_emph_style}
+    plus-emph-style               = {plus_emph_style}
+    plus-empty-line-marker-style  = {plus_empty_line_marker_style}
+    whitespace-error-style        = {whitespace_error_style}"",
+        commit_style = config.commit_style.to_painted_string(),
+        file_style = config.file_style.to_painted_string(),
+        hunk_header_style = config.hunk_header_style.to_painted_string(),
+        minus_emph_style = config.minus_emph_style.to_painted_string(),
+        minus_empty_line_marker_style = config.minus_empty_line_marker_style.to_painted_string(),
+        minus_non_emph_style = config.minus_non_emph_style.to_painted_string(),
+        minus_style = config.minus_style.to_painted_string(),
+        plus_emph_style = config.plus_emph_style.to_painted_string(),
+        plus_empty_line_marker_style = config.plus_empty_line_marker_style.to_painted_string(),
+        plus_non_emph_style = config.plus_non_emph_style.to_painted_string(),
+        plus_style = config.plus_style.to_painted_string(),
+        whitespace_error_style = config.whitespace_error_style.to_painted_string(),
+        zero_style = config.zero_style.to_painted_string(),
+    )?;
+    
+    writeln!(
+        writer,
+        ""    true-color                    = {true_color}
+    file-added-label              = {file_added_label}
+    file-modified-label           = {file_modified_label}
+    file-removed-label            = {file_removed_label}
+    file-renamed-label            = {file_renamed_label}"",
+        true_color = config.true_color,
+        file_added_label = format_option_value(&config.file_added_label),
+        file_modified_label = format_option_value(&config.file_modified_label),
+        file_removed_label = format_option_value(&config.file_removed_label),
+        file_renamed_label = format_option_value(&config.file_renamed_label),
+    )?;
+    writeln!(
+        writer,
+        ""    hyperlinks                    = {hyperlinks}"",
+        hyperlinks = config.hyperlinks
+    )?;
+    if config.hyperlinks {
+        writeln!(
+            writer,
+            ""    hyperlinks-file-link-format   = {hyperlinks_file_link_format}"",
+            hyperlinks_file_link_format = format_option_value(&config.hyperlinks_file_link_format),
+        )?
+    }
+    writeln!(
+        writer,
+        ""    inspect-raw-lines             = {inspect_raw_lines}
+    keep-plus-minus-markers       = {keep_plus_minus_markers}"",
+        inspect_raw_lines = match config.inspect_raw_lines {
+            cli::InspectRawLines::True => ""true"",
+            cli::InspectRawLines::False => ""false"",
+        },
+        keep_plus_minus_markers = config.keep_plus_minus_markers,
+    )?;
+    writeln!(
+        writer,
+        ""    line-numbers                  = {line_numbers}"",
+        line_numbers = config.line_numbers
+    )?;
+    if config.line_numbers {
+        writeln!(
+            writer,
+            ""    line-numbers-minus-style      = {line_numbers_minus_style}
+    line-numbers-zero-style       = {line_numbers_zero_style}
+    line-numbers-plus-style       = {line_numbers_plus_style}
+    line-numbers-left-style       = {line_numbers_left_style}
+    line-numbers-right-style      = {line_numbers_right_style}
+    line-numbers-left-format      = {line_numbers_left_format}
+    line-numbers-right-format     = {line_numbers_right_format}"",
+            line_numbers_minus_style = config.line_numbers_minus_style.to_painted_string(),
+            line_numbers_zero_style = config.line_numbers_zero_style.to_painted_string(),
+            line_numbers_plus_style = config.line_numbers_plus_style.to_painted_string(),
+            line_numbers_left_style = config.line_numbers_left_style.to_painted_string(),
+            line_numbers_right_style = config.line_numbers_right_style.to_painted_string(),
+            line_numbers_left_format = format_option_value(&config.line_numbers_left_format),
+            line_numbers_right_format = format_option_value(&config.line_numbers_right_format),
+        )?
+    }
+    writeln!(
+        writer,
+        ""    max-line-distance             = {max_line_distance}
+    max-line-length               = {max_line_length}
+    navigate                      = {navigate}
+    navigate-regexp               = {navigate_regexp}
+    pager                         = {pager}
+    paging                        = {paging_mode}
+    side-by-side                  = {side_by_side}
+    syntax-theme                  = {syntax_theme}
+    width                         = {width}
+    tabs                          = {tab_width}
+    word-diff-regex               = {tokenization_regex}"",
+        max_line_distance = config.max_line_distance,
+        max_line_length = config.max_line_length,
+        navigate = config.navigate,
+        navigate_regexp = match &config.navigate_regexp {
+            None => """".to_string(),
+            Some(s) => s.to_string(),
+        },
+        pager = config.pager.clone().unwrap_or_else(|| ""none"".to_string()),
+        paging_mode = match config.paging_mode {
+            PagingMode::Always => ""always"",
+            PagingMode::Never => ""never"",
+            PagingMode::QuitIfOneScreen => ""auto"",
+        },
+        side_by_side = config.side_by_side,
+        syntax_theme = config
+            .syntax_theme
+            .clone()
+            .map(|t| t.name.unwrap_or_else(|| ""none"".to_string()))
+            .unwrap_or_else(|| ""none"".to_string()),
+        width = match config.decorations_width {
+            cli::Width::Fixed(width) => width.to_string(),
+            cli::Width::Variable => ""variable"".to_string(),
+        },
+        tab_width = config.tab_width,
+        tokenization_regex = format_option_value(&config.tokenization_regex.to_string()),
+    )?;
+    Ok(())
+}",0,,
+"    pub async fn run(&mut self) -> TResult<()> {
+        loop {
+            
+            
+            self.base.climit.acquire().await.unwrap().forget();
+            let stream = self.accept().await?;
+            let mut sslhandle = ConnectionHandler::new(
+                self.base.db.clone(),
+                Connection::new(stream),
+                self.base.climit.clone(),
+                Terminator::new(self.base.signal.subscribe()),
+                self.base.terminate_tx.clone(),
+            );
+            tokio::spawn(async move {
+                if let Err(e) = sslhandle.run().await {
+                    log::error!(""Error: {}"", e);
+                }
+            });
+        }
+    }",1,5,            let stream = self.accept().await?;
+"    fn sweep(&mut self) {
+        
+        let num_filled = self.num_filled_in_bump_chunk();
+        unsafe {
+            *self.alloc.next.get() = self.alloc.end;
+        }
+        for slot in self.alloc.chunk.iter().take(num_filled) {
+            unsafe {
+                *slot.get() = None;
+            }
+        }
+        debug_assert!(
+            self.alloc
+                .chunk
+                .iter()
+                .all(|slot| unsafe { (*slot.get()).as_ref().is_none() }),
+            ""after sweeping the bump chunk, all slots should be `None`""
+        );
+
+        
+        unsafe {
+            let next = self.alloc.chunk.as_ptr() as *mut TableElem;
+            debug_assert!(!next.is_null());
+            *self.alloc.next.get() = NonNull::new_unchecked(next);
+        }
+
+        
+        
+        mem::swap(
+            &mut self.precise_stack_roots,
+            &mut self.over_approximated_stack_roots,
+        );
+
+        
+        
+        
+        
+        
+        
+        self.precise_stack_roots.clear();
+    }",0,,
+"    pub(super) fn from(source: &'i str, tokens: &'b [(Token, Span)]) -> Result<Self, ParseError> {
+        let error = tokens.iter().find_map(|&(t, span)| match t {
+            Token::Error => Some((span, None)),
+            Token::ErrorMsg(m) => Some((span, Some(m))),
+            _ => None,
+        });
+        if let Some((span, msg)) = error {
+            return match msg {
+                Some(msg) => Err(ParseErrorKind::LexErrorWithMessage(msg).at(span)),
+                None => Err(ParseErrorKind::UnknownToken.at(span)),
+            };
+        }
+
+        Ok(Input { source, tokens })
+    }",1,"0,13","    pub(super) fn from(source: &'i str, tokens: &'b [(Token, Span)]) -> Result<Self, ParseError> {/~/        Ok(Input { source, tokens })"
+"fn test_err_sdiv64_overflow_imm() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov r0, 0x80
+        lsh r0, 56
+        sdiv r0, -1
+        exit"",
+        [],
+        (),
+        0,
+        {
+            |_vm, res: Result| matches!(res.unwrap_err(), EbpfError::DivideOverflow(pc) if pc == 31)
+        },
+        3
+    );
+}",0,,
+"pub fn resize_offset(&mut self, offset: U256, len: U256) -> Result<(), ExitError> {
+		if len == U256::zero() {
+			return Ok(())
+		}
+
+		if let Some(end) = offset.checked_add(len) {
+			self.resize_end(end)
+		} else {
+			Err(ExitError::InvalidRange)
+		}
+	}",0,,
+"fn c(&mut self, expr: &Hir) -> ResultOrEmpty {
+        use crate::prog;
+        use regex_syntax::hir::HirKind::*;
+
+        self.check_size()?;
+        match *expr.kind() {
+            Empty => Ok(None),
+            Literal(hir::Literal::Unicode(c)) => self.c_char(c),
+            Literal(hir::Literal::Byte(b)) => {
+                assert!(self.compiled.uses_bytes());
+                self.c_byte(b)
+            }
+            Class(hir::Class::Unicode(ref cls)) => self.c_class(cls.ranges()),
+            Class(hir::Class::Bytes(ref cls)) => {
+                if self.compiled.uses_bytes() {
+                    self.c_class_bytes(cls.ranges())
+                } else {
+                    assert!(cls.is_all_ascii());
+                    let mut char_ranges = vec![];
+                    for r in cls.iter() {
+                        let (s, e) = (r.start() as char, r.end() as char);
+                        char_ranges.push(hir::ClassUnicodeRange::new(s, e));
+                    }
+                    self.c_class(&char_ranges)
+                }
+            }
+            Anchor(hir::Anchor::StartLine) if self.compiled.is_reverse => {
+                self.byte_classes.set_range(b'\n', b'\n');
+                self.c_empty_look(prog::EmptyLook::EndLine)
+            }
+            Anchor(hir::Anchor::StartLine) => {
+                self.byte_classes.set_range(b'\n', b'\n');
+                self.c_empty_look(prog::EmptyLook::StartLine)
+            }
+            Anchor(hir::Anchor::EndLine) if self.compiled.is_reverse => {
+                self.byte_classes.set_range(b'\n', b'\n');
+                self.c_empty_look(prog::EmptyLook::StartLine)
+            }
+            Anchor(hir::Anchor::EndLine) => {
+                self.byte_classes.set_range(b'\n', b'\n');
+                self.c_empty_look(prog::EmptyLook::EndLine)
+            }
+            Anchor(hir::Anchor::StartText) if self.compiled.is_reverse => {
+                self.c_empty_look(prog::EmptyLook::EndText)
+            }
+            Anchor(hir::Anchor::StartText) => {
+                self.c_empty_look(prog::EmptyLook::StartText)
+            }
+            Anchor(hir::Anchor::EndText) if self.compiled.is_reverse => {
+                self.c_empty_look(prog::EmptyLook::StartText)
+            }
+            Anchor(hir::Anchor::EndText) => {
+                self.c_empty_look(prog::EmptyLook::EndText)
+            }
+            WordBoundary(hir::WordBoundary::Unicode) => {
+                if !cfg!(feature = ""unicode-perl"") {
+                    return Err(Error::Syntax(
+                        ""Unicode word boundaries are unavailable when \
+                         the unicode-perl feature is disabled""
+                            .to_string(),
+                    ));
+                }
+                self.compiled.has_unicode_word_boundary = true;
+                self.byte_classes.set_word_boundary();
+                
+                
+                
+                
+                
+                
+                self.byte_classes.set_range(0, 0x7F);
+                self.c_empty_look(prog::EmptyLook::WordBoundary)
+            }
+            WordBoundary(hir::WordBoundary::UnicodeNegate) => {
+                if !cfg!(feature = ""unicode-perl"") {
+                    return Err(Error::Syntax(
+                        ""Unicode word boundaries are unavailable when \
+                         the unicode-perl feature is disabled""
+                            .to_string(),
+                    ));
+                }
+                self.compiled.has_unicode_word_boundary = true;
+                self.byte_classes.set_word_boundary();
+                
+                self.byte_classes.set_range(0, 0x7F);
+                self.c_empty_look(prog::EmptyLook::NotWordBoundary)
+            }
+            WordBoundary(hir::WordBoundary::Ascii) => {
+                self.byte_classes.set_word_boundary();
+                self.c_empty_look(prog::EmptyLook::WordBoundaryAscii)
+            }
+            WordBoundary(hir::WordBoundary::AsciiNegate) => {
+                self.byte_classes.set_word_boundary();
+                self.c_empty_look(prog::EmptyLook::NotWordBoundaryAscii)
+            }
+            Group(ref g) => match g.kind {
+                hir::GroupKind::NonCapturing => self.c(&g.hir),
+                hir::GroupKind::CaptureIndex(index) => {
+                    if index as usize >= self.compiled.captures.len() {
+                        self.compiled.captures.push(None);
+                    }
+                    self.c_capture(2 * index as usize, &g.hir)
+                }
+                hir::GroupKind::CaptureName { index, ref name } => {
+                    if index as usize >= self.compiled.captures.len() {
+                        let n = name.to_string();
+                        self.compiled.captures.push(Some(n.clone()));
+                        self.capture_name_idx.insert(n, index as usize);
+                    }
+                    self.c_capture(2 * index as usize, &g.hir)
+                }
+            },
+            Concat(ref es) => {
+                if self.compiled.is_reverse {
+                    self.c_concat(es.iter().rev())
+                } else {
+                    self.c_concat(es)
+                }
+            }
+            Alternation(ref es) => self.c_alternate(&**es),
+            Repetition(ref rep) => self.c_repeat(rep),
+        }
+    }",1,6,"            Empty => Ok(None),"
+"    pub fn null() -> Val {
+        Val::ExternRef(None)
+    }",0,,
+"async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let args = set_command_line_args().get_matches();
+    env::set_var(""RUST_LOG"", ""swhkd=warn"");
+
+    if args.is_present(""debug"") {
+        env::set_var(""RUST_LOG"", ""swhkd=trace"");
+    }
+
+    env_logger::init();
+    log::trace!(""Logger initialized."");
+
+    let pidfile: String = String::from(""/tmp/swhkd.pid"");
+    if Path::new(&pidfile).exists() {
+        log::trace!(""Reading {} file and checking for running instances."", pidfile);
+        let swhkd_pid = match fs::read_to_string(&pidfile) {
+            Ok(swhkd_pid) => swhkd_pid,
+            Err(e) => {
+                log::error!(""Unable to read {} to check all running instances"", e);
+                exit(1);
+            }
+        };
+        log::debug!(""Previous PID: {}"", swhkd_pid);
+
+        let mut sys = System::new_all();
+        sys.refresh_all();
+        for (pid, process) in sys.processes() {
+            if pid.to_string() == swhkd_pid && process.exe() == env::current_exe().unwrap() {
+                log::error!(""Swhkd is already running!"");
+                log::error!(""pid of existing swhkd process: {}"", pid.to_string());
+                log::error!(""To close the existing swhkd process, run `sudo killall swhkd`"");
+                exit(1);
+            }
+        }
+    }
+
+    match fs::write(&pidfile, id().to_string()) {
+        Ok(_) => {}
+        Err(e) => {
+            log::error!(""Unable to write to {}: {}"", pidfile, e);
+            exit(1);
+        }
+    }
+
+    if check_user_permissions().is_err() {
+        exit(1);
+    }
+
+    let load_config = || {
+        seteuid(env::var(""PKEXEC_UID"").unwrap().parse::<u32>().unwrap()); 
+        let config_file_path: std::path::PathBuf = if args.is_present(""config"") {
+            Path::new(args.value_of(""config"").unwrap()).to_path_buf()
+        } else {
+            fetch_xdg_config_path()
+        };
+
+        log::debug!(""Using config file path: {:#?}"", config_file_path);
+
+        let hotkeys = match config::load(&config_file_path) {
+            Err(e) => {
+                log::error!(""Config Error: {}"", e);
+                exit(1);
+            }
+            Ok(out) => out,
+        };
+
+        for hotkey in &hotkeys {
+            log::debug!(""hotkey: {:#?}"", hotkey);
+        }
+
+        hotkeys
+    };
+
+    let mut hotkeys = load_config();
+    seteuid(0); 
+    log::trace!(""Attempting to find all keyboard file descriptors."");
+    let keyboard_devices: Vec<Device> =
+        evdev::enumerate().filter(check_device_is_keyboard).collect();
+
+    let mut uinput_device = match uinput::create_uinput_device() {
+        Ok(dev) => dev,
+        Err(e) => {
+            log::error!(""Err: {:#?}"", e);
+            exit(1);
+        }
+    };
+
+    if keyboard_devices.is_empty() {
+        log::error!(""No valid keyboard device was detected!"");
+        exit(1);
+    }
+    log::debug!(""{} Keyboard device(s) detected."", keyboard_devices.len());
+
+    let modifiers_map: HashMap<Key, config::Modifier> = HashMap::from([
+        (Key::KEY_LEFTMETA, config::Modifier::Super),
+        (Key::KEY_RIGHTMETA, config::Modifier::Super),
+        (Key::KEY_LEFTMETA, config::Modifier::Super),
+        (Key::KEY_RIGHTMETA, config::Modifier::Super),
+        (Key::KEY_LEFTALT, config::Modifier::Alt),
+        (Key::KEY_RIGHTALT, config::Modifier::Alt),
+        (Key::KEY_LEFTCTRL, config::Modifier::Control),
+        (Key::KEY_RIGHTCTRL, config::Modifier::Control),
+        (Key::KEY_LEFTSHIFT, config::Modifier::Shift),
+        (Key::KEY_RIGHTSHIFT, config::Modifier::Shift),
+    ]);
+
+    let repeat_cooldown_duration: u64 = if args.is_present(""cooldown"") {
+        args.value_of(""cooldown"").unwrap().parse::<u64>().unwrap()
+    } else {
+        250
+    };
+
+    let mut signals = Signals::new(&[
+        SIGUSR1, SIGUSR2, SIGHUP, SIGABRT, SIGBUS, SIGCHLD, SIGCONT, SIGINT, SIGPIPE, SIGQUIT,
+        SIGSYS, SIGTERM, SIGTRAP, SIGTSTP, SIGVTALRM, SIGXCPU, SIGXFSZ,
+    ])?;
+
+    let mut execution_is_paused = false;
+    let mut last_hotkey: Option<config::Hotkey> = None;
+    let mut pending_release: bool = false;
+    let mut keyboard_states: Vec<KeyboardState> = Vec::new();
+    let mut keyboard_stream_map = StreamMap::new();
+
+    for (i, mut device) in keyboard_devices.into_iter().enumerate() {
+        let _ = device.grab();
+        keyboard_stream_map.insert(i, device.into_event_stream()?);
+        keyboard_states.push(KeyboardState::new());
+    }
+
+    
+    let hotkey_repeat_timer = sleep(Duration::from_millis(0));
+    tokio::pin!(hotkey_repeat_timer);
+
+    loop {
+        select! {
+            _ = &mut hotkey_repeat_timer, if &last_hotkey.is_some() => {
+                let hotkey = last_hotkey.clone().unwrap();
+                if hotkey.keybinding.on_release {
+                    continue;
+                }
+                send_command(hotkey.clone());
+                hotkey_repeat_timer.as_mut().reset(Instant::now() + Duration::from_millis(repeat_cooldown_duration));
+            }
+
+            Some(signal) = signals.next() => {
+                match signal {
+                    SIGUSR1 => {
+                        execution_is_paused = true;
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.ungrab();
+                        }
+                    }
+
+                    SIGUSR2 => {
+                        execution_is_paused = false;
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.grab();
+                        }
+                    }
+
+                    SIGHUP => {
+                        hotkeys = load_config();
+                    }
+
+                    SIGINT => {
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.ungrab();
+                        }
+                        log::warn!(""Received SIGINT signal, exiting..."");
+                        exit(1);
+                    }
+
+                    _ => {
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.ungrab();
+                        }
+
+                        log::warn!(""Received signal: {:#?}"", signal);
+                        log::warn!(""Exiting..."");
+                        exit(1);
+                    }
+                }
+            }
+
+            Some((i, Ok(event))) = keyboard_stream_map.next() => {
+                let keyboard_state = &mut keyboard_states[i];
+
+                let key = match event.kind() {
+                    InputEventKind::Key(keycode) => keycode,
+                    _ => continue
+                };
+
+                match event.value() {
+                    
+                    1 => {
+                        if let Some(modifier) = modifiers_map.get(&key) {
+                            keyboard_state.state_modifiers.insert(*modifier);
+                        } else {
+                            keyboard_state.state_keysyms.insert(key);
+                        }
+                    }
+
+                    
+                    0 => {
+                        if last_hotkey.is_some() && pending_release {
+                            pending_release = false;
+                            send_command(last_hotkey.clone().unwrap());
+                            last_hotkey = None;
+                        }
+                        if let Some(modifier) = modifiers_map.get(&key) {
+                            if let Some(hotkey) = &last_hotkey {
+                                if hotkey.modifiers().contains(modifier) {
+                                    last_hotkey = None;
+                                }
+                            }
+                            keyboard_state.state_modifiers.remove(modifier);
+                        } else if keyboard_state.state_keysyms.contains(key) {
+                            if let Some(hotkey) = &last_hotkey {
+                                if key == hotkey.keysym() {
+                                    last_hotkey = None;
+                                }
+                            }
+                            keyboard_state.state_keysyms.remove(key);
+                        }
+                    }
+
+                    _ => {}
+                }
+
+                let possible_hotkeys: Vec<&config::Hotkey> = hotkeys.iter()
+                    .filter(|hotkey| hotkey.modifiers().len() == keyboard_state.state_modifiers.len())
+                    .collect();
+
+                let event_in_hotkeys = hotkeys.iter().any(|hotkey| {
+                    hotkey.keysym().code() == event.code() &&
+                    keyboard_state.state_modifiers
+                        .iter()
+                        .all(|x| hotkey.modifiers().contains(x)) &&
+                    keyboard_state.state_modifiers.len() == hotkey.modifiers().len()
+                    && !hotkey.is_send()
+                        });
+
+                
+                if !event_in_hotkeys {
+                    uinput_device.emit(&[event]).unwrap();
+                }
+
+                if execution_is_paused || possible_hotkeys.is_empty() || last_hotkey.is_some() {
+                    continue;
+                }
+
+                log::debug!(""state_modifiers: {:#?}"", keyboard_state.state_modifiers);
+                log::debug!(""state_keysyms: {:#?}"", keyboard_state.state_keysyms);
+                log::debug!(""hotkey: {:#?}"", possible_hotkeys);
+
+                for hotkey in possible_hotkeys {
+                    
+                    if keyboard_state.state_modifiers.iter().all(|x| hotkey.modifiers().contains(x))
+                        && keyboard_state.state_modifiers.len() == hotkey.modifiers().len()
+                        && keyboard_state.state_keysyms.contains(hotkey.keysym())
+                    {
+                        last_hotkey = Some(hotkey.clone());
+                        if pending_release { break; }
+                        if hotkey.is_on_release() {
+                            pending_release = true;
+                            break;
+                        }
+                        send_command(hotkey.clone());
+                        hotkey_repeat_timer.as_mut().reset(Instant::now() + Duration::from_millis(repeat_cooldown_duration));
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}",1,"11,48","let pidfile: String = String::from(""/tmp/swhkd.pid"");/~/        seteuid(env::var(""PKEXEC_UID"").unwrap().parse::<u32>().unwrap()); // Dropping privileges to invoking user."
+"    fn drop(&mut self) {
+        if let OutputType::Pager(ref mut command) = *self {
+            let _ = command.wait();
+        }
+    }",0,,
+"pub fn inv(&self) -> Self {
+        SecretKey(self.0.inv())
+    }",0,,
+"fn strip_first_last(s: &str) -> &str {
+    &s[1..s.len() - 1]
+}",0,,
+"fn calculate_multiplication_complexity(base_length: u64, mod_length: u64) -> u64 {
+		let max_length = max(base_length, mod_length);
+		let mut words = max_length / 8;
+		if max_length % 8 > 0 {
+			words += 1;
+		}
+
+		
+		words * words
+	}",1,7,		// TODO: prevent/handle overflow
+"fn from_str<T: FromStr>(s: &str) -> Result<T, ParseErrorKind> {
+    str::parse(s).map_err(|_| ParseErrorKind::Number(NumberError::TooLarge))
+}",0,,
+"pub fn check_user_permissions() -> Result<(), ()> {
+    if !Uid::current().is_root() {
+        let groups = nix::unistd::getgroups();
+        for (_, groups) in groups.iter().enumerate() {
+            for group in groups {
+                let group = Group::from_gid(*group);
+                if group.unwrap().unwrap().name == ""input"" {
+                    log::error!(""Note: INVOKING USER IS IN INPUT GROUP!!!!"");
+                    log::error!(""THIS IS A HUGE SECURITY RISK!!!!"");
+                }
+            }
+        }
+        log::error!(""Consider using `pkexec swhkd ...`"");
+        Err(())
+    } else {
+        log::warn!(""Running swhkd as root!"");
+        Ok(())
+    }
+}",0,,
+"fn do_transact(source: H160, transaction: Transaction) -> DispatchResultWithPostInfo {
+		let transaction_hash =
+			H256::from_slice(Keccak256::digest(&rlp::encode(&transaction)).as_slice());
+		let transaction_index = Pending::<T>::get().len() as u32;
+
+		let (to, _, info) = Self::execute(
+			source,
+			transaction.input.clone(),
+			transaction.value,
+			transaction.gas_limit,
+			Some(transaction.gas_price),
+			Some(transaction.nonce),
+			transaction.action,
+			None,
+		)?;
+
+		let (reason, status, used_gas, dest) = match info {
+			CallOrCreateInfo::Call(info) => (
+				info.exit_reason,
+				TransactionStatus {
+					transaction_hash,
+					transaction_index,
+					from: source,
+					to,
+					contract_address: None,
+					logs: info.logs.clone(),
+					logs_bloom: {
+						let mut bloom: Bloom = Bloom::default();
+						Self::logs_bloom(info.logs, &mut bloom);
+						bloom
+					},
+				},
+				info.used_gas,
+				to,
+			),
+			CallOrCreateInfo::Create(info) => (
+				info.exit_reason,
+				TransactionStatus {
+					transaction_hash,
+					transaction_index,
+					from: source,
+					to,
+					contract_address: Some(info.value),
+					logs: info.logs.clone(),
+					logs_bloom: {
+						let mut bloom: Bloom = Bloom::default();
+						Self::logs_bloom(info.logs, &mut bloom);
+						bloom
+					},
+				},
+				info.used_gas,
+				Some(info.value),
+			),
+		};
+
+		let receipt = ethereum::Receipt {
+			state_root: match reason {
+				ExitReason::Succeed(_) => H256::from_low_u64_be(1),
+				ExitReason::Error(_) => H256::from_low_u64_le(0),
+				ExitReason::Revert(_) => H256::from_low_u64_le(0),
+				ExitReason::Fatal(_) => H256::from_low_u64_le(0),
+			},
+			used_gas,
+			logs_bloom: status.clone().logs_bloom,
+			logs: status.clone().logs,
+		};
+
+		Pending::<T>::append((transaction, status, receipt));
+
+		Self::deposit_event(Event::Executed(
+			source,
+			dest.unwrap_or_default(),
+			transaction_hash,
+			reason,
+		));
+		Ok(PostDispatchInfo {
+			actual_weight: Some(T::GasWeightMapping::gas_to_weight(
+				used_gas.unique_saturated_into(),
+			)),
+			pays_fee: Pays::No,
+		})
+		.into()
+	}",1,0,"fn do_transact(source: H160, transaction: Transaction) -> DispatchResultWithPostInfo {"
+"fn transfer(&mut self, transfer: Transfer) -> Result<(), ExitError> {
+		let source = T::AddressMapping::into_account_id(transfer.source);
+		let target = T::AddressMapping::into_account_id(transfer.target);
+
+		T::Currency::transfer(
+			&source,
+			&target,
+			transfer.value.low_u128().unique_saturated_into(),
+			ExistenceRequirement::AllowDeath,
+		)
+		.map_err(|_| ExitError::OutOfFund)
+	}",1,7,"transfer.value.low_u128().unique_saturated_into(),"
+"fn try_pager(
+        quit_if_one_screen: bool,
+        pager_from_config: Option<String>,
+        config: &config::Config,
+    ) -> Result<Self> {
+        let mut replace_arguments_to_less = false;
+
+        let pager_from_env = match (
+            env::var(""DELTA_PAGER""),
+            env::var(""BAT_PAGER""),
+            env::var(""PAGER""),
+        ) {
+            (Ok(delta_pager), _, _) => Some(delta_pager),
+            (_, Ok(bat_pager), _) => Some(bat_pager),
+            (_, _, Ok(pager)) => {
+                
+                
+                
+                
+                replace_arguments_to_less = true;
+                Some(pager)
+            }
+            _ => None,
+        };
+
+        if pager_from_config.is_some() {
+            replace_arguments_to_less = false;
+        }
+
+        let pager = pager_from_config
+            .or(pager_from_env)
+            .unwrap_or_else(|| String::from(""less""));
+
+        let pagerflags =
+            shell_words::split(&pager).chain_err(|| ""Could not parse pager command."")?;
+
+        match pagerflags.split_first() {
+            Some((pager_name, args)) => {
+                let pager_path = PathBuf::from(pager_name);
+
+                let is_less = pager_path.file_stem() == Some(&OsString::from(""less""));
+
+                let mut process = if is_less {
+                    let mut p = Command::new(&pager_path);
+                    if args.is_empty() || replace_arguments_to_less {
+                        p.args(vec![""--RAW-CONTROL-CHARS""]);
+
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        match retrieve_less_version() {
+                            None => {
+                                p.arg(""--no-init"");
+                            }
+                            Some(version)
+                                if (version < 530 || (cfg!(windows) && version < 558)) =>
+                            {
+                                p.arg(""--no-init"");
+                            }
+                            _ => {}
+                        }
+
+                        if quit_if_one_screen {
+                            p.arg(""--quit-if-one-screen"");
+                        }
+                    } else {
+                        p.args(args);
+                    }
+                    p.env(""LESSCHARSET"", ""UTF-8"");
+                    p
+                } else {
+                    if pager_path.file_stem() == Some(&OsString::from(""delta"")) {
+                        eprintln!(
+                            ""\
+It looks like you have set delta as the value of $PAGER. \
+This would result in a non-terminating recursion. \
+delta is not an appropriate value for $PAGER \
+(but it is an appropriate value for $GIT_PAGER).""
+                        );
+                        std::process::exit(1);
+                    }
+                    let mut p = Command::new(&pager_path);
+                    p.args(args);
+                    p
+                };
+                if is_less && config.navigate {
+                    if let Ok(hist_file) =
+                        navigate::copy_less_hist_file_and_append_navigate_regexp(config)
+                    {
+                        process.env(""LESSHISTFILE"", hist_file);
+                        if config.show_themes {
+                            process.arg(""+n"");
+                        }
+                    }
+                }
+                Ok(process
+                    .env(""LESSANSIENDCHARS"", ""mK"")
+                    .stdin(Stdio::piped())
+                    .spawn()
+                    .map(OutputType::Pager)
+                    .unwrap_or_else(|_| OutputType::stdout()))
+            }
+            None => Ok(OutputType::stdout()),
+        }
+    }",1,"36,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,75,76,77,78,79,80,81,82,83,84,85,86,87,89,90,91,92,93,94,95,96,97,99,100,101,102,103,104,106,107","match pagerflags.split_first() {/~/                let mut process = if is_less {/~/                    let mut p = Command::new(&pager_path);/~/                    if args.is_empty() || replace_arguments_to_less {/~/                        p.args(vec![""--RAW-CONTROL-CHARS""]);/~//~/                        // Passing '--no-init' fixes a bug with '--quit-if-one-screen' in older/~/                        // versions of 'less'. Unfortunately, it also breaks mouse-wheel support./~/                        ///~/                        // See: http://www.greenwoodsoftware.com/less/news.530.html/~/                        ///~/                        // For newer versions (530 or 558 on Windows), we omit '--no-init' as it/~/                        // is not needed anymore./~/                        match retrieve_less_version() {/~/                            None => {/~/                                p.arg(""--no-init"");/~/                            }/~/                            Some(version)/~/                                if (version < 530 || (cfg!(windows) && version < 558)) =>/~/                            {/~/                                p.arg(""--no-init"");/~/                            }/~/                            _ => {}/~/                        }/~//~/                        if quit_if_one_screen {/~/                            p.arg(""--quit-if-one-screen"");/~/                        }/~/                    } else {/~/                        p.args(args);/~/                    }/~/                    p.env(""LESSCHARSET"", ""UTF-8"");/~/                    p/~/                    if pager_path.file_stem() == Some(&OsString::from(""delta"")) {/~/                        eprintln!(/~/                            ""\/~/It looks like you have set delta as the value of $PAGER. \/~/This would result in a non-terminating recursion. \/~/delta is not an appropriate value for $PAGER \/~/(but it is an appropriate value for $GIT_PAGER).""/~/                        );/~/                        std::process::exit(1);/~/                    }/~/                    let mut p = Command::new(&pager_path);/~/                    p.args(args);/~/                    p/~/                if is_less && config.navigate {/~/                    if let Ok(hist_file) =/~/                        navigate::copy_less_hist_file_and_append_navigate_regexp(config)/~/                    {/~/                        process.env(""LESSHISTFILE"", hist_file);/~/                        if config.show_themes {/~/                            process.arg(""+n"");/~/                        }/~/                    }/~/                Ok(process/~/                    .env(""LESSANSIENDCHARS"", ""mK"")/~/                    .stdin(Stdio::piped())/~/                    .spawn()/~/                    .map(OutputType::Pager)/~/                    .unwrap_or_else(|_| OutputType::stdout()))/~/            None => Ok(OutputType::stdout()),/~/        }"
+"    pub fn new(
+        params: impl IntoIterator<Item = ValType>,
+        results: impl IntoIterator<Item = ValType>,
+    ) -> FuncType {
+        FuncType {
+            sig: WasmFuncType {
+                params: params.into_iter().map(|t| t.to_wasm_type()).collect(),
+                returns: results.into_iter().map(|t| t.to_wasm_type()).collect(),
+            },
+        }
+    }",1,"5,6,7,8","            sig: WasmFuncType {/~/                params: params.into_iter().map(|t| t.to_wasm_type()).collect(),/~/                returns: results.into_iter().map(|t| t.to_wasm_type()).collect(),/~/            },"
+"fn many_live_refs() -> anyhow::Result<()> {
+    let mut wat = r#""
+        (module
+            ;; Make new `externref`s.
+            (import """" ""make_ref"" (func $make_ref (result externref)))
+
+            ;; Observe an `externref` so it is kept live.
+            (import """" ""observe_ref"" (func $observe_ref (param externref)))
+
+            (func (export ""many_live_refs"")
+    ""#
+    .to_string();
+
+    
+    
+    const NUM_LIVE_REFS: usize = 1024;
+
+    
+    for _ in 0..NUM_LIVE_REFS {
+        wat.push_str(""(call $make_ref)\n"");
+    }
+
+    
+    
+    
+    for _ in 0..NUM_LIVE_REFS {
+        wat.push_str(""(call $observe_ref)\n"");
+    }
+
+    wat.push_str(
+        ""
+            ) ;; func
+        ) ;; module
+        "",
+    );
+
+    let (mut store, module) = ref_types_module(&wat)?;
+
+    let live_refs = Arc::new(AtomicUsize::new(0));
+
+    let make_ref = Func::wrap(&mut store, {
+        let live_refs = live_refs.clone();
+        move || Some(ExternRef::new(CountLiveRefs::new(live_refs.clone())))
+    });
+
+    let observe_ref = Func::wrap(&mut store, |r: Option<ExternRef>| {
+        let r = r.unwrap();
+        let r = r.data().downcast_ref::<CountLiveRefs>().unwrap();
+        assert!(r.live_refs.load(SeqCst) > 0);
+    });
+
+    let instance = Instance::new(&mut store, &module, &[make_ref.into(), observe_ref.into()])?;
+    let many_live_refs = instance.get_func(&mut store, ""many_live_refs"").unwrap();
+
+    many_live_refs.call(&mut store, &[], &mut [])?;
+
+    store.gc();
+    assert_eq!(live_refs.load(SeqCst), 0);
+
+    return Ok(());
+
+    struct CountLiveRefs {
+        live_refs: Arc<AtomicUsize>,
+    }
+
+    impl CountLiveRefs {
+        fn new(live_refs: Arc<AtomicUsize>) -> Self {
+            live_refs.fetch_add(1, SeqCst);
+            Self { live_refs }
+        }
+    }
+
+    impl Drop for CountLiveRefs {
+        fn drop(&mut self) {
+            self.live_refs.fetch_sub(1, SeqCst);
+        }
+    }
+}",1,36,"    let (mut store, module) = ref_types_module(&wat)?;"
+"fn parse_test_module(args: TokenStream, item: TokenStream) -> TokenStream {
+    let input = syn::parse_macro_input!(item as syn::ItemMod);
+    let content = match input.content {
+        Some((_, c)) => c,
+        None => {
+            return syn::Error::new_spanned(&input, ""Couldn't get the module content"")
+                .to_compile_error()
+                .into()
+        }
+    };
+    let args = syn::parse_macro_input!(args as syn::AttributeArgs);
+    let mut skips = Vec::new();
+    for arg in args {
+        match arg {
+            syn::NestedMeta::Meta(syn::Meta::NameValue(namevalue)) => {
+                let ident = namevalue.path.get_ident();
+                if ident.is_none() {
+                    let msg = ""Must have specified ident"";
+                    return syn::Error::new_spanned(namevalue, msg)
+                        .to_compile_error()
+                        .into();
+                }
+                match ident.unwrap().to_string().to_lowercase().as_str() {
+                    ""skip"" => {
+                        let skip_lit = namevalue.lit.clone();
+                        let span = skip_lit.span();
+                        skips = match parse_string(skip_lit, span, ""skip"") {
+                            Ok(s) => s,
+                            Err(_) => {
+                                return syn::Error::new_spanned(
+                                    namevalue,
+                                    ""Expected a value for argument `skip`"",
+                                )
+                                .to_compile_error()
+                                .into();
+                            }
+                        }
+                        .split_whitespace()
+                        .map(|val| val.to_string())
+                        .collect();
+                    }
+                    x => {
+                        let msg = format!(""Unknown attribute {} is specified; expected `skip`"", x);
+                        return syn::Error::new_spanned(namevalue, msg)
+                            .to_compile_error()
+                            .into();
+                    }
+                }
+            }
+            _ => (),
+        }
+    }
+    let modname = &input.ident;
+    if modname.to_string() != ""__private"" {
+        return syn::Error::new_spanned(
+            modname,
+            ""By convention, all the modules using the `dbtest` macro have to be called `__private`"",
+        )
+        .to_compile_error()
+        .into();
+    }
+    let mut rng = thread_rng();
+    let mut in_set = HashSet::<u16>::new();
+
+    let mut result = quote! {};
+    for item in content {
+        
+
+
+
+
+
+
+        let mut rand: u16 = rng.gen_range(1025, 65535);
+        #[cfg(not(target_os = ""windows""))]
+        {
+            while in_set.contains(&rand) {
+                rand = rng.gen_range(1025, 65535);
+            }
+        }
+        #[cfg(target_os = ""windows"")]
+        {
+            in_set.insert(5357);
+            in_set.insert(7680);
+            while in_set.contains(&rand) || (rand >= 49670 && rand <= 50293) {
+                rand = rng.gen_range(1025, 65535);
+            }
+        }
+        in_set.insert(rand);
+        match item {
+            
+            
+            syn::Item::Fn(function) => {
+                if skips.contains(&function.sig.ident.to_string()) {
+                    result = quote! {
+                        #result
+                        #function
+                    };
+                    continue;
+                }
+                let inp = parse_test_sig(function, rand);
+                let __tok: syn::ItemFn = syn::parse_macro_input!(inp as syn::ItemFn);
+                let tok = quote! {
+                    #__tok
+                };
+                result = quote! {
+                    #result
+                    #tok
+                };
+            }
+            token => {
+                result = quote! {
+                    #result
+                    #token
+                };
+            }
+        }
+    }
+    result.into()
+}",1,"73,77,85","let mut rand: u16 = rng.gen_range(1025, 65535);/~/                rand = rng.gen_range(1025, 65535);/~/                rand = rng.gen_range(1025, 65535);"
+"fn test_err_mod_by_zero_reg() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov32 r0, 1
+        mov32 r1, 0
+        mod32 r0, r1
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| matches!(res.unwrap_err(), EbpfError::DivideByZero(pc) if pc == 31) },
+        3
+    );
+}",0,,
+"fn recover_signer(transaction: &Transaction) -> Option<H160> {
+		let mut sig = [0u8; 65];
+		let mut msg = [0u8; 32];
+		sig[0..32].copy_from_slice(&transaction.signature.r()[..]);
+		sig[32..64].copy_from_slice(&transaction.signature.s()[..]);
+		sig[64] = transaction.signature.standard_v();
+		msg.copy_from_slice(&LegacyTransactionMessage::from(transaction.clone()).hash()[..]);
+
+		let pubkey = sp_io::crypto::secp256k1_ecdsa_recover(&sig, &msg).ok()?;
+		Some(H160::from(H256::from_slice(
+			Keccak256::digest(&pubkey).as_slice(),
+		)))
+	}",0,,
+"fn push_types(isa: &dyn TargetIsa, sig: &mut ir::Signature, wasm: &WasmFuncType) {
+    let cvt = |ty: &WasmType| ir::AbiParam::new(value_type(isa, *ty));
+    sig.params.extend(wasm.params.iter().map(&cvt));
+    sig.returns.extend(wasm.returns.iter().map(&cvt));
+}",1,"2,3",    sig.params.extend(wasm.params.iter().map(&cvt));/~/    sig.returns.extend(wasm.returns.iter().map(&cvt));
+"    pub fn params(&self) -> impl ExactSizeIterator<Item = ValType> + '_ {
+        self.sig.params.iter().map(ValType::from_wasm_type)
+    }
+
+    
+    pub fn results(&self) -> impl ExactSizeIterator<Item = ValType> + '_ {
+        self.sig.returns.iter().map(ValType::from_wasm_type)
+    }",1,"1,6",        self.sig.params.iter().map(ValType::from_wasm_type)/~/        self.sig.returns.iter().map(ValType::from_wasm_type)
+"    fn into(self) -> InternalRunResult {
+        InternalRunResult::Normal(self)
+    }",0,,

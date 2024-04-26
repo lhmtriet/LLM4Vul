@@ -1,0 +1,219 @@
+processed_func,target
+"    override fun doWork(): Result {
+        val now = clock.currentTimeMillis()
+        var tDummy = inputData.getLong(KEY_T_DUMMY, now)
+        while (tDummy < now) {
+            if (tDummy >= now - FACTOR_HOUR_MILLIS * MAX_DELAY_HOURS) {
+                if (BuildConfig.DEBUG)
+                    DP3T.addWorkerStartedToHistory(applicationContext, TAG)
+                reportFakeInfectionUseCase.reportFakeInfection().subscribe()
+            }
+            tDummy += clock.syncInterval();
+            preferencesRepository.setTDummy(tDummy)
+        }
+
+        start(applicationContext, tDummy, ExistingWorkPolicy.APPEND)
+        return Result.success()
+    }",0
+"    override fun applicationInjector(): AndroidInjector<out DaggerApplication> =
+        DaggerApplicationComponent.builder()
+            .applicationContext(this)
+            .build()
+
+    private fun initRxJavaSettings() {
+        RxJavaPlugins.setErrorHandler {
+            if (BuildConfig.DEBUG)
+                it.printStackTrace()
+        }
+    }
+
+}",0
+"    fun write(baseline: Baseline, path: Path) {
+        try {
+            Files.newBufferedWriter(path).addFinalNewLine().use {
+                it.streamXml().prettyPrinter().save(baseline)
+            }
+        } catch (error: XMLStreamException) {
+            val (line, column) = error.positions
+            throw InvalidState(""Error on position $line:$column while writing the baseline xml file!"", error)
+        }
+    }",0
+"    fun read(path: Path): Baseline {
+        try {
+            Files.newInputStream(path).use {
+                val reader = SAXParserFactory.newInstance()
+                    .apply {
+                        setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true)
+                    }
+                    .newSAXParser()
+                val handler = BaselineHandler()
+                reader.parse(it, handler)
+                return handler.createBaseline()
+            }
+        } catch (error: SAXParseException) {
+            val (line, column) = error.lineNumber to error.columnNumber
+            throw InvalidState(""Error on position $line:$column while reading the baseline xml file!"", error)
+        }
+    }",0
+"    override fun doWork(): Result {
+        val now = clock.currentTimeMillis()
+        var tDummy = inputData.getLong(KEY_T_DUMMY, now)
+        while (tDummy < now) {
+            if (tDummy >= now - FACTOR_HOUR_MILLIS * MAX_DELAY_HOURS) {
+                if (BuildConfig.DEBUG)
+                    DP3T.addWorkerStartedToHistory(applicationContext, TAG)
+                reportFakeInfectionUseCase.reportFakeInfection().subscribe()
+            }
+            tDummy += clock.syncInterval();
+            preferencesRepository.setTDummy(tDummy)
+        }
+
+        start(applicationContext, tDummy, ExistingWorkPolicy.APPEND)
+        return Result.success()
+    }",1
+"    override fun <T> decodeSerializableValue(deserializer: DeserializationStrategy<T>): T {
+        try {
+            return super.decodeSerializableValue(deserializer)
+        } catch (e: SerializationException) {
+            throwIfMissingRequiredPropertyException(e)
+
+            throw e
+        }
+    }",0
+"        get() = currentKey.content
+}",0
+"        private fun start(
+            context: Context,
+            tDummy: Long,
+            existingWorkPolicy: ExistingWorkPolicy
+        ) {
+
+            val now = clock.currentTimeMillis()
+            val executionDelay = 0L.coerceAtLeast(tDummy - now)
+            val executionDelayDays =
+                executionDelay / FACTOR_DAY_MILLIS
+
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+            val work =
+                OneTimeWorkRequest
+                    .Builder(FakeInfectionReportWorker::class.java)
+                    .setInitialDelay(executionDelayDays, TimeUnit.MILLISECONDS)
+                    .setConstraints(constraints)
+                    .setInputData(Data.Builder().putLong(KEY_T_DUMMY, tDummy).build())
+                    .build()
+            WorkManager.getInstance(context)
+                .enqueueUniqueWork(TAG, existingWorkPolicy, work)
+        }",0
+"    fun read(path: Path): Baseline {
+        try {
+            Files.newInputStream(path).use {
+                val reader = SAXParserFactory.newInstance().newSAXParser()
+                val handler = BaselineHandler()
+                reader.parse(it, handler)
+                return handler.createBaseline()
+            }
+        } catch (error: SAXParseException) {
+            val (line, column) = error.lineNumber to error.columnNumber
+            throw InvalidState(""Error on position $line:$column while reading the baseline xml file!"", error)
+        }
+    }",1
+"        fun sampleFromStandard(): Double {
+            val random = SecureRandom()
+            return -Math.log(1.0 - random.nextDouble())
+        }",0
+"        fun sampleFromStandard(): Double {
+            val random = SecureRandom()
+            return -Math.log(1.0 - random.nextDouble())
+        }",1
+"                            override fun checkServerTrusted(
+                                    chain: Array<X509Certificate>,
+                                    authType: String
+                            ) {
+                            }",1
+"        fun start(context: Context) {
+            start(context, getRandomDelay(), ExistingWorkPolicy.KEEP)
+        }",0
+"    private inline fun <T> maybeCallOnContent(blockOnType: () -> T, blockOnContent: YamlInput.() -> T): T {
+        return when (currentField) {
+            CurrentField.NotStarted, CurrentField.Type -> blockOnType()
+            CurrentField.Content -> contentDecoder.blockOnContent()
+        }
+    }",0
+"    override fun setHealingTime(healingTime: HealingTime) {
+        preferences.edit()
+            .putString(KEY_HEALING_TIME, healingTime.toJson())
+            .apply()
+    }",0
+"    private fun throwIfUnknownPolymorphicTypeException(e: Exception, deserializer: DeserializationStrategy<*>) {
+        val message = e.message ?: return
+        val match = unknownPolymorphicTypeExceptionMessage.matchEntire(message) ?: return
+        val unknownType = match.groupValues[1]
+        val className = match.groupValues[2]
+
+        val knownTypes = when (deserializer.descriptor.kind) {
+            PolymorphicKind.SEALED -> getKnownTypesForSealedType(deserializer)
+            PolymorphicKind.OPEN -> getKnownTypesForOpenType(className)
+            else -> throw IllegalArgumentException(""Can't get known types for descriptor of kind ${deserializer.descriptor.kind}"")
+        }
+
+        throw UnknownPolymorphicTypeException(unknownType, knownTypes, typeNamePath, e)
+    }",0
+"    override fun getTDummy(): Long {
+        return preferences.getLong(KEY_T_DUMMY, -1)
+    }",0
+"    private fun getKnownTypesForSealedType(deserializer: DeserializationStrategy<*>): Set<String> {
+        val typesDescriptor = deserializer.descriptor.getElementDescriptor(1)
+
+        return typesDescriptor.elementNames.toSet()
+    }",0
+"        override fun syncInterval(): Long {
+            val newDelayDays: Double =
+                ExponentialDistribution.sampleFromStandard() / SAMPLING_RATE
+            return (newDelayDays * FACTOR_DAY_MILLIS).toLong()
+        }",0
+"    override fun onCreate() {
+        super.onCreate()
+
+        initRxJavaSettings()
+
+        DP3T.init(
+            this,
+            ApplicationInfo(packageName, BuildConfig.REPORT_URL, BuildConfig.BUCKET_URL),
+            SignatureUtil.getPublicKeyFromBase64OrThrow(BuildConfig.PUBLIC_KEY),
+            BuildConfig.DEBUG
+        )
+        DP3T.setCertificatePinner(certificatePinner)
+        DP3T.setUserAgent(userAgent)
+
+        FakeInfectionReportWorker.start(this, preferencesRepository)
+
+        registerReceiver(ExposureStatusChangeBroadcastReceiver(), DP3T.getUpdateIntentFilter())
+
+    }",0
+"        fun start(context: Context, preferencesRepository: PreferencesRepository) {
+            var tDummy: Long = preferencesRepository.getTDummy()
+            if (tDummy == -1L) {
+                tDummy = clock.currentTimeMillis() + clock.syncInterval()
+                preferencesRepository.setTDummy(tDummy)
+            }
+            start(context, tDummy, ExistingWorkPolicy.KEEP)
+        }",0
+"        fun sampleFromStandard(): Double {
+            val random = SecureRandom()
+            return -ln(1.0 - random.nextDouble())
+        }",0
+"    override fun getInfectionReportDate(): Date? {
+        val infectionReportDateMillis = preferences.getLong(KEY_INFECTION_REPORT_DATE, 0)
+        return if (infectionReportDateMillis == 0L)
+            null
+        else
+            Date(infectionReportDateMillis)
+    }",0
+"    override fun setUuid(uuid: String) {
+        preferences
+            .edit()
+            .putString(KEY_UUID, uuid)
+            .apply()
+    }",0

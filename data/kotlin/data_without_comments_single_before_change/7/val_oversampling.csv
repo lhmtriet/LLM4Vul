@@ -1,0 +1,341 @@
+processed_func,target,flaw_line_index,flaw_line
+"override fun checkServerTrusted(
+                                    chain: Array<X509Certificate>,
+                                    authType: String
+                            ) {
+                            }",1,"0,1,2,3,4","override fun checkServerTrusted(/~/                                    chain: Array<X509Certificate>,/~/                                    authType: String/~/                            ) {/~/                            }"
+"override fun onCreate() {
+        super.onCreate()
+
+        initRxJavaSettings()
+
+        DP3T.init(
+            this,
+            ApplicationInfo(packageName, BuildConfig.REPORT_URL, BuildConfig.BUCKET_URL),
+            SignatureUtil.getPublicKeyFromBase64OrThrow(BuildConfig.PUBLIC_KEY),
+            BuildConfig.DEBUG
+        )
+        DP3T.setCertificatePinner(certificatePinner)
+        DP3T.setUserAgent(userAgent)
+
+        FakeInfectionReportWorker.start(this)
+
+        registerReceiver(ExposureStatusChangeBroadcastReceiver(), DP3T.getUpdateIntentFilter())
+
+    }",1,14,        FakeInfectionReportWorker.start(this)
+"override fun onCreate() {
+        super.onCreate()
+
+        initRxJavaSettings()
+
+        DP3T.init(
+            this,
+            ApplicationInfo(packageName, BuildConfig.REPORT_URL, BuildConfig.BUCKET_URL),
+            SignatureUtil.getPublicKeyFromBase64OrThrow(BuildConfig.PUBLIC_KEY),
+            BuildConfig.DEBUG
+        )
+        DP3T.setCertificatePinner(certificatePinner)
+        DP3T.setUserAgent(userAgent)
+
+        FakeInfectionReportWorker.start(this)
+
+        registerReceiver(ExposureStatusChangeBroadcastReceiver(), DP3T.getUpdateIntentFilter())
+
+    }",1,14,        FakeInfectionReportWorker.start(this)
+"override fun onCreate() {
+        super.onCreate()
+
+        initRxJavaSettings()
+
+        DP3T.init(
+            this,
+            ApplicationInfo(packageName, BuildConfig.REPORT_URL, BuildConfig.BUCKET_URL),
+            SignatureUtil.getPublicKeyFromBase64OrThrow(BuildConfig.PUBLIC_KEY),
+            BuildConfig.DEBUG
+        )
+        DP3T.setCertificatePinner(certificatePinner)
+        DP3T.setUserAgent(userAgent)
+
+        FakeInfectionReportWorker.start(this)
+
+        registerReceiver(ExposureStatusChangeBroadcastReceiver(), DP3T.getUpdateIntentFilter())
+
+    }",1,14,        FakeInfectionReportWorker.start(this)
+"        override fun currentTimeMillis(): Long {
+            return System.currentTimeMillis()
+        }",0,,
+"    override fun setOnboardingCompleted(onboardingCompleted: Boolean) {
+        preferences
+            .edit()
+            .putBoolean(KEY_ONBOARDING_COMPLETED, onboardingCompleted)
+            .apply()
+    }",0,,
+"override fun onCreate() {
+        super.onCreate()
+
+        initRxJavaSettings()
+
+        DP3T.init(
+            this,
+            ApplicationInfo(packageName, BuildConfig.REPORT_URL, BuildConfig.BUCKET_URL),
+            SignatureUtil.getPublicKeyFromBase64OrThrow(BuildConfig.PUBLIC_KEY),
+            BuildConfig.DEBUG
+        )
+        DP3T.setCertificatePinner(certificatePinner)
+        DP3T.setUserAgent(userAgent)
+
+        FakeInfectionReportWorker.start(this)
+
+        registerReceiver(ExposureStatusChangeBroadcastReceiver(), DP3T.getUpdateIntentFilter())
+
+    }",1,14,        FakeInfectionReportWorker.start(this)
+"override fun onCreate() {
+        super.onCreate()
+
+        initRxJavaSettings()
+
+        DP3T.init(
+            this,
+            ApplicationInfo(packageName, BuildConfig.REPORT_URL, BuildConfig.BUCKET_URL),
+            SignatureUtil.getPublicKeyFromBase64OrThrow(BuildConfig.PUBLIC_KEY),
+            BuildConfig.DEBUG
+        )
+        DP3T.setCertificatePinner(certificatePinner)
+        DP3T.setUserAgent(userAgent)
+
+        FakeInfectionReportWorker.start(this)
+
+        registerReceiver(ExposureStatusChangeBroadcastReceiver(), DP3T.getUpdateIntentFilter())
+
+    }",1,14,        FakeInfectionReportWorker.start(this)
+"    protected fun <T> fromCurrentValue(action: YamlInput.() -> T): T {
+        try {
+            return action(currentValueDecoder)
+        } catch (e: YamlException) {
+            if (currentlyReadingValue) {
+                throw InvalidPropertyValueException(propertyName, e.message, e.path, e)
+            } else {
+                throw e
+            }
+        }
+    }",0,,
+"    override fun setExposed(exposed: Boolean) {
+        preferences.edit()
+            .putBoolean(KEY_WAS_EXPOSED, exposed)
+            .apply()
+    }",0,,
+"    override fun setHealingTime(healingTime: HealingTime) {
+        preferences.edit()
+            .putString(KEY_HEALING_TIME, healingTime.toJson())
+            .apply()
+    }",0,,
+"override fun checkServerTrusted(
+                                    chain: Array<X509Certificate>,
+                                    authType: String
+                            ) {
+                            }",1,"0,1,2,3,4","override fun checkServerTrusted(/~/                                    chain: Array<X509Certificate>,/~/                                    authType: String/~/                            ) {/~/                            }"
+"    override fun setSelectedRegion(region: String) {
+        preferences.edit()
+            .putString(KEY_CURRENT_REGION, region)
+            .apply()
+    }",0,,
+"    private fun getKnownTypesForOpenType(className: String): Set<String> {
+        val knownTypes = mutableSetOf<String>()
+
+        serializersModule.dumpTo(object : SerializersModuleCollector {
+            override fun <T : Any> contextual(kClass: KClass<T>, provider: (typeArgumentsSerializers: List<KSerializer<*>>) -> KSerializer<*>) {}
+
+            
+            
+            override fun <Base : Any, Sub : Base> polymorphic(baseClass: KClass<Base>, actualClass: KClass<Sub>, actualSerializer: KSerializer<Sub>) {
+                if (baseClass.simpleName == className) {
+                    knownTypes.add(actualSerializer.descriptor.serialName)
+                }
+            }
+
+            override fun <Base : Any> polymorphicDefault(baseClass: KClass<Base>, defaultSerializerProvider: (className: String?) -> DeserializationStrategy<out Base>?) {
+                throw UnsupportedOperationException(""This method should never be called."")
+            }
+        })
+
+        return knownTypes
+    }",0,,
+"    override fun getLabels(): Map<String, String> {
+        val itemType = object : TypeToken<HashMap<String, String>>() {}.type
+        return Gson().fromJson(
+            preferences.getString(
+                KEY_LABELS, ""{\""test\"":\""Hola Label\""}""
+            ),
+            itemType
+        )
+    }",0,,
+"    override fun exampleRequest(): Either<Throwable, String> = callService {
+        apiInterface.test()
+    }
+
+}",1,"0,1,2,3,4","    override fun exampleRequest(): Either<Throwable, String> = callService {/~/        apiInterface.test()/~/    }/~//~/}"
+"override fun getHealingTime(): HealingTime {
+        val healingTimeJson = preferences.getString(
+            KEY_HEALING_TIME,
+            ""{\n"" +
+                    ""        \""exposureHighMinutes\"": 20160,\n"" +
+                    ""        \""infectedMinutes\"": 43200\n"" +
+                    ""    }""
+        )
+        return Gson().fromJson(healingTimeJson, HealingTime::class.java)
+    }",0,,
+"    override fun <T> decodeSerializableValue(deserializer: DeserializationStrategy<T>): T {
+        try {
+            return super.decodeSerializableValue(deserializer)
+        } catch (e: SerializationException) {
+            throwIfUnknownPolymorphicTypeException(e, deserializer)
+
+            throw e
+        }
+    }",0,,
+"override fun onCreate() {
+        super.onCreate()
+
+        initRxJavaSettings()
+
+        DP3T.init(
+            this,
+            ApplicationInfo(packageName, BuildConfig.REPORT_URL, BuildConfig.BUCKET_URL),
+            SignatureUtil.getPublicKeyFromBase64OrThrow(BuildConfig.PUBLIC_KEY),
+            BuildConfig.DEBUG
+        )
+        DP3T.setCertificatePinner(certificatePinner)
+        DP3T.setUserAgent(userAgent)
+
+        FakeInfectionReportWorker.start(this)
+
+        registerReceiver(ExposureStatusChangeBroadcastReceiver(), DP3T.getUpdateIntentFilter())
+
+    }",1,14,        FakeInfectionReportWorker.start(this)
+"    get() {
+        return when (this) {
+            is StructureKind.MAP -> ""a map""
+            is StructureKind.CLASS -> ""an object""
+            is StructureKind.OBJECT -> ""an object""
+            is StructureKind.LIST -> ""a list""
+            is PrimitiveKind.STRING -> ""a string""
+            is PrimitiveKind.BOOLEAN -> ""a boolean""
+            is PrimitiveKind.BYTE -> ""a byte""
+            is PrimitiveKind.CHAR -> ""a character""
+            is PrimitiveKind.DOUBLE -> ""a double""
+            is PrimitiveKind.FLOAT -> ""a float""
+            is PrimitiveKind.INT -> ""an integer""
+            is PrimitiveKind.SHORT -> ""a short""
+            is PrimitiveKind.LONG -> ""a long""
+            is SerialKind.ENUM -> ""an enumeration value""
+            else -> ""a $this value""
+        }
+    }",0,,
+"override fun onCreate() {
+        super.onCreate()
+
+        initRxJavaSettings()
+
+        DP3T.init(
+            this,
+            ApplicationInfo(packageName, BuildConfig.REPORT_URL, BuildConfig.BUCKET_URL),
+            SignatureUtil.getPublicKeyFromBase64OrThrow(BuildConfig.PUBLIC_KEY),
+            BuildConfig.DEBUG
+        )
+        DP3T.setCertificatePinner(certificatePinner)
+        DP3T.setUserAgent(userAgent)
+
+        FakeInfectionReportWorker.start(this)
+
+        registerReceiver(ExposureStatusChangeBroadcastReceiver(), DP3T.getUpdateIntentFilter())
+
+    }",1,14,        FakeInfectionReportWorker.start(this)
+"override fun onCreate() {
+        super.onCreate()
+
+        initRxJavaSettings()
+
+        DP3T.init(
+            this,
+            ApplicationInfo(packageName, BuildConfig.REPORT_URL, BuildConfig.BUCKET_URL),
+            SignatureUtil.getPublicKeyFromBase64OrThrow(BuildConfig.PUBLIC_KEY),
+            BuildConfig.DEBUG
+        )
+        DP3T.setCertificatePinner(certificatePinner)
+        DP3T.setUserAgent(userAgent)
+
+        FakeInfectionReportWorker.start(this)
+
+        registerReceiver(ExposureStatusChangeBroadcastReceiver(), DP3T.getUpdateIntentFilter())
+
+    }",1,14,        FakeInfectionReportWorker.start(this)
+"override fun onCreate() {
+        super.onCreate()
+
+        initRxJavaSettings()
+
+        DP3T.init(
+            this,
+            ApplicationInfo(packageName, BuildConfig.REPORT_URL, BuildConfig.BUCKET_URL),
+            SignatureUtil.getPublicKeyFromBase64OrThrow(BuildConfig.PUBLIC_KEY),
+            BuildConfig.DEBUG
+        )
+        DP3T.setCertificatePinner(certificatePinner)
+        DP3T.setUserAgent(userAgent)
+
+        FakeInfectionReportWorker.start(this)
+
+        registerReceiver(ExposureStatusChangeBroadcastReceiver(), DP3T.getUpdateIntentFilter())
+
+    }",1,14,        FakeInfectionReportWorker.start(this)
+"    override fun exampleRequest(): Either<Throwable, String> = callService {
+        apiInterface.test()
+    }
+
+}",1,"0,1,2,3,4","    override fun exampleRequest(): Either<Throwable, String> = callService {/~/        apiInterface.test()/~/    }/~//~/}"
+"override fun checkServerTrusted(
+                                    chain: Array<X509Certificate>,
+                                    authType: String
+                            ) {
+                            }",1,"0,1,2,3,4","override fun checkServerTrusted(/~/                                    chain: Array<X509Certificate>,/~/                                    authType: String/~/                            ) {/~/                            }"
+"fun sampleFromStandard(): Double {
+            val random = SecureRandom()
+            return -ln(1.0 - random.nextDouble())
+        }",0,,
+"private fun start(
+            context: Context,
+            tDummy: Long,
+            existingWorkPolicy: ExistingWorkPolicy
+        ) {
+
+            val now = clock.currentTimeMillis()
+            val executionDelay = 0L.coerceAtLeast(tDummy - now)
+
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+            val work =
+                OneTimeWorkRequest
+                    .Builder(FakeInfectionReportWorker::class.java)
+                    .setInitialDelay(executionDelay, TimeUnit.MILLISECONDS)
+                    .setConstraints(constraints)
+                    .setInputData(Data.Builder().putLong(KEY_T_DUMMY, tDummy).build())
+                    .build()
+            WorkManager.getInstance(context)
+                .enqueueUniqueWork(TAG, existingWorkPolicy, work)
+        }",0,,
+"    override fun beginStructure(descriptor: SerialDescriptor): CompositeDecoder {
+        if (haveStartedReadingElements) {
+            return currentElementDecoder
+        }
+
+        return super.beginStructure(descriptor)
+    }",0,,
+"override fun checkServerTrusted(
+                                    chain: Array<X509Certificate>,
+                                    authType: String
+                            ) {
+                            }",1,"0,1,2,3,4","override fun checkServerTrusted(/~/                                    chain: Array<X509Certificate>,/~/                                    authType: String/~/                            ) {/~/                            }"
+"            override fun <Base : Any> polymorphicDefault(baseClass: KClass<Base>, defaultSerializerProvider: (className: String?) -> DeserializationStrategy<out Base>?) {
+                throw UnsupportedOperationException(""This method should never be called."")
+            }",0,,

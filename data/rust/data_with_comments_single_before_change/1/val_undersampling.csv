@@ -1,0 +1,657 @@
+processed_func,target,flaw_line_index,flaw_line
+"fn validate_and_install(&self, response: fetch::Response) -> Result<ValidatorResponse, String> {
+		let status = StatusCode::from_u16(response.status().to_u16());
+		let is_html = response.is_html();
+		let mime = response.content_type().unwrap_or(mime!(Text/Html));
+		let mut handler = StreamingHandler::new(
+			response,
+			status,
+			mime,
+			self.embeddable_on.clone(),
+		);
+		if is_html {
+			handler.set_initial_content(&format!(
+				r#""<script src=""/{}/inject.js""></script><script>history.replaceState({{}}, """", ""/?{}{}/{}"")</script>""#,
+				apps::UTILS_PATH,
+				apps::URL_REFERER,
+				apps::WEB_PATH,
+				&self.referer,
+			));
+		}
+		Ok(ValidatorResponse::Streaming(handler))
+	}",0,,
+"fn main() -> std::io::Result<()> {
+    env::set_var(""RUST_LOG"", ""swhks=trace"");
+    env_logger::init();
+
+    let pid_file_path = String::from(""/tmp/swhks.pid"");
+    let sock_file_path = String::from(format!(""/run/user/{}/swhkd.sock"", unistd::Uid::current()));
+
+    if Path::new(&pid_file_path).exists() {
+        log::trace!(""Reading {} file and checking for running instances."", pid_file_path);
+        let swhkd_pid = match fs::read_to_string(&pid_file_path) {
+            Ok(swhkd_pid) => swhkd_pid,
+            Err(e) => {
+                log::error!(""Unable to read {} to check all running instances"", e);
+                exit(1);
+            }
+        };
+        log::debug!(""Previous PID: {}"", swhkd_pid);
+
+        let mut sys = System::new_all();
+        sys.refresh_all();
+        for (pid, process) in sys.processes() {
+            if pid.to_string() == swhkd_pid && process.exe() == env::current_exe().unwrap() {
+                log::error!(""Server is already running!"");
+                exit(1);
+            }
+        }
+    }
+
+    if Path::new(&sock_file_path).exists() {
+        log::trace!(""Sockfile exists, attempting to remove it."");
+        match fs::remove_file(&sock_file_path) {
+            Ok(_) => {
+                log::debug!(""Removed old socket file"");
+            }
+            Err(e) => {
+                log::error!(""Error removing the socket file!: {}"", e);
+                log::error!(""You can manually remove the socket file: {}"", sock_file_path);
+                exit(1);
+            }
+        };
+    }
+
+    match fs::write(&pid_file_path, id().to_string()) {
+        Ok(_) => {}
+        Err(e) => {
+            log::error!(""Unable to write to {}: {}"", pid_file_path, e);
+            exit(1);
+        }
+    }
+
+    let listener = UnixListener::bind(sock_file_path)?;
+    loop {
+        match listener.accept() {
+            Ok((mut socket, address)) => {
+                let mut response = String::new();
+                socket.read_to_string(&mut response)?;
+                run_system_command(&response);
+                log::debug!(""Socket: {:?} Address: {:?} Response: {}"", socket, address, response);
+            }
+            Err(e) => log::error!(""accept function failed: {:?}"", e),
+        }
+    }
+}",1,4,"    let pid_file_path = String::from(""/tmp/swhks.pid"");"
+"    pub fn get_func_name(&self, func_index: FuncIndex) -> Option<&str> {
+        self.function_names.get(func_index).map(String::as_ref)
+    }",0,,
+"fn calculate_multiplication_complexity(base_length: u64, mod_length: u64) -> u64 {
+		let max_length = max(base_length, mod_length);
+		let mut words = max_length / 8;
+		if max_length % 8 > 0 {
+			words += 1;
+		}
+
+		// TODO: prevent/handle overflow
+		words * words
+	}",1,7,		// TODO: prevent/handle overflow
+    fn _assert<T: Send + Sync>() {},0,,
+"    fn deref_mut(&mut self) -> &mut Self::Target {
+        unsafe { self.inst.as_mut() }
+    }",0,,
+"    pub fn params(&self) -> impl ExactSizeIterator<Item = ValType> + '_ {
+        self.sig.params.iter().map(ValType::from_wasm_type)
+    }
+
+    /// Returns the list of result types for this function.
+    pub fn results(&self) -> impl ExactSizeIterator<Item = ValType> + '_ {
+        self.sig.returns.iter().map(ValType::from_wasm_type)
+    }",1,"1,6",        self.sig.params.iter().map(ValType::from_wasm_type)/~/        self.sig.returns.iter().map(ValType::from_wasm_type)
+"fn get() -> H256 {
+		H256::decode(&mut &sp_io::storage::root()[..])
+			.expect(""Node is configured to use the same hash; qed"")
+	}",0,,
+"pub(crate) fn tokenize(mut input: &str) -> Vec<(Token, Span)> {
+    let mut result = vec![];
+    let mut offset = 0;
+
+    loop {
+        let input_len = input.len();
+        input = input.trim_start();
+        while input.starts_with('#') {
+            input = input.trim_start_matches(|c| c != '\n').trim_start();
+        }
+        offset += input_len - input.len();
+
+        match input.chars().next() {
+            None => break,
+            Some(c) => {
+                let (len, token) = consume_chain! {
+                    input, c;
+
+                    if input.starts_with(""<%"") => (2, Token::BStart);
+                    if input.starts_with(""%>"") => (2, Token::BEnd);
+                    if input.starts_with("">>"") => (2, Token::LookAhead);
+                    if input.starts_with(""<<"") => (2, Token::LookBehind);
+                    if input.starts_with(""::"") => (2, Token::Backref);
+
+                    if c == '%' => (1, Token::BWord);
+                    if c == '*' => (1, Token::Star);
+                    if c == '+' => (1, Token::Plus);
+                    if c == '?' => (1, Token::QuestionMark);
+                    if c == '|' => (1, Token::Pipe);
+                    if c == ':' => (1, Token::Colon);
+                    if c == ')' => (1, Token::CloseParen);
+                    if c == '{' => (1, Token::OpenBrace);
+                    if c == '}' => (1, Token::CloseBrace);
+                    if c == ',' => (1, Token::Comma);
+                    if c == '!' => (1, Token::Not);
+                    if c == '[' => (1, Token::OpenBracket);
+                    if c == '-' => (1, Token::Dash);
+                    if c == ']' => (1, Token::CloseBracket);
+                    if c == '.' => (1, Token::Dot);
+                    if c == ';' => (1, Token::Semicolon);
+                    if c == '=' => (1, Token::Equals);
+
+                    if c == '\'' => match input[1..].find('\'') {
+                        Some(len_inner) => (len_inner + 2, Token::String),
+                        None => (input.len(), Token::ErrorMsg(ParseErrorMsg::UnclosedString)),
+                    };
+
+                    if c == '""' => match find_unescaped_quote(&input[1..]) {
+                        Some(len_inner) => (len_inner + 2, Token::String),
+                        None => (input.len(), Token::ErrorMsg(ParseErrorMsg::UnclosedString)),
+                    };
+
+                    if let Some(rest) = input.strip_prefix(""U+"") => {
+                        match rest.find(|c: char| !c.is_ascii_hexdigit()) {
+                            Some(0) => (1, Token::Error),
+                            Some(len_inner) => (len_inner + 2, Token::CodePoint),
+                            None => (input.len(), Token::CodePoint),
+                        }
+                    };
+
+                    if matches!(c, '0'..='9') => (
+                        input.find(|c: char| !matches!(c, '0'..='9')).unwrap_or(input.len()),
+                        Token::Number,
+                    );
+
+                    if c.is_alphabetic() || c == '_' => (
+                        input.find(|c: char| !c.is_alphanumeric() && c != '_').unwrap_or(input.len()),
+                        Token::Identifier,
+                    );
+
+                    if c == '^' => (1, Token::ErrorMsg(ParseErrorMsg::Caret));
+                    if c == '$' => (1, Token::ErrorMsg(ParseErrorMsg::Dollar));
+
+                    if let Some(rest) = input.strip_prefix(""(?"") => (
+                        match rest.chars().next() {
+                            Some('<') => {
+                                let name_len = rest.chars()
+                                    .skip(1)
+                                    .take_while(char::is_ascii_alphanumeric)
+                                    .count();
+
+                                if name_len > 0 && matches!(rest.chars().nth(1 + name_len), Some('>')) {
+                                    4 + name_len
+                                } else if let Some('=' | '!') = rest.chars().nth(1) {
+                                    4
+                                } else {
+                                    3
+                                }
+                            }
+                            Some('P') if matches!(rest.chars().nth(1), Some('<')) => {
+                                let name_len = rest.chars()
+                                    .skip(2)
+                                    .take_while(char::is_ascii_alphanumeric)
+                                    .count();
+
+                                if name_len > 0 && matches!(rest.chars().nth(2 + name_len), Some('>')) {
+                                    5 + name_len
+                                } else {
+                                    4
+                                }
+                            },
+                            Some('>' | '!' | ':' | '=' | '(' | '|') => 3,
+                            _ => 2,
+                        },
+                        Token::ErrorMsg(ParseErrorMsg::SpecialGroup),
+                    );
+                    if c == '(' => (1, Token::OpenParen);
+
+                    if c == '\\' => {
+                        if input.starts_with(""\\u{"") || input.starts_with(""\\x{"") {
+                            match input[3..].find('}') {
+                                Some(len) => (len + 4, Token::ErrorMsg(ParseErrorMsg::BackslashUnicode)),
+                                None => (2, Token::ErrorMsg(ParseErrorMsg::Backslash)),
+                            }
+                        } else if let Some(rest) = input.strip_prefix(""\\u"") {
+                            match rest.find(|c: char| !c.is_ascii_hexdigit()).unwrap_or(rest.len()) {
+                                4.. => (6, Token::ErrorMsg(ParseErrorMsg::BackslashU4)),
+                                _ => (2, Token::ErrorMsg(ParseErrorMsg::Backslash)),
+                            }
+                        } else if let Some(rest) = input.strip_prefix(""\\x"") {
+                            match rest.find(|c: char| !c.is_ascii_hexdigit()).unwrap_or(rest.len()) {
+                                2.. => (4, Token::ErrorMsg(ParseErrorMsg::BackslashX2)),
+                                _ => (2, Token::ErrorMsg(ParseErrorMsg::Backslash)),
+                            }
+                        } else if let Some(rest) = input.strip_prefix(""\\k<"") {
+                            match rest.find('>') {
+                                Some(len) => (len + 4, Token::ErrorMsg(ParseErrorMsg::BackslashK)),
+                                _ => (2, Token::ErrorMsg(ParseErrorMsg::Backslash)),
+                            }
+                        } else if input.len() >= 2 {
+                            (2, Token::ErrorMsg(ParseErrorMsg::Backslash))
+                        } else {
+                            (1, Token::Error)
+                        }
+                    };
+                };
+
+                let start = offset;
+                offset += len;
+                input = &input[len..];
+                result.push((token, Span::new(start, offset)));
+            }
+        }
+    }
+
+    result
+}",1,"129,130","} else if input.len() >= 2 {/~/                            (2, Token::ErrorMsg(ParseErrorMsg::Backslash))"
+"pub fn set_int(&mut self, v: u32) {
+        self.0 = [v, 0, 0, 0, 0, 0, 0, 0];
+    }",0,,
+"    pub fn expect_returned(self, msg: &str) -> UntypedRetVal {
+        self.returned().expect(msg)
+    }",0,,
+"    pub fn neg(&self) -> Scalar {
+        let mut ret = Scalar::default();
+        ret.neg_in_place(self);
+        ret
+    }",0,,
+"pub fn parse_cmd(cmd_str: &str, _sender_address: AccountAddress) -> Result<ast::Cmd> {
+    let stripped_string = &strip_comments(cmd_str);
+    let parser = syntax::CmdParser::new();
+    match parser.parse(stripped_string) {
+        Ok(cmd) => Ok(cmd),
+        Err(e) => handle_error(e, cmd_str),
+    }
+}",1,"1,5","    let stripped_string = &strip_comments(cmd_str);/~/        Err(e) => handle_error(e, cmd_str),"
+"fn test_stw() {
+    test_interpreter_and_jit_asm!(
+        ""
+        stw [r1+2], 0x44332211
+        ldxw r0, [r1+2]
+        exit"",
+        [
+            0xaa, 0xbb, 0xff, 0xff, 0xff, 0xff, 0xcc, 0xdd, //
+        ],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x44332211 } },
+        3
+    );
+}",0,,
+"pub fn is_empty(&self) -> bool {
+		self.len() == 0
+	}",0,,
+"pub fn clone_cstring_safely(out_ptr: *const c_char) -> Result<CString> {
+        if out_ptr.is_null() {
+            return_errno!(EINVAL, ""NULL address is invalid"");
+        }
+
+        let cstr = unsafe { CStr::from_ptr(out_ptr) };
+        let cstring = CString::from(cstr);
+        if !is_inside_user_space(out_ptr as *const u8, cstring.as_bytes().len()) {
+            return_errno!(EFAULT, ""the whole buffer is not in the user space"");
+        }
+        Ok(cstring)
+    }",1,7,"if !is_inside_user_space(out_ptr as *const u8, cstring.as_bytes().len()) {"
+"pub fn retrieve_less_version(less_path: &dyn AsRef<OsStr>) -> Option<usize> {
+    let cmd = Command::new(less_path).arg(""--version"").output().ok()?;
+    parse_less_version(&cmd.stdout)
+}",1,1,"    let cmd = Command::new(less_path).arg(""--version"").output().ok()?;"
+"    fn drop(&mut self) {
+        if self.needs_inst_drop {
+            unsafe {
+                let inst = self.inst.as_mut();
+
+                // Grab a handle to the region to ensure it outlives `inst`.
+                //
+                // This ensures that the region won't be dropped by `inst` being
+                // dropped, which could result in `inst` being unmapped by the
+                // Region *during* drop of the Instance's fields.
+                let region: Arc<dyn RegionInternal> = inst.alloc().region.clone();
+
+                // drop the actual instance
+                std::ptr::drop_in_place(inst);
+
+                // and now we can drop what may be the last Arc<Region>. If it is
+                // it can safely do what it needs with memory; we're not running
+                // destructors on it anymore.
+                mem::drop(region);
+            }
+        }
+    }",1,"5,7,8,9,10,15,16,17,18","                // Grab a handle to the region to ensure it outlives `inst`./~/                // This ensures that the region won't be dropped by `inst` being/~/                // dropped, which could result in `inst` being unmapped by the/~/                // Region *during* drop of the Instance's fields./~/                let region: Arc<dyn RegionInternal> = inst.alloc().region.clone();/~/                // and now we can drop what may be the last Arc<Region>. If it is/~/                // it can safely do what it needs with memory; we're not running/~/                // destructors on it anymore./~/                mem::drop(region);"
+"fn c(&mut self, expr: &Hir) -> ResultOrEmpty {
+        use crate::prog;
+        use regex_syntax::hir::HirKind::*;
+
+        self.check_size()?;
+        match *expr.kind() {
+            Empty => Ok(None),
+            Literal(hir::Literal::Unicode(c)) => self.c_char(c),
+            Literal(hir::Literal::Byte(b)) => {
+                assert!(self.compiled.uses_bytes());
+                self.c_byte(b)
+            }
+            Class(hir::Class::Unicode(ref cls)) => self.c_class(cls.ranges()),
+            Class(hir::Class::Bytes(ref cls)) => {
+                if self.compiled.uses_bytes() {
+                    self.c_class_bytes(cls.ranges())
+                } else {
+                    assert!(cls.is_all_ascii());
+                    let mut char_ranges = vec![];
+                    for r in cls.iter() {
+                        let (s, e) = (r.start() as char, r.end() as char);
+                        char_ranges.push(hir::ClassUnicodeRange::new(s, e));
+                    }
+                    self.c_class(&char_ranges)
+                }
+            }
+            Anchor(hir::Anchor::StartLine) if self.compiled.is_reverse => {
+                self.byte_classes.set_range(b'\n', b'\n');
+                self.c_empty_look(prog::EmptyLook::EndLine)
+            }
+            Anchor(hir::Anchor::StartLine) => {
+                self.byte_classes.set_range(b'\n', b'\n');
+                self.c_empty_look(prog::EmptyLook::StartLine)
+            }
+            Anchor(hir::Anchor::EndLine) if self.compiled.is_reverse => {
+                self.byte_classes.set_range(b'\n', b'\n');
+                self.c_empty_look(prog::EmptyLook::StartLine)
+            }
+            Anchor(hir::Anchor::EndLine) => {
+                self.byte_classes.set_range(b'\n', b'\n');
+                self.c_empty_look(prog::EmptyLook::EndLine)
+            }
+            Anchor(hir::Anchor::StartText) if self.compiled.is_reverse => {
+                self.c_empty_look(prog::EmptyLook::EndText)
+            }
+            Anchor(hir::Anchor::StartText) => {
+                self.c_empty_look(prog::EmptyLook::StartText)
+            }
+            Anchor(hir::Anchor::EndText) if self.compiled.is_reverse => {
+                self.c_empty_look(prog::EmptyLook::StartText)
+            }
+            Anchor(hir::Anchor::EndText) => {
+                self.c_empty_look(prog::EmptyLook::EndText)
+            }
+            WordBoundary(hir::WordBoundary::Unicode) => {
+                if !cfg!(feature = ""unicode-perl"") {
+                    return Err(Error::Syntax(
+                        ""Unicode word boundaries are unavailable when \
+                         the unicode-perl feature is disabled""
+                            .to_string(),
+                    ));
+                }
+                self.compiled.has_unicode_word_boundary = true;
+                self.byte_classes.set_word_boundary();
+                // We also make sure that all ASCII bytes are in a different
+                // class from non-ASCII bytes. Otherwise, it's possible for
+                // ASCII bytes to get lumped into the same class as non-ASCII
+                // bytes. This in turn may cause the lazy DFA to falsely start
+                // when it sees an ASCII byte that maps to a byte class with
+                // non-ASCII bytes. This ensures that never happens.
+                self.byte_classes.set_range(0, 0x7F);
+                self.c_empty_look(prog::EmptyLook::WordBoundary)
+            }
+            WordBoundary(hir::WordBoundary::UnicodeNegate) => {
+                if !cfg!(feature = ""unicode-perl"") {
+                    return Err(Error::Syntax(
+                        ""Unicode word boundaries are unavailable when \
+                         the unicode-perl feature is disabled""
+                            .to_string(),
+                    ));
+                }
+                self.compiled.has_unicode_word_boundary = true;
+                self.byte_classes.set_word_boundary();
+                // See comments above for why we set the ASCII range here.
+                self.byte_classes.set_range(0, 0x7F);
+                self.c_empty_look(prog::EmptyLook::NotWordBoundary)
+            }
+            WordBoundary(hir::WordBoundary::Ascii) => {
+                self.byte_classes.set_word_boundary();
+                self.c_empty_look(prog::EmptyLook::WordBoundaryAscii)
+            }
+            WordBoundary(hir::WordBoundary::AsciiNegate) => {
+                self.byte_classes.set_word_boundary();
+                self.c_empty_look(prog::EmptyLook::NotWordBoundaryAscii)
+            }
+            Group(ref g) => match g.kind {
+                hir::GroupKind::NonCapturing => self.c(&g.hir),
+                hir::GroupKind::CaptureIndex(index) => {
+                    if index as usize >= self.compiled.captures.len() {
+                        self.compiled.captures.push(None);
+                    }
+                    self.c_capture(2 * index as usize, &g.hir)
+                }
+                hir::GroupKind::CaptureName { index, ref name } => {
+                    if index as usize >= self.compiled.captures.len() {
+                        let n = name.to_string();
+                        self.compiled.captures.push(Some(n.clone()));
+                        self.capture_name_idx.insert(n, index as usize);
+                    }
+                    self.c_capture(2 * index as usize, &g.hir)
+                }
+            },
+            Concat(ref es) => {
+                if self.compiled.is_reverse {
+                    self.c_concat(es.iter().rev())
+                } else {
+                    self.c_concat(es)
+                }
+            }
+            Alternation(ref es) => self.c_alternate(&**es),
+            Repetition(ref rep) => self.c_repeat(rep),
+        }
+    }",1,6,"            Empty => Ok(None),"
+"    fn ready(&mut self, poll: &mut mio::Poll, ev: &mio::Event) {
+        // If we're readable: read some TLS.  Then
+        // see if that yielded new plaintext.  Then
+        // see if the backend is readable too.
+        if ev.readiness().is_readable() {
+            self.do_tls_read();
+            self.try_plain_read();
+            self.try_back_read();
+        }
+
+        if ev.readiness().is_writable() {
+            self.do_tls_write_and_handle_error();
+        }
+
+        if self.closing && !self.tls_session.wants_write() {
+            let _ = self.socket.shutdown(Shutdown::Both);
+            self.close_back();
+            self.closed = true;
+        } else {
+            self.reregister(poll);
+        }
+    }",1,14,        if self.closing && !self.tls_session.wants_write() {
+"pub async fn mksnap(handle: &CoreDB, con: &mut Connection, act: ActionGroup) -> TResult<()> {
+    let howmany = act.howmany();
+    if howmany == 0 {
+        if !handle.is_snapshot_enabled() {
+            // Since snapshotting is disabled, we can't create a snapshot!
+            // We'll just return an error returning the same
+            let error = ""err-snapshot-disabled"";
+            con.write_response(GroupBegin(1)).await?;
+            let error = RespCodes::OtherError(Some(error.to_string()));
+            return con.write_response(error).await;
+        }
+        // We will just follow the standard convention of creating snapshots
+        let mut was_engine_error = false;
+        let mut snap_result = None;
+        let mut engine_was_busy = false;
+        {
+            let snaphandle = handle.snapcfg.clone();
+            let snapstatus = (*snaphandle)
+                .as_ref()
+                .unwrap_or_else(|| unsafe { unreachable_unchecked() });
+            let snapengine = SnapshotEngine::new(snapstatus.max, &handle, None);
+            if snapengine.is_err() {
+                was_engine_error = true;
+            } else {
+                if snapstatus.is_busy() {
+                    engine_was_busy = true;
+                } else {
+                    let mut snapengine =
+                        snapengine.unwrap_or_else(|_| unsafe { unreachable_unchecked() });
+
+                    snap_result = snapengine.mksnap();
+                }
+            }
+        }
+        if was_engine_error {
+            return con
+                .write_response(responses::fresp::R_SERVER_ERR.to_owned())
+                .await;
+        }
+        if engine_was_busy {
+            con.write_response(GroupBegin(1)).await?;
+            let error = RespCodes::OtherError(Some(""err-snapshot-busy"".to_owned()));
+            return con.write_response(error).await;
+        }
+        if let Some(succeeded) = snap_result {
+            if succeeded {
+                // Snapshotting succeeded, return Okay
+                return con
+                    .write_response(responses::fresp::R_OKAY.to_owned())
+                    .await;
+            } else {
+                // Nope, something happened while creating a snapshot
+                // return a server error
+                return con
+                    .write_response(responses::fresp::R_SERVER_ERR.to_owned())
+                    .await;
+            }
+        } else {
+            // We shouldn't ever reach here if all our logic is correct
+            // but if we do, something is wrong with the runtime
+            con.write_response(GroupBegin(1)).await?;
+            let error = RespCodes::OtherError(Some(""err-access-after-termsig"".to_owned()));
+            return con.write_response(error).await;
+        }
+    } else {
+        if howmany == 1 {
+            // This means that the user wants to create a 'named' snapshot
+            let snapname = act
+                .get_ref()
+                .get(1)
+                .unwrap_or_else(|| unsafe { unreachable_unchecked() });
+            let mut path = PathBuf::from(DIR_SNAPSHOT);
+            path.push(""remote"");
+            path.push(snapname.to_owned() + "".snapshot"");
+            let failed;
+            {
+                match diskstore::flush_data(&path, &handle.acquire_read().get_ref()) {
+                    Ok(_) => failed = false,
+                    Err(e) => {
+                        log::error!(""Error while creating snapshot: {}"", e);
+                        failed = true;
+                    }
+                }
+            }
+            if failed {
+                return con
+                    .write_response(responses::fresp::R_SERVER_ERR.to_owned())
+                    .await;
+            } else {
+                return con
+                    .write_response(responses::fresp::R_OKAY.to_owned())
+                    .await;
+            }
+        } else {
+            return con
+                .write_response(responses::fresp::R_ACTION_ERR.to_owned())
+                .await;
+        }
+    }
+}",1,99,}
+"fn test_err_ldindb_oob() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov64 r1, 0x5
+        ldindb r1, 0x33
+        exit"",
+        [
+            0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, //
+            0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, //
+        ],
+        (),
+        0,
+        {
+            |_vm, res: Result| {
+                matches!(res.unwrap_err(),
+                    EbpfError::AccessViolation(pc, access_type, vm_addr, len, name)
+                    if access_type == AccessType::Load && pc == 30 && vm_addr == 0x400000038 && len == 1 && name == ""input""
+                )
+            }
+        },
+        2
+    );
+}",0,,
+"pub fn fill_b32(&self, bin: &mut [u8; 32]) {
+        bin[0] = (self.0[7] >> 24) as u8; bin[1] = (self.0[7] >> 16) as u8; bin[2] = (self.0[7] >> 8) as u8; bin[3] = (self.0[7]) as u8;
+        bin[4] = (self.0[6] >> 24) as u8; bin[5] = (self.0[6] >> 16) as u8; bin[6] = (self.0[6] >> 8) as u8; bin[7] = (self.0[6]) as u8;
+        bin[8] = (self.0[5] >> 24) as u8; bin[9] = (self.0[5] >> 16) as u8; bin[10] = (self.0[5] >> 8) as u8; bin[11] = (self.0[5]) as u8;
+        bin[12] = (self.0[4] >> 24) as u8; bin[13] = (self.0[4] >> 16) as u8; bin[14] = (self.0[4] >> 8) as u8; bin[15] = (self.0[4]) as u8;
+        bin[16] = (self.0[3] >> 24) as u8; bin[17] = (self.0[3] >> 16) as u8; bin[18] = (self.0[3] >> 8) as u8; bin[19] = (self.0[3]) as u8;
+        bin[20] = (self.0[2] >> 24) as u8; bin[21] = (self.0[2] >> 16) as u8; bin[22] = (self.0[2] >> 8) as u8; bin[23] = (self.0[2]) as u8;
+        bin[24] = (self.0[1] >> 24) as u8; bin[25] = (self.0[1] >> 16) as u8; bin[26] = (self.0[1] >> 8) as u8; bin[27] = (self.0[1]) as u8;
+        bin[28] = (self.0[0] >> 24) as u8; bin[29] = (self.0[0] >> 16) as u8; bin[30] = (self.0[0] >> 8) as u8; bin[31] = (self.0[0]) as u8;
+    }",0,,
+"fn transfer(&mut self, transfer: Transfer) -> Result<(), ExitError> {
+		let source = T::AddressMapping::into_account_id(transfer.source);
+		let target = T::AddressMapping::into_account_id(transfer.target);
+
+		T::Currency::transfer(
+			&source,
+			&target,
+			transfer.value.low_u128().unique_saturated_into(),
+			ExistenceRequirement::AllowDeath,
+		)
+		.map_err(|_| ExitError::OutOfFund)
+	}",1,7,"transfer.value.low_u128().unique_saturated_into(),"
+"pub(crate) unsafe fn write_value_to(&self, store: &mut StoreOpaque, p: *mut u128) {
+        match self {
+            Val::I32(i) => ptr::write(p as *mut i32, *i),
+            Val::I64(i) => ptr::write(p as *mut i64, *i),
+            Val::F32(u) => ptr::write(p as *mut u32, *u),
+            Val::F64(u) => ptr::write(p as *mut u64, *u),
+            Val::V128(b) => ptr::write(p as *mut u128, *b),
+            Val::ExternRef(None) => ptr::write(p, 0),
+            Val::ExternRef(Some(x)) => {
+                let externref_ptr = x.inner.as_raw();
+                store.insert_vmexternref(x.inner.clone());
+                ptr::write(p as *mut *mut u8, externref_ptr)
+            }
+            Val::FuncRef(f) => ptr::write(
+                p as *mut *mut runtime::VMCallerCheckedAnyfunc,
+                if let Some(f) = f {
+                    f.caller_checked_anyfunc(store).as_ptr()
+                } else {
+                    ptr::null_mut()
+                },
+            ),
+        }
+    }",1,"0,1,2,3,4,5,6,8,10","pub(crate) unsafe fn write_value_to(&self, store: &mut StoreOpaque, p: *mut u128) {/~/        match self {/~/            Val::I32(i) => ptr::write(p as *mut i32, *i),/~/            Val::I64(i) => ptr::write(p as *mut i64, *i),/~/            Val::F32(u) => ptr::write(p as *mut u32, *u),/~/            Val::F64(u) => ptr::write(p as *mut u64, *u),/~/            Val::V128(b) => ptr::write(p as *mut u128, *b),/~/            Val::ExternRef(Some(x)) => {/~/                store.insert_vmexternref(x.inner.clone());"
+"fn wasmtime_call_conv(isa: &dyn TargetIsa) -> CallConv {
+    match isa.triple().default_calling_convention() {
+        Ok(CallingConvention::AppleAarch64) => CallConv::WasmtimeAppleAarch64,
+        Ok(CallingConvention::SystemV) | Err(()) => CallConv::WasmtimeSystemV,
+        Ok(CallingConvention::WindowsFastcall) => CallConv::WasmtimeFastcall,
+        Ok(unimp) => unimplemented!(""calling convention: {:?}"", unimp),
+    }
+}",0,,

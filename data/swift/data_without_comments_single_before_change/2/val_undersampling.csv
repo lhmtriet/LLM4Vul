@@ -1,0 +1,160 @@
+processed_func,target,flaw_line_index,flaw_line
+"private func handlePong(_ pingData: HTTP2PingData) -> Action {
+    if pingData.integer == self.pingCode {
+      return .cancelScheduledTimeout
+    } else {
+      return .none
+    }
+  }",1,1,    if pingData.integer == self.pingCode {
+"public func addParticipantsAndUpdateConversationState(usersAndRoles: [(ZMUser, Role?)]) {
+        
+        
+        let doesExistsOnBackend = self.remoteIdentifier != nil
+        
+        let addedRoles = usersAndRoles.compactMap { (user, role) -> ParticipantRole? in
+            guard !user.isAccountDeleted else { return nil }
+            
+            
+            require(
+                role == nil || (role!.team == self.team || role!.conversation == self),
+                ""Tried to add a role that does not belong to the conversation""
+            )
+            
+            guard let (result, pr) = updateExistingOrCreateParticipantRole(for: user, with: role) else { return nil }
+            return (result == .created) ? pr : nil
+        }
+        
+        let addedSelfUser = doesExistsOnBackend && addedRoles.contains(where: {$0.user.isSelfUser})
+        if addedSelfUser {
+            self.markToDownloadRolesIfNeeded()
+            self.needsToBeUpdatedFromBackend = true
+        }
+        
+        if !addedRoles.isEmpty {
+            self.checkIfArchivedStatusChanged(addedSelfUser: addedSelfUser)
+            self.checkIfVerificationLevelChanged(addedUsers: Set(addedRoles.map { $0.user}))
+        }
+    }",1,26,self.checkIfVerificationLevelChanged(addedUsers: Set(addedRoles.map { $0.user}))
+"private func resendPendingMessagesAfterPrivacyChanges() {
+        enumerateReverseMessagesThatCausedDegradationUntilFirstSystemMessageOnSyncContext {
+            $0.causedSecurityLevelDegradation = false
+            $0.resend()
+        }
+    }",0,,
+"    public func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
+        
+        var path = request.url.path
+
+        
+        while path.hasPrefix(""/"") {
+            path = String(path.dropFirst())
+        }
+
+        
+        guard !path.contains(""../"") else {
+            return request.eventLoop.makeFailedFuture(Abort(.forbidden))
+        }
+
+        
+        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+
+        
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: filePath, isDirectory: &isDir), !isDir.boolValue else {
+            return next.respond(to: request)
+        }
+
+        
+        let res = request.fileio.streamFile(at: filePath)
+        return request.eventLoop.makeSucceededFuture(res)
+    }",1,"1,2,15",        // make a copy of the path/~/        var path = request.url.path/~/        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+"internal static func showAll(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""call.participants.show_all"", String(describing: p1))
+        }",0,,
+"    private func streamView(at location: CGPoint) -> BaseVideoPreviewView? {
+        guard let indexPath = gridView.indexPathForItem(at: location) else {
+            return nil
+        }
+        return streamView(for: dataSource[indexPath.row].stream) as? BaseVideoPreviewView
+    }",0,,
+"internal static func youRemovedOther(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""content.system.you_removed_other"", String(describing: p1))
+        }",0,,
+"private mutating func generatePingFrame(code: UInt64, ack: Bool) -> HTTP2Frame.FramePayload {
+    if self.activeStreams == 0 {
+      self.sentPingsWithoutData += 1
+    }
+
+    self.lastSentPingDate = self.now()
+    return HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: code), ack: ack)
+  }",1,"0,6","private mutating func generatePingFrame(code: UInt64, ack: Bool) -> HTTP2Frame.FramePayload {/~/    return HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: code), ack: ack)"
+"public func collectFile(at path: String) -> EventLoopFuture<ByteBuffer> {
+        var data = self.allocator.buffer(capacity: 0)
+        return self.readFile(at: path) { new in
+            var new = new
+            data.writeBuffer(&new)
+            return self.request.eventLoop.makeSucceededFuture(())
+        }.map { data }
+    }",0,,
+"self.init(light: color, dark: color)
+    }
+}
+
+extension UIColor {
+
+    static func from(scheme: ColorSchemeColor, variant: ColorSchemeVariant? = nil) -> UIColor {
+        return ColorScheme.default.color(named: scheme, variant: variant)
+    }
+
+    
+    
+    private static let accentColorNameColorBlendingCoefficientsDark: [CGFloat] = [0.8, 0.8, 0.72, 1.0, 0.8, 0.8, 0.8, 0.64]
+    private static let accentColorNameColorBlendingCoefficientsLight: [CGFloat] = [0.8, 0.8, 0.72, 1.0, 0.8, 0.8, 0.64, 1.0]
+
+    
+    class func nameColor(for accentColor: ZMAccentColor, variant: ColorSchemeVariant) -> UIColor {
+
+        assert(accentColor.rawValue <= ZMAccentColor.max.rawValue)
+
+        let coefficientsArray = variant == .dark ? accentColorNameColorBlendingCoefficientsDark : accentColorNameColorBlendingCoefficientsLight
+        let coefficient = coefficientsArray[Int(accentColor.rawValue)]
+
+        let background: UIColor = variant == .dark ? .black : .white
+        return background.mix(UIColor(fromZMAccentColor: accentColor), amount: coefficient)
+    }
+}",1,"17,18,19,22,24","/~/        assert(accentColor.rawValue <= ZMAccentColor.max.rawValue)/~//~//~/        return background.mix(UIColor(fromZMAccentColor: accentColor), amount: coefficient)"
+"  private func schedulePing(in delay: TimeAmount, timeout: TimeAmount) {
+    guard delay != .nanoseconds(.max) else {
+      return
+    }
+
+    self.scheduledPing = self.context?.eventLoop.scheduleRepeatedTask(
+      initialDelay: delay,
+      delay: delay
+    ) { _ in
+      self.handlePingAction(self.pingHandler.pingFired())
+      
+      
+      assert(timeout < delay, ""`timeout` must be less than `interval`"")
+      self.scheduleClose(in: timeout)
+    }
+  }",0,,
+"private(set) var connectionManagerEvent: ConnectionManagerEvent?
+
+    
+    private(set) var maxConcurrentStreamsChange: Int?
+
+    
+    private(set) var idleTask: IdleTask?
+
+    
+    private(set) var sendGoAwayWithLastPeerInitiatedStreamID: HTTP2StreamID?
+
+    
+    private(set) var shouldCloseChannel: Bool
+
+    fileprivate static let none = Operations()
+
+    fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+      self.sendGoAwayWithLastPeerInitiatedStreamID = streamID
+    }",1,16,fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {

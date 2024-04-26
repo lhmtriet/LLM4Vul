@@ -1,0 +1,275 @@
+processed_func,target,flaw_line_index,flaw_line
+"    override fun setRegions(regions: List<Region>) {
+        preferences.edit()
+            .putString(KEY_REGIONS, regions.toJson())
+            .apply()
+    }",0,,
+"    fun reportInfected(reportCode: String): Completable {
+
+        return getVerifyToken(reportCode).flatMapCompletable {
+            contactTracingRepository.notifyInfected(it.token, jwtTokenUtils.getOnset(it.token))
+        }.concatWith {
+            preferencesRepository.setInfectionReportDate(Date())
+            it.onComplete()
+        }
+
+    }",1,"0,1,2,3,4,5,6,9","    fun reportInfected(reportCode: String): Completable {/~//~/        return getVerifyToken(reportCode).flatMapCompletable {/~/            contactTracingRepository.notifyInfected(it.token, jwtTokenUtils.getOnset(it.token))/~/        }.concatWith {/~/            preferencesRepository.setInfectionReportDate(Date())/~/            it.onComplete()/~/    }"
+"fun start(context: Context, preferencesRepository: PreferencesRepository) {
+            var tDummy: Long = preferencesRepository.getTDummy()
+            if (tDummy == -1L) {
+                tDummy = clock.currentTimeMillis() + clock.syncInterval()
+                preferencesRepository.setTDummy(tDummy)
+            }
+            start(context, tDummy, ExistingWorkPolicy.KEEP)
+        }",0,,
+"override fun checkClientTrusted(
+                                    chain: Array<X509Certificate>,
+                                    authType: String
+                            ) {
+                            }",1,"0,1,2,3,4","override fun checkClientTrusted(/~/                                    chain: Array<X509Certificate>,/~/                                    authType: String/~/                            ) {/~/                            }"
+"private fun throwIfUnknownPolymorphicTypeException(e: Exception, deserializer: DeserializationStrategy<*>) {
+        val message = e.message ?: return
+        val match = unknownPolymorphicTypeExceptionMessage.matchEntire(message) ?: return
+        val unknownType = match.groupValues[1]
+        val className = match.groupValues[2]
+
+        val knownTypes = when (deserializer.descriptor.kind) {
+            PolymorphicKind.SEALED -> getKnownTypesForSealedType(deserializer)
+            PolymorphicKind.OPEN -> getKnownTypesForOpenType(className)
+            else -> throw IllegalArgumentException(""Can't get known types for descriptor of kind ${deserializer.descriptor.kind}"")
+        }
+
+        throw UnknownPolymorphicTypeException(unknownType, knownTypes, typeNamePath, e)
+    }",0,,
+"    private fun getKnownTypesForOpenType(className: String): Set<String> {
+        val knownTypes = mutableSetOf<String>()
+
+        serializersModule.dumpTo(object : SerializersModuleCollector {
+            override fun <T : Any> contextual(kClass: KClass<T>, provider: (typeArgumentsSerializers: List<KSerializer<*>>) -> KSerializer<*>) {}
+
+            
+            
+            override fun <Base : Any, Sub : Base> polymorphic(baseClass: KClass<Base>, actualClass: KClass<Sub>, actualSerializer: KSerializer<Sub>) {
+                if (baseClass.simpleName == className) {
+                    knownTypes.add(actualSerializer.descriptor.serialName)
+                }
+            }
+
+            override fun <Base : Any> polymorphicDefault(baseClass: KClass<Base>, defaultSerializerProvider: (className: String?) -> DeserializationStrategy<out Base>?) {
+                throw UnsupportedOperationException(""This method should never be called."")
+            }
+        })
+
+        return knownTypes
+    }",0,,
+"    fun reportInfected(reportCode: String): Completable {
+
+        return getVerifyToken(reportCode).flatMapCompletable {
+            contactTracingRepository.notifyInfected(it.token, jwtTokenUtils.getOnset(it.token))
+        }.concatWith {
+            preferencesRepository.setInfectionReportDate(Date())
+            it.onComplete()
+        }
+
+    }",1,"0,1,2,3,4,5,6,9","    fun reportInfected(reportCode: String): Completable {/~//~/        return getVerifyToken(reportCode).flatMapCompletable {/~/            contactTracingRepository.notifyInfected(it.token, jwtTokenUtils.getOnset(it.token))/~/        }.concatWith {/~/            preferencesRepository.setInfectionReportDate(Date())/~/            it.onComplete()/~/    }"
+"    fun reportInfected(reportCode: String): Completable {
+
+        return getVerifyToken(reportCode).flatMapCompletable {
+            contactTracingRepository.notifyInfected(it.token, jwtTokenUtils.getOnset(it.token))
+        }.concatWith {
+            preferencesRepository.setInfectionReportDate(Date())
+            it.onComplete()
+        }
+
+    }",1,"0,1,2,3,4,5,6,9","    fun reportInfected(reportCode: String): Completable {/~//~/        return getVerifyToken(reportCode).flatMapCompletable {/~/            contactTracingRepository.notifyInfected(it.token, jwtTokenUtils.getOnset(it.token))/~/        }.concatWith {/~/            preferencesRepository.setInfectionReportDate(Date())/~/            it.onComplete()/~/    }"
+"    override fun getCurrentLocation(): Location = getCurrentPath().endLocation
+}",0,,
+"    override fun decodeNotNullMark(): Boolean {
+        if (!haveStartedReadingElements) {
+            return true
+        }
+
+        return currentElementDecoder.decodeNotNullMark()
+    }",0,,
+"    fun read(path: Path): Baseline {
+        try {
+            Files.newInputStream(path).use {
+                val reader = SAXParserFactory.newInstance().newSAXParser()
+                val handler = BaselineHandler()
+                reader.parse(it, handler)
+                return handler.createBaseline()
+            }
+        } catch (error: SAXParseException) {
+            val (line, column) = error.lineNumber to error.columnNumber
+            throw InvalidState(""Error on position $line:$column while reading the baseline xml file!"", error)
+        }
+    }",1,3,                val reader = SAXParserFactory.newInstance().newSAXParser()
+"    get() {
+        return when (this) {
+            is StructureKind.MAP -> ""a map""
+            is StructureKind.CLASS -> ""an object""
+            is StructureKind.OBJECT -> ""an object""
+            is StructureKind.LIST -> ""a list""
+            is PrimitiveKind.STRING -> ""a string""
+            is PrimitiveKind.BOOLEAN -> ""a boolean""
+            is PrimitiveKind.BYTE -> ""a byte""
+            is PrimitiveKind.CHAR -> ""a character""
+            is PrimitiveKind.DOUBLE -> ""a double""
+            is PrimitiveKind.FLOAT -> ""a float""
+            is PrimitiveKind.INT -> ""an integer""
+            is PrimitiveKind.SHORT -> ""a short""
+            is PrimitiveKind.LONG -> ""a long""
+            is SerialKind.ENUM -> ""an enumeration value""
+            else -> ""a $this value""
+        }
+    }",0,,
+"    override fun decodeNotNullMark(): Boolean {
+        if (!haveStartedReadingEntries) {
+            return true
+        }
+
+        return fromCurrentValue { decodeNotNullMark() }
+    }",0,,
+"            return this.get(desiredKey) ?: throw MissingRequiredPropertyException(desiredKey, this.path)
+        }
+
+        private fun YamlMap.withoutKey(key: String): YamlMap {
+            return this.copy(entries = entries.filterKeys { it.content != key })
+        }",0,,
+"        override fun syncInterval(): Long {
+            val newDelayDays: Double =
+                ExponentialDistribution.sampleFromStandard() / SAMPLING_RATE
+            return (newDelayDays * FACTOR_DAY_MILLIS).toLong()
+        }",0,,
+"override fun checkClientTrusted(
+                                    chain: Array<X509Certificate>,
+                                    authType: String
+                            ) {
+                            }",1,"0,1,2,3,4","override fun checkClientTrusted(/~/                                    chain: Array<X509Certificate>,/~/                                    authType: String/~/                            ) {/~/                            }"
+"        private fun start(
+            context: Context,
+            delayInMinutes: Long,
+            existingWorkPolicy: ExistingWorkPolicy
+        ) {
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+            val work =
+                OneTimeWorkRequest
+                    .Builder(FakeInfectionReportWorker::class.java)
+                    .setInitialDelay(delayInMinutes, TimeUnit.MINUTES)
+                    .setConstraints(constraints)
+                    .build()
+            WorkManager.getInstance(context)
+                .enqueueUniqueWork(TAG, existingWorkPolicy, work)
+        }",1,"2,11","            delayInMinutes: Long,/~/                    .setInitialDelay(delayInMinutes, TimeUnit.MINUTES)"
+"private fun start(
+            context: Context,
+            tDummy: Long,
+            existingWorkPolicy: ExistingWorkPolicy
+        ) {
+
+            val now = clock.currentTimeMillis()
+            val executionDelay = 0L.coerceAtLeast(tDummy - now)
+            val executionDelayDays =
+                executionDelay / FACTOR_DAY_MILLIS
+
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+            val work =
+                OneTimeWorkRequest
+                    .Builder(FakeInfectionReportWorker::class.java)
+                    .setInitialDelay(executionDelayDays, TimeUnit.MINUTES)
+                    .setConstraints(constraints)
+                    .setInputData(Data.Builder().putLong(KEY_T_DUMMY, tDummy).build())
+                    .build()
+            WorkManager.getInstance(context)
+                .enqueueUniqueWork(TAG, existingWorkPolicy, work)
+        }",0,,
+"    fun reportInfected(reportCode: String): Completable {
+
+        return getVerifyToken(reportCode).flatMapCompletable {
+            contactTracingRepository.notifyInfected(it.token, jwtTokenUtils.getOnset(it.token))
+        }.concatWith {
+            preferencesRepository.setInfectionReportDate(Date())
+            it.onComplete()
+        }
+
+    }",1,"0,1,2,3,4,5,6,9","    fun reportInfected(reportCode: String): Completable {/~//~/        return getVerifyToken(reportCode).flatMapCompletable {/~/            contactTracingRepository.notifyInfected(it.token, jwtTokenUtils.getOnset(it.token))/~/        }.concatWith {/~/            preferencesRepository.setInfectionReportDate(Date())/~/            it.onComplete()/~/    }"
+"    fun reportInfected(reportCode: String): Completable {
+
+        return getVerifyToken(reportCode).flatMapCompletable {
+            contactTracingRepository.notifyInfected(it.token, jwtTokenUtils.getOnset(it.token))
+        }.concatWith {
+            preferencesRepository.setInfectionReportDate(Date())
+            it.onComplete()
+        }
+
+    }",1,"0,1,2,3,4,5,6,9","    fun reportInfected(reportCode: String): Completable {/~//~/        return getVerifyToken(reportCode).flatMapCompletable {/~/            contactTracingRepository.notifyInfected(it.token, jwtTokenUtils.getOnset(it.token))/~/        }.concatWith {/~/            preferencesRepository.setInfectionReportDate(Date())/~/            it.onComplete()/~/    }"
+"    fun reportInfected(reportCode: String): Completable {
+
+        return getVerifyToken(reportCode).flatMapCompletable {
+            contactTracingRepository.notifyInfected(it.token, jwtTokenUtils.getOnset(it.token))
+        }.concatWith {
+            preferencesRepository.setInfectionReportDate(Date())
+            it.onComplete()
+        }
+
+    }",1,"0,1,2,3,4,5,6,9","    fun reportInfected(reportCode: String): Completable {/~//~/        return getVerifyToken(reportCode).flatMapCompletable {/~/            contactTracingRepository.notifyInfected(it.token, jwtTokenUtils.getOnset(it.token))/~/        }.concatWith {/~/            preferencesRepository.setInfectionReportDate(Date())/~/            it.onComplete()/~/    }"
+"    fun reportInfected(reportCode: String): Completable {
+
+        return getVerifyToken(reportCode).flatMapCompletable {
+            contactTracingRepository.notifyInfected(it.token, jwtTokenUtils.getOnset(it.token))
+        }.concatWith {
+            preferencesRepository.setInfectionReportDate(Date())
+            it.onComplete()
+        }
+
+    }",1,"0,1,2,3,4,5,6,9","    fun reportInfected(reportCode: String): Completable {/~//~/        return getVerifyToken(reportCode).flatMapCompletable {/~/            contactTracingRepository.notifyInfected(it.token, jwtTokenUtils.getOnset(it.token))/~/        }.concatWith {/~/            preferencesRepository.setInfectionReportDate(Date())/~/            it.onComplete()/~/    }"
+"override fun checkClientTrusted(
+                                    chain: Array<X509Certificate>,
+                                    authType: String
+                            ) {
+                            }",1,"0,1,2,3,4","override fun checkClientTrusted(/~/                                    chain: Array<X509Certificate>,/~/                                    authType: String/~/                            ) {/~/                            }"
+"fun start(context: Context, preferencesRepository: PreferencesRepository) {
+            var tDummy: Long = preferencesRepository.getTDummy()
+            if (tDummy == -1L) {
+                tDummy = clock.currentTimeMillis() + clock.syncInterval()
+                preferencesRepository.setTDummy(tDummy)
+            }
+            start(context, tDummy, ExistingWorkPolicy.KEEP)
+        }",0,,
+"    fun providesApiRepository(repository: ApiRepositoryImpl): ApiRepository = repository
+
+}",0,,
+"    fun reportInfected(reportCode: String): Completable {
+
+        return getVerifyToken(reportCode).flatMapCompletable {
+            contactTracingRepository.notifyInfected(it.token, jwtTokenUtils.getOnset(it.token))
+        }.concatWith {
+            preferencesRepository.setInfectionReportDate(Date())
+            it.onComplete()
+        }
+
+    }",1,"0,1,2,3,4,5,6,9","    fun reportInfected(reportCode: String): Completable {/~//~/        return getVerifyToken(reportCode).flatMapCompletable {/~/            contactTracingRepository.notifyInfected(it.token, jwtTokenUtils.getOnset(it.token))/~/        }.concatWith {/~/            preferencesRepository.setInfectionReportDate(Date())/~/            it.onComplete()/~/    }"
+"    fun read(path: Path): Baseline {
+        try {
+            Files.newInputStream(path).use {
+                val reader = SAXParserFactory.newInstance().newSAXParser()
+                val handler = BaselineHandler()
+                reader.parse(it, handler)
+                return handler.createBaseline()
+            }
+        } catch (error: SAXParseException) {
+            val (line, column) = error.lineNumber to error.columnNumber
+            throw InvalidState(""Error on position $line:$column while reading the baseline xml file!"", error)
+        }
+    }",1,3,                val reader = SAXParserFactory.newInstance().newSAXParser()
+"private fun throwUnknownProperty(name: String, path: YamlPath, desc: SerialDescriptor): Nothing {
+        val knownPropertyNames = (0 until desc.elementsCount)
+            .map { desc.getElementName(it) }
+            .toSet()
+
+        throw UnknownPropertyException(name, knownPropertyNames, path)
+    }",0,,

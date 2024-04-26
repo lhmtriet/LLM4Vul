@@ -1,0 +1,425 @@
+processed_func,target,flaw_line_index,flaw_line
+"private func checkIfVerificationLevelChanged(addedUsers: Set<ZMUser>) {
+        self.decreaseSecurityLevelIfNeededAfterDiscovering(clients: Set(addedUsers.flatMap { $0.clients }), causedBy: addedUsers)
+    }",1,"0,1","private func checkIfVerificationLevelChanged(addedUsers: Set<ZMUser>) {/~/        self.decreaseSecurityLevelIfNeededAfterDiscovering(clients: Set(addedUsers.flatMap { $0.clients }), causedBy: addedUsers)"
+"    private func applicationDidTransition(to appState: AppState) {
+        if case .unauthenticated(let error) = appState {
+            presentAlertForDeletedAccountIfNeeded(error)
+        }
+
+        if case .authenticated = appState {
+            authenticatedRouter?.updateActiveCallPresentationState()
+
+            ZClientViewController.shared?.legalHoldDisclosureController?.discloseCurrentState(cause: .appOpen)
+        }
+
+        resetSelfUserProviderIfNeeded(for: appState)
+        urlActionRouter.openDeepLink(for: appState)
+        appStateTransitionGroup.leave()
+    }",0,,
+"private func updateMetrics(
+        for request: Request,
+        path: String,
+        startTime: UInt64,
+        statusCode: UInt
+    ) {
+        let counterDimensions = [
+            (""method"", request.method.string),
+            (""path"", path),
+            (""status"", statusCode.description),
+        ]
+        Counter(label: ""http_requests_total"", dimensions: counterDimensions).increment()
+        if statusCode >= 500 {
+            Counter(label: ""http_request_errors_total"", dimensions: counterDimensions).increment()
+        }
+        Timer(
+            label: ""http_request_duration_seconds"",
+            dimensions: [
+                (""method"", request.method.string),
+                (""path"", path)
+            ],
+            preferredDisplayUnit: .seconds
+        ).recordNanoseconds(DispatchTime.now().uptimeNanoseconds - startTime)
+    }",1,"2,6,7,8,11,13,17,18,19,20","        path: String,/~/        let counterDimensions = [/~/            (""method"", request.method.string),/~/            (""path"", path),/~/        Counter(label: ""http_requests_total"", dimensions: counterDimensions).increment()/~/            Counter(label: ""http_request_errors_total"", dimensions: counterDimensions).increment()/~/            dimensions: [/~/                (""method"", request.method.string),/~/                (""path"", path)/~/            ],"
+"    private func presentAlertForDeletedAccountIfNeeded(_ error: NSError?) {
+        guard
+            error?.userSessionErrorCode == .accountDeleted,
+            let reason = error?.userInfo[ZMAccountDeletedReasonKey] as? ZMAccountDeletedReason
+        else {
+            return
+        }
+
+        switch reason {
+        case .sessionExpired:
+            rootViewController.presentAlertWithOKButton(title: ""account_deleted_session_expired_alert.title"".localized,
+                                                        message: ""account_deleted_session_expired_alert.message"".localized)
+
+        case .databaseWiped:
+            let wipeCompletionViewController = WipeCompletionViewController()
+            wipeCompletionViewController.modalPresentationStyle = .fullScreen
+            rootViewController.present(wipeCompletionViewController, animated: true)
+
+        default:
+            break
+        }
+    }",1,"10,11","            rootViewController.presentAlertWithOKButton(title: ""account_deleted_session_expired_alert.title"".localized,/~/                                                        message: ""account_deleted_session_expired_alert.message"".localized)"
+"internal static func title(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""landing.custom_backend.title"", String(describing: p1))
+        }",0,,
+"    static func == (lhs: URLQueryFragment, rhs: URLQueryFragment) -> Bool {
+        do {
+            return try lhs.asUrlDecoded() == rhs.asUrlDecoded()
+        } catch {
+            return false
+        }
+    }",0,,
+"internal func sign(digest: ByteBuffer) throws -> ByteBuffer {
+        let bio = BIO_new(BIO_s_mem())
+        defer { BIO_free(bio) }
+        let res = buffer.withUnsafeReadableBytes { ptr in
+            Int(BIO_puts(bio, ptr.baseAddress?.assumingMemoryBound(to: Int8.self)))
+        }
+        assert(res >= 0, ""BIO_puts failed"")
+
+        guard let opaquePointer = OpaquePointer.make(optional: PEM_read_bio_ECPrivateKey(bio!, nil, nil, nil)) else {
+            throw APNSwiftError.SigningError.invalidAuthKey
+        }
+        defer { EC_KEY_free(opaquePointer) }
+        
+        let sig = digest.withUnsafeReadableBytes { ptr in
+            ECDSA_do_sign(ptr.baseAddress?.assumingMemoryBound(to: UInt8.self), Int32(digest.readableBytes), opaquePointer)
+        }
+        defer { ECDSA_SIG_free(sig) }
+
+        var derEncodedSignature: UnsafeMutablePointer<UInt8>?
+        let derLength = i2d_ECDSA_SIG(sig, &derEncodedSignature)
+        guard let derCopy = derEncodedSignature, derLength > 0 else {
+            throw APNSwiftError.SigningError.invalidASN1
+        }
+
+        var derBytes = ByteBufferAllocator().buffer(capacity: Int(derLength))
+        for b in 0 ..< Int(derLength) {
+            derBytes.writeBytes([derCopy[b]])
+        }
+
+        return derBytes
+    }",1,"4,6,18,25,26,27,28","Int(BIO_puts(bio, ptr.baseAddress?.assumingMemoryBound(to: Int8.self)))/~/        assert(res >= 0, ""BIO_puts failed"")/~/        var derEncodedSignature: UnsafeMutablePointer<UInt8>?/~/        for b in 0 ..< Int(derLength) {/~/            derBytes.writeBytes([derCopy[b]])/~/        }/~/"
+"    func scheduleNotification(expositionInfo: ExpositionInfo) {
+        var title, body: String?
+        var sound: UNNotificationSound?
+        formatter.dateFormat = ""dd.MM.YYYY""
+
+        switch expositionInfo.level {
+        case .exposed:
+            title = ""NOTIFICATION_TITLE_EXPOSURE_HIGH"".localized
+            body = ""NOTIFICATION_MESSAGE_EXPOSURE_HIGH"".localized
+            sound = .defaultCritical
+        default:
+            debugPrint(""No notification for exposition: \(expositionInfo.level.rawValue)"")
+        }
+
+        if let title = title, let body = body, let sound = sound {
+            scheduleNotification(title: title, body: body, sound: sound)
+        }
+    }",1,4,
+"    init(stringLiteral: String) {
+        self.values = [.urlDecoded(stringLiteral)]
+        self.children = [:]
+    }",0,,
+"internal static func count(_ p1: Int) -> String {
+          return L10n.tr(""Localizable"", ""participants.people.count"", p1)
+        }",0,,
+"internal static func nameInContacts(_ p1: Any) -> String {
+        return L10n.tr(""Localizable"", ""contacts_ui.name_in_contacts"", String(describing: p1))
+      }",0,,
+"  mutating func pingFired() -> Action {
+    if self.shouldBlockPing {
+      return .none
+    } else {
+      return .reply(self.generatePingFrame(code: self.pingCode, ack: false))
+    }
+  }",1,4,"      return .reply(self.generatePingFrame(code: self.pingCode, ack: false))"
+"    func applicationDidBecomeActive() {
+        updateOverlayWindowFrame()
+        teamMetadataRefresher.triggerRefreshIfNeeded()
+    }",0,,
+"    private func enumerateReverseMessagesThatCausedDegradationUntilFirstSystemMessageOnSyncContext(block: @escaping (ZMOTRMessage)->()) {
+        guard let syncMOC = self.managedObjectContext?.zm_sync else { return }
+        syncMOC.performGroupedBlock {
+            guard let conversation = (try? syncMOC.existingObject(with: self.objectID)) as? ZMConversation else { return }
+            conversation.messagesThatCausedSecurityLevelDegradation.forEach(block)
+            syncMOC.saveOrRollback()
+        }
+    }",0,,
+"internal static func text(_ p1: Any) -> String {
+            return L10n.tr(""Localizable"", ""conversation.status.message.text"", String(describing: p1))
+          }",0,,
+"    private func increaseSecurityLevelIfNeeded(for cause: SecurityChangeCause) {
+        guard securityLevel != .secure &&
+            allUsersTrusted &&
+            allParticipantsHaveClients &&
+            conversationType != .connection else {
+                return
+        }
+
+        securityLevel = .secure
+        appendNewIsSecureSystemMessage(cause: cause)
+        notifyOnUI(name: ZMConversation.isVerifiedNotificationName)
+    }",1,"1,4,5",        guard securityLevel != .secure &&/~/            conversationType != .connection else {/~/                return
+"    @objc public func requestPreviewProfileImage() {
+        guard let moc = self.managedObjectContext, moc.zm_isUserInterfaceContext, !moc.zm_userImageCache.hasUserImage(self, size: .preview) else { return }
+        
+        NotificationInContext(name: .userDidRequestPreviewAsset,
+                              context: moc.notificationContext,
+                              object: self.objectID).post()
+    }",0,,
+"        super.init()
+
+        setupAppStateCalculator()
+        setupURLActionRouter()
+        setupNotifications()
+        setupAdditionalWindows()
+
+        AppRootRouter.configureAppearance()
+
+        createLifeCycleObserverTokens()
+        setCallingSettings()
+    }
+
+    // MARK: - Public implementation
+
+    public func start(launchOptions: LaunchOptions) {
+        showInitial(launchOptions: launchOptions)
+    }",0,,
+"    class func nameColor(for accentColor: ZMAccentColor, variant: ColorSchemeVariant) -> UIColor {
+
+        assert(accentColor.rawValue <= ZMAccentColor.max.rawValue)
+
+        let coefficientsArray = variant == .dark ? accentColorNameColorBlendingCoefficientsDark : accentColorNameColorBlendingCoefficientsLight
+        let coefficient = coefficientsArray[Int(accentColor.rawValue)]
+
+        let background: UIColor = variant == .dark ? .black : .white
+        return background.mix(UIColor(fromZMAccentColor: accentColor), amount: coefficient)
+    }",1,"1,2,3,6,8","/~/        assert(accentColor.rawValue <= ZMAccentColor.max.rawValue)/~//~//~/        return background.mix(UIColor(fromZMAccentColor: accentColor), amount: coefficient)"
+"internal static func mention(_ p1: Any) -> String {
+            return L10n.tr(""Localizable"", ""conversation.status.message.mention"", String(describing: p1))
+          }",0,,
+"    public func respond(to request: Request) -> EventLoopFuture<Response> {
+        let startTime = DispatchTime.now().uptimeNanoseconds
+        let response: EventLoopFuture<Response>
+        let path: String
+        if let cachedRoute = self.getRoute(for: request) {
+            path = cachedRoute.route.description
+            request.route = cachedRoute.route
+            response = cachedRoute.responder.respond(to: request)
+        } else {
+            path = request.url.path
+            response = self.notFoundResponder.respond(to: request)
+        }
+        return response.always { result in
+            let status: HTTPStatus
+            switch result {
+            case .success(let response):
+                status = response.status
+            case .failure:
+                status = .internalServerError
+            }
+            self.updateMetrics(
+                for: request,
+                path: path,
+                startTime: startTime,
+                statusCode: status.code
+            )
+        }
+    }",1,"3,5,9,22","        let path: String/~/            path = cachedRoute.route.description/~/            path = request.url.path/~/                path: path,"
+"init(
+    pingCode: UInt64,
+    interval: TimeAmount,
+    timeout: TimeAmount,
+    permitWithoutCalls: Bool,
+    maximumPingsWithoutData: UInt,
+    minimumSentPingIntervalWithoutData: TimeAmount,
+    minimumReceivedPingIntervalWithoutData: TimeAmount? = nil,
+    maximumPingStrikes: UInt? = nil
+  ) {
+    self.pingCode = pingCode
+    self.interval = interval
+    self.timeout = timeout
+    self.permitWithoutCalls = permitWithoutCalls
+    self.maximumPingsWithoutData = maximumPingsWithoutData
+    self.minimumSentPingIntervalWithoutData = minimumSentPingIntervalWithoutData
+    self.minimumReceivedPingIntervalWithoutData = minimumReceivedPingIntervalWithoutData
+    self.maximumPingStrikes = maximumPingStrikes
+  }",1,10,    self.pingCode = pingCode
+"private func createHTTPRequest() {
+
+        let urlRequest = CFHTTPMessageCreateRequest(kCFAllocatorDefault, ""GET"" as CFString,
+                                                    url as CFURL, kCFHTTPVersion1_1).takeRetainedValue()
+
+        var port = url.port
+        if port == nil {
+            if supportedSSLSchemes.contains(url.scheme!) {
+                port = 443
+            } else {
+                port = 80
+            }
+        }
+        addHeader(urlRequest, key: headerWSUpgradeName, val: headerWSUpgradeValue)
+        addHeader(urlRequest, key: headerWSConnectionName, val: headerWSConnectionValue)
+        if let protocols = optionalProtocols {
+            addHeader(urlRequest, key: headerWSProtocolName, val: protocols.joined(separator: "",""))
+        }
+        addHeader(urlRequest, key: headerWSVersionName, val: headerWSVersionValue)
+        addHeader(urlRequest, key: headerWSKeyName, val: generateWebSocketKey())
+        if let origin = origin {
+            addHeader(urlRequest, key: headerOriginName, val: origin)
+        }
+        addHeader(urlRequest, key: headerWSHostName, val: ""\(url.host!):\(port!)"")
+        for (key, value) in headers {
+            addHeader(urlRequest, key: key, val: value)
+        }
+        if let cfHTTPMessage = CFHTTPMessageCopySerializedMessage(urlRequest) {
+            let serializedRequest = cfHTTPMessage.takeRetainedValue()
+            initStreamsWithData(serializedRequest as Data, Int(port!))
+        }
+    }",1,1,
+"private func perform(operations: GRPCIdleHandlerStateMachine.Operations) {
+    // Prod the connection manager.
+    if let event = operations.connectionManagerEvent, let manager = self.mode.connectionManager {
+      switch event {
+      case .idle:
+        manager.idle()
+      case .inactive:
+        manager.channelInactive()
+      case .ready:
+        manager.ready()
+      case .quiescing:
+        manager.beginQuiescing()
+      }
+    }
+
+    // Max concurrent streams changed.
+    if let manager = self.mode.connectionManager,
+      let maxConcurrentStreams = operations.maxConcurrentStreamsChange {
+      manager.maxConcurrentStreamsChanged(maxConcurrentStreams)
+    }
+
+    // Handle idle timeout creation/cancellation.
+    if let idleTask = operations.idleTask {
+      switch idleTask {
+      case let .cancel(task):
+        task.cancel()
+
+      case .schedule:
+        if self.idleTimeout != .nanoseconds(.max), let context = self.context {
+          let task = context.eventLoop.scheduleTask(in: self.idleTimeout) {
+            self.idleTimeoutFired()
+          }
+          self.perform(operations: self.stateMachine.scheduledIdleTimeoutTask(task))
+        }
+      }
+    }
+
+    // Send a GOAWAY frame.
+    if let streamID = operations.sendGoAwayWithLastPeerInitiatedStreamID {
+      let goAwayFrame = HTTP2Frame(
+        streamID: .rootStream,
+        payload: .goAway(lastStreamID: streamID, errorCode: .noError, opaqueData: nil)
+      )
+      self.context?.writeAndFlush(self.wrapOutboundOut(goAwayFrame), promise: nil)
+    }
+
+    // Close the channel, if necessary.
+    if operations.shouldCloseChannel, let context = self.context {
+      // Close on the next event-loop tick so we don't drop any events which are
+      // currently being processed.
+      context.eventLoop.execute {
+        context.close(mode: .all, promise: nil)
+      }
+    }
+  }",1,43,"      self.context?.writeAndFlush(self.wrapOutboundOut(goAwayFrame), promise: nil)"
+"private mutating func handlePing(_ pingData: HTTP2PingData) -> Action {
+    // Do we support ping strikes (only servers support ping strikes)?
+    if let maximumPingStrikes = self.maximumPingStrikes {
+      // Is this a ping strike?
+      if self.isPingStrike {
+        self.pingStrikes += 1
+
+        // A maximum ping strike of zero indicates that we tolerate any number of strikes.
+        if maximumPingStrikes != 0, self.pingStrikes > maximumPingStrikes {
+          return .reply(PingHandler.goAwayFrame)
+        } else {
+          return .none
+        }
+      } else {
+        // This is a valid ping, reset our strike count and reply with a pong.
+        self.pingStrikes = 0
+        self.lastReceivedPingDate = self.now()
+        return .reply(self.generatePingFrame(code: pingData.integer, ack: true))
+      }
+    } else {
+      // We don't support ping strikes. We'll just reply with a pong.
+      //
+      // Note: we don't need to update `pingStrikes` or `lastReceivedPingDate` as we don't
+      // support ping strikes.
+      return .reply(self.generatePingFrame(code: pingData.integer, ack: true))
+    }
+  }",1,"17,24","        return .reply(self.generatePingFrame(code: pingData.integer, ack: true))/~/      return .reply(self.generatePingFrame(code: pingData.integer, ack: true))"
+"open func stream(_ aStream: Stream, handle eventCode: Stream.Event) {
+        if let sec = security, !certValidated && [.hasBytesAvailable, .hasSpaceAvailable].contains(eventCode) {
+            let trust = aStream.property(forKey: kCFStreamPropertySSLPeerTrust as Stream.PropertyKey) as! SecTrust
+            let domain = aStream.property(forKey: kCFStreamSSLPeerName as Stream.PropertyKey) as? String
+            if sec.isValid(trust, domain: domain) {
+                certValidated = true
+            } else {
+                let error = errorWithDetail(""Invalid SSL certificate"", code: 1)
+                disconnectStream(error)
+                return
+            }
+        }
+        if eventCode == .hasBytesAvailable {
+            if aStream == inputStream {
+                processInputStream()
+            }
+        } else if eventCode == .errorOccurred {
+            disconnectStream(aStream.streamError as NSError?)
+        } else if eventCode == .endEncountered {
+            disconnectStream(nil)
+        }
+    }",1,"1,2,3,4,5,6,7,8,9,10,11","if let sec = security, !certValidated && [.hasBytesAvailable, .hasSpaceAvailable].contains(eventCode) {/~/            let trust = aStream.property(forKey: kCFStreamPropertySSLPeerTrust as Stream.PropertyKey) as! SecTrust/~/            let domain = aStream.property(forKey: kCFStreamSSLPeerName as Stream.PropertyKey) as? String/~/            if sec.isValid(trust, domain: domain) {/~/                certValidated = true/~/            } else {/~/                let error = errorWithDetail(""Invalid SSL certificate"", code: 1)/~/                disconnectStream(error)/~/                return/~/            }/~/        }"
+"internal static func messageReadReceiptOnYou(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""content.system.message_read_receipt_on-you"", String(describing: p1))
+        }",0,,
+"  func errorCaught(context: ChannelHandlerContext, error: Error) {
+    // No state machine action here.
+    self.mode.connectionManager?.channelError(error)
+    context.fireErrorCaught(error)
+  }",0,,
+"    private func checkIfArchivedStatusChanged(addedSelfUser: Bool) {
+        if addedSelfUser &&
+            self.mutedStatus == MutedMessageOptionValue.none.rawValue &&
+            self.isArchived
+        {
+            self.isArchived = false
+        }
+    }",0,,
+"fileprivate func asByteBufferBounds(withMaxSize size: Int) -> (offset: Int64, byteCount: Int) {
+        switch self {
+            case .start(let value):
+                return (offset: numericCast(value), byteCount: size - value)
+            case .tail(let value):
+                return (offset: numericCast(size - value), byteCount: value)
+            case .within(let start, let end):
+                return (offset: numericCast(start), byteCount: end - start + 1)
+        }
+    }",1,"0,7","fileprivate func asByteBufferBounds(withMaxSize size: Int) -> (offset: Int64, byteCount: Int) {/~/                return (offset: numericCast(start), byteCount: end - start + 1)"
+"    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        
+        if window != nil {
+            startCapture()
+        }
+    }",1,4,            startCapture()
+"internal static func started(_ p1: Any, _ p2: Any) -> String {
+              return L10n.tr(""Localizable"", ""content.system.conversation.other.started"", String(describing: p1), String(describing: p2))
+            }",0,,

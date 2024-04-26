@@ -1,0 +1,1079 @@
+processed_func,target,flaw_line_index,flaw_line
+"fn special_endpoints(content_fetcher: Arc<apps::fetcher::Fetcher>) -> HashMap<router::SpecialEndpoint, Option<Box<endpoint::Endpoint>>> {
+	let mut special = HashMap::new();
+	special.insert(router::SpecialEndpoint::Rpc, None);
+	special.insert(router::SpecialEndpoint::Utils, Some(apps::utils()));
+	special.insert(router::SpecialEndpoint::Api, Some(api::RestApi::new(content_fetcher)));
+	special
+}",0,,
+"pub fn generate_web_proxy_access_token(&self) -> String {
+		let token = random_string(16);
+		let mut tokens = self.web_proxy_tokens.lock();
+		tokens.prune();
+		tokens.insert(token.clone(), ());
+		token
+	}",1,"0,4","	pub fn generate_web_proxy_access_token(&self) -> String {/~/		tokens.insert(token.clone(), ());"
+"pub fn new(pubkey: &PublicKey, seckey: &SecretKey) -> Result<SharedSecret, Error> {
+        let inner = match ECMULT_CONTEXT.ecdh_raw(&pubkey.0, &seckey.0) {
+            Some(val) => val,
+            None => return Err(Error::InvalidSecretKey),
+        };
+
+        Ok(SharedSecret(inner))
+    }",0,,
+"    pub async fn run(&mut self) -> TResult<()> {
+        loop {
+            // Take the permit first, but we won't use it right now
+            // that's why we will forget it
+            self.base.climit.acquire().await.unwrap().forget();
+            let stream = self.accept().await?;
+            let mut chandle = ConnectionHandler::new(
+                self.base.db.clone(),
+                Connection::new(stream),
+                self.base.climit.clone(),
+                Terminator::new(self.base.signal.subscribe()),
+                self.base.terminate_tx.clone(),
+            );
+            tokio::spawn(async move {
+                if let Err(e) = chandle.run().await {
+                    log::error!(""Error: {}"", e);
+                }
+            });
+        }
+    }",1,5,            let stream = self.accept().await?;
+"    pub fn into_data(mut self) -> T {
+        // This is an unsafe operation because we want to avoid having a runtime
+        // check or boolean for whether the data is actually contained within a
+        // `Store`. The data itself is stored as `ManuallyDrop` since we're
+        // manually managing the memory here, and there's also a `ManuallyDrop`
+        // around the `Box<StoreInner<T>>`. The way this works though is a bit
+        // tricky, so here's how things get dropped appropriately:
+        //
+        // * When a `Store<T>` is normally dropped, the custom destructor for
+        //   `Store<T>` will drop `T`, then the `self.inner` field. The
+        //   rustc-glue destructor runs for `Box<StoreInner<T>>` which drops
+        //   `StoreInner<T>`. This cleans up all internal fields and doesn't
+        //   touch `T` because it's wrapped in `ManuallyDrop`.
+        //
+        // * When calling this method we skip the top-level destructor for
+        //   `Store<T>` with `mem::forget`. This skips both the destructor for
+        //   `T` and the destructor for `StoreInner<T>`. We do, however, run the
+        //   destructor for `Box<StoreInner<T>>` which, like above, will skip
+        //   the destructor for `T` since it's `ManuallyDrop`.
+        //
+        // In both cases all the other fields of `StoreInner<T>` should all get
+        // dropped, and the manual management of destructors is basically
+        // between this method and `Drop for Store<T>`. Note that this also
+        // means that `Drop for StoreInner<T>` cannot access `self.data`, so
+        // there is a comment indicating this as well.
+        unsafe {
+            let mut inner = ManuallyDrop::take(&mut self.inner);
+            std::mem::forget(self);
+            ManuallyDrop::take(&mut inner.data)
+        }
+    }",0,,
+"	fn metadata(&self) -> &StackSubstateMetadata<'config> {
+		self.substate.metadata()
+	}
+
+	fn metadata_mut(&mut self) -> &mut StackSubstateMetadata<'config> {
+		self.substate.metadata_mut()
+	}",0,,
+"fn correct_and_deposit_fee(
+		who: &H160,
+		corrected_fee: U256,
+		base_fee: U256,
+		already_withdrawn: Self::LiquidityInfo,
+	) -> Self::LiquidityInfo {
+		if let Some(paid) = already_withdrawn {
+			let account_id = T::AddressMapping::into_account_id(*who);
+
+			// Calculate how much refund we should return
+			let refund_amount = paid
+				.peek()
+				.saturating_sub(corrected_fee.low_u128().unique_saturated_into());
+			// refund to the account that paid the fees. If this fails, the
+			// account might have dropped below the existential balance. In
+			// that case we don't refund anything.
+			let refund_imbalance = C::deposit_into_existing(&account_id, refund_amount)
+				.unwrap_or_else(|_| C::PositiveImbalance::zero());
+
+			// Make sure this works with 0 ExistentialDeposit
+			// https://github.com/paritytech/substrate/issues/10117
+			// If we tried to refund something, the account still empty and the ED is set to 0,
+			// we call `make_free_balance_be` with the refunded amount.
+			let refund_imbalance = if C::minimum_balance().is_zero()
+				&& refund_amount > C::Balance::zero()
+				&& C::total_balance(&account_id).is_zero()
+			{
+				// Known bug: Substrate tried to refund to a zeroed AccountData, but
+				// interpreted the account to not exist.
+				match C::make_free_balance_be(&account_id, refund_amount) {
+					SignedImbalance::Positive(p) => p,
+					_ => C::PositiveImbalance::zero(),
+				}
+			} else {
+				refund_imbalance
+			};
+
+			// merge the imbalance caused by paying the fees and refunding parts of it again.
+			let adjusted_paid = paid
+				.offset(refund_imbalance)
+				.same()
+				.unwrap_or_else(|_| C::NegativeImbalance::zero());
+
+			let (base_fee, tip) = adjusted_paid.split(base_fee.low_u128().unique_saturated_into());
+			// Handle base fee. Can be either burned, rationed, etc ...
+			OU::on_unbalanced(base_fee);
+			return Some(tip);
+		}
+		None
+	}",1,"12,43",".saturating_sub(corrected_fee.low_u128().unique_saturated_into());/~/			let (base_fee, tip) = adjusted_paid.split(base_fee.low_u128().unique_saturated_into());"
+"fn run_system_command(command: &str) {
+    match Command::new(""sh"")
+        .arg(""-c"")
+        .arg(command)
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()
+    {
+        Ok(_) => {}
+        Err(e) => {
+            log::error!(""Failed to execute {}"", command);
+            log::error!(""Error, {}"", e);
+        }
+    }
+}",0,,
+"pub async fn mksnap(handle: &CoreDB, con: &mut Connection, act: ActionGroup) -> TResult<()> {
+    let howmany = act.howmany();
+    if howmany == 0 {
+        if !handle.is_snapshot_enabled() {
+            // Since snapshotting is disabled, we can't create a snapshot!
+            // We'll just return an error returning the same
+            let error = ""err-snapshot-disabled"";
+            con.write_response(GroupBegin(1)).await?;
+            let error = RespCodes::OtherError(Some(error.to_string()));
+            return con.write_response(error).await;
+        }
+        // We will just follow the standard convention of creating snapshots
+        let mut was_engine_error = false;
+        let mut snap_result = None;
+        let mut engine_was_busy = false;
+        {
+            let snaphandle = handle.snapcfg.clone();
+            let snapstatus = (*snaphandle)
+                .as_ref()
+                .unwrap_or_else(|| unsafe { unreachable_unchecked() });
+            let snapengine = SnapshotEngine::new(snapstatus.max, &handle, None);
+            if snapengine.is_err() {
+                was_engine_error = true;
+            } else {
+                if snapstatus.is_busy() {
+                    engine_was_busy = true;
+                } else {
+                    let mut snapengine =
+                        snapengine.unwrap_or_else(|_| unsafe { unreachable_unchecked() });
+
+                    snap_result = snapengine.mksnap();
+                }
+            }
+        }
+        if was_engine_error {
+            return con
+                .write_response(responses::fresp::R_SERVER_ERR.to_owned())
+                .await;
+        }
+        if engine_was_busy {
+            con.write_response(GroupBegin(1)).await?;
+            let error = RespCodes::OtherError(Some(""err-snapshot-busy"".to_owned()));
+            return con.write_response(error).await;
+        }
+        if let Some(succeeded) = snap_result {
+            if succeeded {
+                // Snapshotting succeeded, return Okay
+                return con
+                    .write_response(responses::fresp::R_OKAY.to_owned())
+                    .await;
+            } else {
+                // Nope, something happened while creating a snapshot
+                // return a server error
+                return con
+                    .write_response(responses::fresp::R_SERVER_ERR.to_owned())
+                    .await;
+            }
+        } else {
+            // We shouldn't ever reach here if all our logic is correct
+            // but if we do, something is wrong with the runtime
+            con.write_response(GroupBegin(1)).await?;
+            let error = RespCodes::OtherError(Some(""err-access-after-termsig"".to_owned()));
+            return con.write_response(error).await;
+        }
+    } else {
+        if howmany == 1 {
+            // This means that the user wants to create a 'named' snapshot
+            let snapname = act
+                .get_ref()
+                .get(1)
+                .unwrap_or_else(|| unsafe { unreachable_unchecked() });
+            let mut path = PathBuf::from(DIR_SNAPSHOT);
+            path.push(""remote"");
+            path.push(snapname.to_owned() + "".snapshot"");
+            let failed;
+            {
+                match diskstore::flush_data(&path, &handle.acquire_read().get_ref()) {
+                    Ok(_) => failed = false,
+                    Err(e) => {
+                        log::error!(""Error while creating snapshot: {}"", e);
+                        failed = true;
+                    }
+                }
+            }
+            if failed {
+                return con
+                    .write_response(responses::fresp::R_SERVER_ERR.to_owned())
+                    .await;
+            } else {
+                return con
+                    .write_response(responses::fresp::R_OKAY.to_owned())
+                    .await;
+            }
+        } else {
+            return con
+                .write_response(responses::fresp::R_ACTION_ERR.to_owned())
+                .await;
+        }
+    }
+}",1,99,}
+"fn call(
+        &mut self,
+        depth: u64,
+        throw: u64,
+        _arg3: u64,
+        _arg4: u64,
+        _arg5: u64,
+        _memory_mapping: &MemoryMapping,
+        result: &mut Result,
+    ) {
+        #[allow(unused_mut)]
+        if depth > 0 {
+            let mut syscall_registry = SyscallRegistry::default();
+            syscall_registry
+                .register_syscall_by_name(
+                    b""NestedVmSyscall"",
+                    NestedVmSyscall::init::<UserContext, UserError>,
+                    NestedVmSyscall::call,
+                )
+                .unwrap();
+            let mem = [depth as u8 - 1, throw as u8];
+            let mut executable = assemble::<UserError, TestInstructionMeter>(
+                ""
+                ldabsb 0
+                mov64 r1, r0
+                ldabsb 1
+                mov64 r2, r0
+                syscall NestedVmSyscall
+                exit"",
+                None,
+                Config::default(),
+                syscall_registry,
+            )
+            .unwrap();
+            test_interpreter_and_jit!(
+                executable,
+                mem,
+                0,
+                {
+                    |_vm, res: Result| {
+                        *result = res;
+                        true
+                    }
+                },
+                if throw == 0 { 6 } else { 5 }
+            );
+        } else {
+            *result = if throw == 0 {
+                Ok(42)
+            } else {
+                Err(EbpfError::CallDepthExceeded(33, 0))
+            };
+        }
+    }",0,,
+"    pub fn is_ready(&self) -> bool {
+        self.state.is_ready()
+    }",0,,
+"fn c_repeat_range(
+        &mut self,
+        expr: &Hir,
+        greedy: bool,
+        min: u32,
+        max: u32,
+    ) -> ResultOrEmpty {
+        let (min, max) = (u32_to_usize(min), u32_to_usize(max));
+        debug_assert!(min <= max);
+        let patch_concat = self.c_concat(iter::repeat(expr).take(min))?;
+        if min == max {
+            return Ok(patch_concat);
+        }
+        // Same reasoning as in c_repeat_range_min_or_more (we know that min <
+        // max at this point).
+        let patch_concat = patch_concat.unwrap_or(self.next_inst());
+        let initial_entry = patch_concat.entry;
+        // It is much simpler to compile, e.g., `a{2,5}` as:
+        //
+        //     aaa?a?a?
+        //
+        // But you end up with a sequence of instructions like this:
+        //
+        //     0: 'a'
+        //     1: 'a',
+        //     2: split(3, 4)
+        //     3: 'a'
+        //     4: split(5, 6)
+        //     5: 'a'
+        //     6: split(7, 8)
+        //     7: 'a'
+        //     8: MATCH
+        //
+        // This is *incredibly* inefficient because the splits end
+        // up forming a chain, which has to be resolved everything a
+        // transition is followed.
+        let mut holes = vec![];
+        let mut prev_hole = patch_concat.hole;
+        for _ in min..max {
+            self.fill_to_next(prev_hole);
+            let split = self.push_split_hole();
+            let Patch { hole, entry } = match self.c(expr)? {
+                Some(p) => p,
+                None => return self.pop_split_hole(),
+            };
+            prev_hole = hole;
+            if greedy {
+                holes.push(self.fill_split(split, Some(entry), None));
+            } else {
+                holes.push(self.fill_split(split, None, Some(entry)));
+            }
+        }
+        holes.push(prev_hole);
+        Ok(Some(Patch { hole: Hole::Many(holes), entry: initial_entry }))
+    }",0,,
+"fn try_pager(
+        single_screen_action: SingleScreenAction,
+        wrapping_mode: WrappingMode,
+        pager_from_config: Option<&str>,
+    ) -> Result<Self> {
+        use crate::pager::{self, PagerKind, PagerSource};
+        use std::process::{Command, Stdio};
+
+        let pager_opt =
+            pager::get_pager(pager_from_config).chain_err(|| ""Could not parse pager command."")?;
+
+        let pager = match pager_opt {
+            Some(pager) => pager,
+            None => return Ok(OutputType::stdout()),
+        };
+
+        if pager.kind == PagerKind::Bat {
+            return Err(ErrorKind::InvalidPagerValueBat.into());
+        }
+
+        let mut p = Command::new(&pager.bin);
+        let args = pager.args;
+
+        if pager.kind == PagerKind::Less {
+            // less needs to be called with the '-R' option in order to properly interpret the
+            // ANSI color sequences printed by bat. If someone has set PAGER=""less -F"", we
+            // therefore need to overwrite the arguments and add '-R'.
+            //
+            // We only do this for PAGER (as it is not specific to 'bat'), not for BAT_PAGER
+            // or bats '--pager' command line option.
+            let replace_arguments_to_less = pager.source == PagerSource::EnvVarPager;
+
+            if args.is_empty() || replace_arguments_to_less {
+                p.arg(""--RAW-CONTROL-CHARS"");
+                if single_screen_action == SingleScreenAction::Quit {
+                    p.arg(""--quit-if-one-screen"");
+                }
+
+                if wrapping_mode == WrappingMode::NoWrapping(true) {
+                    p.arg(""--chop-long-lines"");
+                }
+
+                // Passing '--no-init' fixes a bug with '--quit-if-one-screen' in older
+                // versions of 'less'. Unfortunately, it also breaks mouse-wheel support.
+                //
+                // See: http://www.greenwoodsoftware.com/less/news.530.html
+                //
+                // For newer versions (530 or 558 on Windows), we omit '--no-init' as it
+                // is not needed anymore.
+                match retrieve_less_version(&pager.bin) {
+                    None => {
+                        p.arg(""--no-init"");
+                    }
+                    Some(version) if (version < 530 || (cfg!(windows) && version < 558)) => {
+                        p.arg(""--no-init"");
+                    }
+                    _ => {}
+                }
+            } else {
+                p.args(args);
+            }
+            p.env(""LESSCHARSET"", ""UTF-8"");
+        } else {
+            p.args(args);
+        };
+
+        Ok(p.stdin(Stdio::piped())
+            .spawn()
+            .map(OutputType::Pager)
+            .unwrap_or_else(|_| OutputType::stdout()))
+    }",1,20,        let mut p = Command::new(&pager.bin);
+"	fn on_request(&self, req: &hyper::server::Request<hyper::net::HttpStream>, control: &hyper::Control) -> http::RequestMiddlewareAction {
+		self.router.on_request(req, control)
+	}",0,,
+"fn wasmtime_call_conv(isa: &dyn TargetIsa) -> CallConv {
+    match isa.triple().default_calling_convention() {
+        Ok(CallingConvention::AppleAarch64) => CallConv::WasmtimeAppleAarch64,
+        Ok(CallingConvention::SystemV) | Err(()) => CallConv::WasmtimeSystemV,
+        Ok(CallingConvention::WindowsFastcall) => CallConv::WasmtimeFastcall,
+        Ok(unimp) => unimplemented!(""calling convention: {:?}"", unimp),
+    }
+}",0,,
+"pub fn clone_cstring_safely(out_ptr: *const c_char) -> Result<CString> {
+        if out_ptr.is_null() {
+            return_errno!(EINVAL, ""NULL address is invalid"");
+        }
+
+        let cstr = unsafe { CStr::from_ptr(out_ptr) };
+        let cstring = CString::from(cstr);
+        if !is_inside_user_space(out_ptr as *const u8, cstring.as_bytes().len()) {
+            return_errno!(EFAULT, ""the whole buffer is not in the user space"");
+        }
+        Ok(cstring)
+    }",1,7,"if !is_inside_user_space(out_ptr as *const u8, cstring.as_bytes().len()) {"
+"	pub fn is_valid_web_proxy_access_token(&self, token: &String) -> bool {
+		self.web_proxy_tokens.lock().contains_key(&token)
+	}",1,"0,1","	pub fn is_valid_web_proxy_access_token(&self, token: &String) -> bool {/~/		self.web_proxy_tokens.lock().contains_key(&token)"
+"async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let args = set_command_line_args().get_matches();
+    env::set_var(""RUST_LOG"", ""swhkd=warn"");
+
+    if args.is_present(""debug"") {
+        env::set_var(""RUST_LOG"", ""swhkd=trace"");
+    }
+
+    env_logger::init();
+    log::trace!(""Logger initialized."");
+
+    let pidfile: String = String::from(""/tmp/swhkd.pid"");
+    if Path::new(&pidfile).exists() {
+        log::trace!(""Reading {} file and checking for running instances."", pidfile);
+        let swhkd_pid = match fs::read_to_string(&pidfile) {
+            Ok(swhkd_pid) => swhkd_pid,
+            Err(e) => {
+                log::error!(""Unable to read {} to check all running instances"", e);
+                exit(1);
+            }
+        };
+        log::debug!(""Previous PID: {}"", swhkd_pid);
+
+        let mut sys = System::new_all();
+        sys.refresh_all();
+        for (pid, process) in sys.processes() {
+            if pid.to_string() == swhkd_pid && process.exe() == env::current_exe().unwrap() {
+                log::error!(""Swhkd is already running!"");
+                log::error!(""pid of existing swhkd process: {}"", pid.to_string());
+                log::error!(""To close the existing swhkd process, run `sudo killall swhkd`"");
+                exit(1);
+            }
+        }
+    }
+
+    match fs::write(&pidfile, id().to_string()) {
+        Ok(_) => {}
+        Err(e) => {
+            log::error!(""Unable to write to {}: {}"", pidfile, e);
+            exit(1);
+        }
+    }
+
+    if check_user_permissions().is_err() {
+        exit(1);
+    }
+
+    let load_config = || {
+        seteuid(env::var(""PKEXEC_UID"").unwrap().parse::<u32>().unwrap()); // Dropping privileges to invoking user.
+        let config_file_path: std::path::PathBuf = if args.is_present(""config"") {
+            Path::new(args.value_of(""config"").unwrap()).to_path_buf()
+        } else {
+            fetch_xdg_config_path()
+        };
+
+        log::debug!(""Using config file path: {:#?}"", config_file_path);
+
+        let hotkeys = match config::load(&config_file_path) {
+            Err(e) => {
+                log::error!(""Config Error: {}"", e);
+                exit(1);
+            }
+            Ok(out) => out,
+        };
+
+        for hotkey in &hotkeys {
+            log::debug!(""hotkey: {:#?}"", hotkey);
+        }
+
+        hotkeys
+    };
+
+    let mut hotkeys = load_config();
+    seteuid(0); // Escalating back to root after reading config file.
+    log::trace!(""Attempting to find all keyboard file descriptors."");
+    let keyboard_devices: Vec<Device> =
+        evdev::enumerate().filter(check_device_is_keyboard).collect();
+
+    let mut uinput_device = match uinput::create_uinput_device() {
+        Ok(dev) => dev,
+        Err(e) => {
+            log::error!(""Err: {:#?}"", e);
+            exit(1);
+        }
+    };
+
+    if keyboard_devices.is_empty() {
+        log::error!(""No valid keyboard device was detected!"");
+        exit(1);
+    }
+    log::debug!(""{} Keyboard device(s) detected."", keyboard_devices.len());
+
+    let modifiers_map: HashMap<Key, config::Modifier> = HashMap::from([
+        (Key::KEY_LEFTMETA, config::Modifier::Super),
+        (Key::KEY_RIGHTMETA, config::Modifier::Super),
+        (Key::KEY_LEFTMETA, config::Modifier::Super),
+        (Key::KEY_RIGHTMETA, config::Modifier::Super),
+        (Key::KEY_LEFTALT, config::Modifier::Alt),
+        (Key::KEY_RIGHTALT, config::Modifier::Alt),
+        (Key::KEY_LEFTCTRL, config::Modifier::Control),
+        (Key::KEY_RIGHTCTRL, config::Modifier::Control),
+        (Key::KEY_LEFTSHIFT, config::Modifier::Shift),
+        (Key::KEY_RIGHTSHIFT, config::Modifier::Shift),
+    ]);
+
+    let repeat_cooldown_duration: u64 = if args.is_present(""cooldown"") {
+        args.value_of(""cooldown"").unwrap().parse::<u64>().unwrap()
+    } else {
+        250
+    };
+
+    let mut signals = Signals::new(&[
+        SIGUSR1, SIGUSR2, SIGHUP, SIGABRT, SIGBUS, SIGCHLD, SIGCONT, SIGINT, SIGPIPE, SIGQUIT,
+        SIGSYS, SIGTERM, SIGTRAP, SIGTSTP, SIGVTALRM, SIGXCPU, SIGXFSZ,
+    ])?;
+
+    let mut execution_is_paused = false;
+    let mut last_hotkey: Option<config::Hotkey> = None;
+    let mut pending_release: bool = false;
+    let mut keyboard_states: Vec<KeyboardState> = Vec::new();
+    let mut keyboard_stream_map = StreamMap::new();
+
+    for (i, mut device) in keyboard_devices.into_iter().enumerate() {
+        let _ = device.grab();
+        keyboard_stream_map.insert(i, device.into_event_stream()?);
+        keyboard_states.push(KeyboardState::new());
+    }
+
+    // The initial sleep duration is never read because last_hotkey is initialized to None
+    let hotkey_repeat_timer = sleep(Duration::from_millis(0));
+    tokio::pin!(hotkey_repeat_timer);
+
+    loop {
+        select! {
+            _ = &mut hotkey_repeat_timer, if &last_hotkey.is_some() => {
+                let hotkey = last_hotkey.clone().unwrap();
+                if hotkey.keybinding.on_release {
+                    continue;
+                }
+                send_command(hotkey.clone());
+                hotkey_repeat_timer.as_mut().reset(Instant::now() + Duration::from_millis(repeat_cooldown_duration));
+            }
+
+            Some(signal) = signals.next() => {
+                match signal {
+                    SIGUSR1 => {
+                        execution_is_paused = true;
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.ungrab();
+                        }
+                    }
+
+                    SIGUSR2 => {
+                        execution_is_paused = false;
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.grab();
+                        }
+                    }
+
+                    SIGHUP => {
+                        hotkeys = load_config();
+                    }
+
+                    SIGINT => {
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.ungrab();
+                        }
+                        log::warn!(""Received SIGINT signal, exiting..."");
+                        exit(1);
+                    }
+
+                    _ => {
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.ungrab();
+                        }
+
+                        log::warn!(""Received signal: {:#?}"", signal);
+                        log::warn!(""Exiting..."");
+                        exit(1);
+                    }
+                }
+            }
+
+            Some((i, Ok(event))) = keyboard_stream_map.next() => {
+                let keyboard_state = &mut keyboard_states[i];
+
+                let key = match event.kind() {
+                    InputEventKind::Key(keycode) => keycode,
+                    _ => continue
+                };
+
+                match event.value() {
+                    // Key press
+                    1 => {
+                        if let Some(modifier) = modifiers_map.get(&key) {
+                            keyboard_state.state_modifiers.insert(*modifier);
+                        } else {
+                            keyboard_state.state_keysyms.insert(key);
+                        }
+                    }
+
+                    // Key release
+                    0 => {
+                        if last_hotkey.is_some() && pending_release {
+                            pending_release = false;
+                            send_command(last_hotkey.clone().unwrap());
+                            last_hotkey = None;
+                        }
+                        if let Some(modifier) = modifiers_map.get(&key) {
+                            if let Some(hotkey) = &last_hotkey {
+                                if hotkey.modifiers().contains(modifier) {
+                                    last_hotkey = None;
+                                }
+                            }
+                            keyboard_state.state_modifiers.remove(modifier);
+                        } else if keyboard_state.state_keysyms.contains(key) {
+                            if let Some(hotkey) = &last_hotkey {
+                                if key == hotkey.keysym() {
+                                    last_hotkey = None;
+                                }
+                            }
+                            keyboard_state.state_keysyms.remove(key);
+                        }
+                    }
+
+                    _ => {}
+                }
+
+                let possible_hotkeys: Vec<&config::Hotkey> = hotkeys.iter()
+                    .filter(|hotkey| hotkey.modifiers().len() == keyboard_state.state_modifiers.len())
+                    .collect();
+
+                let event_in_hotkeys = hotkeys.iter().any(|hotkey| {
+                    hotkey.keysym().code() == event.code() &&
+                    keyboard_state.state_modifiers
+                        .iter()
+                        .all(|x| hotkey.modifiers().contains(x)) &&
+                    keyboard_state.state_modifiers.len() == hotkey.modifiers().len()
+                    && !hotkey.is_send()
+                        });
+
+                // Don't emit event to virtual device if it's from a valid hotkey
+                if !event_in_hotkeys {
+                    uinput_device.emit(&[event]).unwrap();
+                }
+
+                if execution_is_paused || possible_hotkeys.is_empty() || last_hotkey.is_some() {
+                    continue;
+                }
+
+                log::debug!(""state_modifiers: {:#?}"", keyboard_state.state_modifiers);
+                log::debug!(""state_keysyms: {:#?}"", keyboard_state.state_keysyms);
+                log::debug!(""hotkey: {:#?}"", possible_hotkeys);
+
+                for hotkey in possible_hotkeys {
+                    // this should check if state_modifiers and hotkey.modifiers have the same elements
+                    if keyboard_state.state_modifiers.iter().all(|x| hotkey.modifiers().contains(x))
+                        && keyboard_state.state_modifiers.len() == hotkey.modifiers().len()
+                        && keyboard_state.state_keysyms.contains(hotkey.keysym())
+                    {
+                        last_hotkey = Some(hotkey.clone());
+                        if pending_release { break; }
+                        if hotkey.is_on_release() {
+                            pending_release = true;
+                            break;
+                        }
+                        send_command(hotkey.clone());
+                        hotkey_repeat_timer.as_mut().reset(Instant::now() + Duration::from_millis(repeat_cooldown_duration));
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}",1,"11,48","let pidfile: String = String::from(""/tmp/swhkd.pid"");/~/        seteuid(env::var(""PKEXEC_UID"").unwrap().parse::<u32>().unwrap()); // Dropping privileges to invoking user."
+"	pub fn dapps_middleware(
+		deps: Dependencies,
+		dapps_path: PathBuf,
+		extra_dapps: Vec<PathBuf>,
+		dapps_domain: String,
+	) -> Result<Middleware, String> {
+		let signer = deps.signer;
+		let parity_remote = parity_reactor::Remote::new(deps.remote.clone());
+		let web_proxy_tokens = Arc::new(move |token| signer.is_valid_web_proxy_access_token(&token));
+
+		Ok(parity_dapps::Middleware::dapps(
+			parity_remote,
+			deps.ui_address,
+			dapps_path,
+			extra_dapps,
+			dapps_domain,
+			deps.contract_client,
+			deps.sync_status,
+			web_proxy_tokens,
+			deps.fetch,
+		))
+	}",1,8,		let web_proxy_tokens = Arc::new(move |token| signer.is_valid_web_proxy_access_token(&token));
+"pub fn emit(
+        &self,
+    ) -> (
+        MachBuffer<I>,
+        Vec<CodeOffset>,
+        Vec<(CodeOffset, CodeOffset)>,
+    )
+    where
+        I: MachInstEmit,
+    {
+        let _tt = timing::vcode_emit();
+        let mut buffer = MachBuffer::new();
+        let mut state = I::State::new(&*self.abi);
+        let cfg_metadata = self.flags().machine_code_cfg_info();
+        let mut bb_starts: Vec<Option<CodeOffset>> = vec![];
+
+        // The first M MachLabels are reserved for block indices, the next N MachLabels for
+        // constants.
+        buffer.reserve_labels_for_blocks(self.num_blocks() as BlockIndex);
+        buffer.reserve_labels_for_constants(&self.constants);
+
+        let mut inst_end_offsets = vec![0; self.insts.len()];
+        let mut label_inst_indices = vec![0; self.num_blocks()];
+
+        // Construct the final order we emit code in: cold blocks at the end.
+        let mut final_order: SmallVec<[BlockIndex; 16]> = smallvec![];
+        let mut cold_blocks: SmallVec<[BlockIndex; 16]> = smallvec![];
+        for block in 0..self.num_blocks() {
+            let block = block as BlockIndex;
+            if self.block_order.is_cold(block) {
+                cold_blocks.push(block);
+            } else {
+                final_order.push(block);
+            }
+        }
+        let first_cold_block = cold_blocks.first().cloned();
+        final_order.extend(cold_blocks.clone());
+
+        // Emit blocks.
+        let mut safepoint_idx = 0;
+        let mut cur_srcloc = None;
+        let mut last_offset = None;
+        let mut start_of_cold_code = None;
+        for block in final_order {
+            let new_offset = I::align_basic_block(buffer.cur_offset());
+            while new_offset > buffer.cur_offset() {
+                // Pad with NOPs up to the aligned block offset.
+                let nop = I::gen_nop((new_offset - buffer.cur_offset()) as usize);
+                nop.emit(&mut buffer, &self.emit_info, &mut Default::default());
+            }
+            assert_eq!(buffer.cur_offset(), new_offset);
+
+            if Some(block) == first_cold_block {
+                start_of_cold_code = Some(buffer.cur_offset());
+            }
+
+            let (start, end) = self.block_ranges[block as usize];
+            buffer.bind_label(MachLabel::from_block(block));
+            label_inst_indices[block as usize] = start;
+
+            if cfg_metadata {
+                // Track BB starts. If we have backed up due to MachBuffer
+                // branch opts, note that the removed blocks were removed.
+                let cur_offset = buffer.cur_offset();
+                if last_offset.is_some() && cur_offset <= last_offset.unwrap() {
+                    for i in (0..bb_starts.len()).rev() {
+                        if bb_starts[i].is_some() && cur_offset > bb_starts[i].unwrap() {
+                            break;
+                        }
+                        bb_starts[i] = None;
+                    }
+                }
+                bb_starts.push(Some(cur_offset));
+                last_offset = Some(cur_offset);
+            }
+
+            for iix in start..end {
+                let srcloc = self.srclocs[iix as usize];
+                if cur_srcloc != Some(srcloc) {
+                    if cur_srcloc.is_some() {
+                        buffer.end_srcloc();
+                    }
+                    buffer.start_srcloc(srcloc);
+                    cur_srcloc = Some(srcloc);
+                }
+                state.pre_sourceloc(cur_srcloc.unwrap_or(SourceLoc::default()));
+
+                if safepoint_idx < self.safepoint_insns.len()
+                    && self.safepoint_insns[safepoint_idx] == iix
+                {
+                    if self.safepoint_slots[safepoint_idx].len() > 0 {
+                        let stack_map = self.abi.spillslots_to_stack_map(
+                            &self.safepoint_slots[safepoint_idx][..],
+                            &state,
+                        );
+                        state.pre_safepoint(stack_map);
+                    }
+                    safepoint_idx += 1;
+                }
+
+                self.insts[iix as usize].emit(&mut buffer, &self.emit_info, &mut state);
+
+                if self.generate_debug_info {
+                    // Buffer truncation may have happened since last inst append; trim inst-end
+                    // layout info as appropriate.
+                    let l = &mut inst_end_offsets[0..iix as usize];
+                    for end in l.iter_mut().rev() {
+                        if *end > buffer.cur_offset() {
+                            *end = buffer.cur_offset();
+                        } else {
+                            break;
+                        }
+                    }
+                    inst_end_offsets[iix as usize] = buffer.cur_offset();
+                }
+            }
+
+            if cur_srcloc.is_some() {
+                buffer.end_srcloc();
+                cur_srcloc = None;
+            }
+
+            // Do we need an island? Get the worst-case size of the next BB and see if, having
+            // emitted that many bytes, we will be beyond the deadline.
+            if block < (self.num_blocks() - 1) as BlockIndex {
+                let next_block = block + 1;
+                let next_block_range = self.block_ranges[next_block as usize];
+                let next_block_size = next_block_range.1 - next_block_range.0;
+                let worst_case_next_bb = I::worst_case_size() * next_block_size;
+                if buffer.island_needed(worst_case_next_bb) {
+                    buffer.emit_island(worst_case_next_bb);
+                }
+            }
+        }
+
+        // Emit the constants used by the function.
+        for (constant, data) in self.constants.iter() {
+            let label = buffer.get_label_for_constant(constant);
+            buffer.defer_constant(label, data.alignment(), data.as_slice(), u32::max_value());
+        }
+
+        if self.generate_debug_info {
+            for end in inst_end_offsets.iter_mut().rev() {
+                if *end > buffer.cur_offset() {
+                    *end = buffer.cur_offset();
+                } else {
+                    break;
+                }
+            }
+            *self.insts_layout.borrow_mut() = InstsLayoutInfo {
+                inst_end_offsets,
+                label_inst_indices,
+                start_of_cold_code,
+            };
+        }
+
+        // Create `bb_edges` and final (filtered) `bb_starts`.
+        let mut final_bb_starts = vec![];
+        let mut bb_edges = vec![];
+        if cfg_metadata {
+            for block in 0..self.num_blocks() {
+                if bb_starts[block].is_none() {
+                    // Block was deleted by MachBuffer; skip.
+                    continue;
+                }
+                let from = bb_starts[block].unwrap();
+
+                final_bb_starts.push(from);
+                // Resolve each `succ` label and add edges.
+                let succs = self.block_succs(BlockIx::new(block as u32));
+                for succ in succs.iter() {
+                    let to = buffer.resolve_label_offset(MachLabel::from_block(succ.get()));
+                    bb_edges.push((from, to));
+                }
+            }
+        }
+
+        (buffer, final_bb_starts, bb_edges)
+    }",1,"39,87,88,89,90,91,92,93,94,95,96,97","let mut safepoint_idx = 0;/~/                if safepoint_idx < self.safepoint_insns.len()/~/                    && self.safepoint_insns[safepoint_idx] == iix/~/                {/~/                    if self.safepoint_slots[safepoint_idx].len() > 0 {/~/                        let stack_map = self.abi.spillslots_to_stack_map(/~/                            &self.safepoint_slots[safepoint_idx][..],/~/                            &state,/~/                        );/~/                        state.pre_safepoint(stack_map);/~/                    }/~/                    safepoint_idx += 1;"
+"fn parse_dbtest(mut input: syn::ItemFn, rand: u16) -> Result<TokenStream, syn::Error> {
+    let sig = &mut input.sig;
+    let fname = sig.ident.to_string();
+    let body = &input.block;
+    let attrs = &input.attrs;
+    let vis = &input.vis;
+    let header = quote! {
+        #[::core::prelude::v1::test]
+    };
+    if sig.asyncness.is_none() {
+        let msg = ""`dbtest` functions need to be async"";
+        return Err(syn::Error::new_spanned(sig.fn_token, msg));
+    }
+    sig.asyncness = None;
+    let body = quote! {
+        let asyncdb = crate::coredb::CoreDB::new(
+            crate::config::BGSave::Disabled,
+            crate::config::SnapshotConfig::default(),
+            None
+        ).unwrap();
+        let addr = crate::tests::start_test_server(#rand, Some(asyncdb.clone())).await;
+        let mut stream = tokio::net::TcpStream::connect(&addr).await.unwrap();
+        #body
+        stream.shutdown(::std::net::Shutdown::Write).unwrap();
+        asyncdb.finish_db();
+        drop(asyncdb);
+    };
+    let result = quote! {
+        #header
+        #(#attrs)*
+        #vis #sig {
+            tokio::runtime::Builder::new_multi_thread()
+            .worker_threads(4)
+            .thread_name(#fname)
+            .thread_stack_size(3 * 1024 * 1024)
+            .enable_all()
+            .build()
+            .unwrap()
+            .block_on(async { #body });
+        }
+    };
+    Ok(result.into())
+}",1,23,        stream.shutdown(::std::net::Shutdown::Write).unwrap();
+"    pub fn reverse(mut self, yes: bool) -> Self {
+        self.compiled.is_reverse = yes;
+        self
+    }",0,,
+"	fn default() -> Self {
+		Self::Undefined
+	}",0,,
+"fn pass_funcref_in_and_out_of_wasm() -> anyhow::Result<()> {
+    let (mut store, module) = ref_types_module(
+        r#""
+            (module
+                (func (export ""func"") (param funcref) (result funcref)
+                    local.get 0
+                )
+            )
+        ""#,
+    )?;
+
+    let instance = Instance::new(&mut store, &module, &[])?;
+    let func = instance.get_func(&mut store, ""func"").unwrap();
+
+    // Pass in a non-null funcref.
+    {
+        let mut results = [Val::I32(0)];
+        func.call(
+            &mut store,
+            &[Val::FuncRef(Some(func.clone()))],
+            &mut results,
+        )?;
+
+        // Can't compare `Func` for equality, so this is the best we can do here.
+        let result_func = results[0].unwrap_funcref().unwrap();
+        assert_eq!(func.ty(&store), result_func.ty(&store));
+    }
+
+    // Pass in a null funcref.
+    {
+        let mut results = [Val::I32(0)];
+        func.call(&mut store, &[Val::FuncRef(None)], &mut results)?;
+        let result_func = results[0].unwrap_funcref();
+        assert!(result_func.is_none());
+    }
+
+    // Pass in a `funcref` from another instance.
+    {
+        let other_instance = Instance::new(&mut store, &module, &[])?;
+        let other_instance_func = other_instance.get_func(&mut store, ""func"").unwrap();
+
+        let mut results = [Val::I32(0)];
+        func.call(
+            &mut store,
+            &[Val::FuncRef(Some(other_instance_func.clone()))],
+            &mut results,
+        )?;
+        assert_eq!(results.len(), 1);
+
+        // Can't compare `Func` for equality, so this is the best we can do here.
+        let result_func = results[0].unwrap_funcref().unwrap();
+        assert_eq!(other_instance_func.ty(&store), result_func.ty(&store));
+    }
+
+    // Passing in a `funcref` from another store fails.
+    {
+        let (mut other_store, other_module) = ref_types_module(r#""(module (func (export ""f"")))""#)?;
+        let other_store_instance = Instance::new(&mut other_store, &other_module, &[])?;
+        let f = other_store_instance
+            .get_func(&mut other_store, ""f"")
+            .unwrap();
+
+        assert!(func
+            .call(&mut store, &[Val::FuncRef(Some(f))], &mut [Val::I32(0)])
+            .is_err());
+    }
+
+    Ok(())
+}",1,56,"        let (mut other_store, other_module) = ref_types_module(r#""(module (func (export ""f"")))""#)?;"
+"fn sock_send(command: &str) -> std::io::Result<()> {
+    let mut stream = UnixStream::connect(""/tmp/swhkd.sock"")?;
+    stream.write_all(command.as_bytes())?;
+    Ok(())
+}",1,1,"    let mut stream = UnixStream::connect(""/tmp/swhkd.sock"")?;"
+"pub fn add_in_place(&mut self, a: &Scalar, b: &Scalar) -> bool {
+        let mut overflow: u64;
+        let mut t: u64 = (a.0[0] as u64) + (b.0[0] as u64);
+        self.0[0] = (t & 0xFFFFFFFF) as u32; t >>= 32;
+        t += (a.0[1] as u64) + (b.0[1] as u64);
+        self.0[1] = (t & 0xFFFFFFFF) as u32; t >>= 32;
+        t += (a.0[2] as u64) + (b.0[2] as u64);
+        self.0[2] = (t & 0xFFFFFFFF) as u32; t >>= 32;
+        t += (a.0[3] as u64) + (b.0[3] as u64);
+        self.0[3] = (t & 0xFFFFFFFF) as u32; t >>= 32;
+        t += (a.0[4] as u64) + (b.0[4] as u64);
+        self.0[4] = (t & 0xFFFFFFFF) as u32; t >>= 32;
+        t += (a.0[5] as u64) + (b.0[5] as u64);
+        self.0[5] = (t & 0xFFFFFFFF) as u32; t >>= 32;
+        t += (a.0[6] as u64) + (b.0[6] as u64);
+        self.0[6] = (t & 0xFFFFFFFF) as u32; t >>= 32;
+        t += (a.0[7] as u64) + (b.0[7] as u64);
+        self.0[7] = (t & 0xFFFFFFFF) as u32; t >>= 32;
+        overflow = t + if self.check_overflow() { 1 } else { 0 };
+        debug_assert!(overflow == 0 || overflow == 1);
+        overflow = overflow | if self.reduce(overflow == 1) { 1 } else { 0 };
+        return overflow == 1;
+    }",0,,

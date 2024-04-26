@@ -1,0 +1,127 @@
+processed_func,target,flaw_line_index,flaw_line
+"private func updateMetrics(
+        for request: Request,
+        path: String,
+        startTime: UInt64,
+        statusCode: UInt
+    ) {
+        let counterDimensions = [
+            (""method"", request.method.string),
+            (""path"", path),
+            (""status"", statusCode.description),
+        ]
+        Counter(label: ""http_requests_total"", dimensions: counterDimensions).increment()
+        if statusCode >= 500 {
+            Counter(label: ""http_request_errors_total"", dimensions: counterDimensions).increment()
+        }
+        Timer(
+            label: ""http_request_duration_seconds"",
+            dimensions: [
+                (""method"", request.method.string),
+                (""path"", path)
+            ],
+            preferredDisplayUnit: .seconds
+        ).recordNanoseconds(DispatchTime.now().uptimeNanoseconds - startTime)
+    }",1,"2,6,7,8,11,13,17,18,19,20","        path: String,/~/        let counterDimensions = [/~/            (""method"", request.method.string),/~/            (""path"", path),/~/        Counter(label: ""http_requests_total"", dimensions: counterDimensions).increment()/~/            Counter(label: ""http_request_errors_total"", dimensions: counterDimensions).increment()/~/            dimensions: [/~/                (""method"", request.method.string),/~/                (""path"", path)/~/            ],"
+"    private func setupURLActionRouter() {
+        urlActionRouter.delegate = self
+    }",0,,
+"init(
+    pingCode: UInt64,
+    interval: TimeAmount,
+    timeout: TimeAmount,
+    permitWithoutCalls: Bool,
+    maximumPingsWithoutData: UInt,
+    minimumSentPingIntervalWithoutData: TimeAmount,
+    minimumReceivedPingIntervalWithoutData: TimeAmount? = nil,
+    maximumPingStrikes: UInt? = nil
+  ) {
+    self.pingCode = pingCode
+    self.interval = interval
+    self.timeout = timeout
+    self.permitWithoutCalls = permitWithoutCalls
+    self.maximumPingsWithoutData = maximumPingsWithoutData
+    self.minimumSentPingIntervalWithoutData = minimumSentPingIntervalWithoutData
+    self.minimumReceivedPingIntervalWithoutData = minimumReceivedPingIntervalWithoutData
+    self.maximumPingStrikes = maximumPingStrikes
+  }",1,10,    self.pingCode = pingCode
+"internal static func minLength(_ p1: Int) -> String {
+            return L10n.tr(""Localizable"", ""registration.password.rules.min_length"", p1)
+          }",0,,
+"result.set(value: .urlEncoded(value), forPath: [])
+            case 2:
+                let key = kv[0]
+                let value = String(kv[1])
+                result.set(value: .urlEncoded(value), forPath: try parseKey(key: Substring(key)))
+            default:
+                //Empty `&&`
+                continue
+            }
+        }
+        return result
+    }
+
+    func parseKey(key: Substring) throws -> [String] {
+        guard let percentDecodedKey = key.removingPercentEncoding else {
+            throw URLEncodedFormError.malformedKey(key: key)
+        }
+        return try percentDecodedKey.split(separator: ""["").enumerated().map { (i, part) in 
+            switch i {
+            case 0:
+                return String(part)
+            default:
+                guard part.last == ""]"" else {
+                    throw URLEncodedFormError.malformedKey(key: key)
+                }
+                return String(part.dropLast())
+            }
+        }
+    }",1,"0,4","                result.set(value: .urlEncoded(value), forPath: [])/~/                result.set(value: .urlEncoded(value), forPath: try parseKey(key: Substring(key)))"
+"    private func setupViews() {
+        gridView.dataSource = self
+        view.addSubview(gridView)
+
+        addToSelf(thumbnailViewController)
+
+        view.addSubview(networkConditionView)
+
+        networkConditionView.accessibilityIdentifier = ""network-conditions-indicator""
+    }",0,,
+"    class func nameColor(for accentColor: ZMAccentColor, variant: ColorSchemeVariant) -> UIColor {
+
+        assert(accentColor.rawValue <= ZMAccentColor.max.rawValue)
+
+        let coefficientsArray = variant == .dark ? accentColorNameColorBlendingCoefficientsDark : accentColorNameColorBlendingCoefficientsLight
+        let coefficient = coefficientsArray[Int(accentColor.rawValue)]
+
+        let background: UIColor = variant == .dark ? .black : .white
+        return background.mix(UIColor(fromZMAccentColor: accentColor), amount: coefficient)
+    }",1,"1,2,3,6,8","/~/        assert(accentColor.rawValue <= ZMAccentColor.max.rawValue)/~//~//~/        return background.mix(UIColor(fromZMAccentColor: accentColor), amount: coefficient)"
+"internal static func tooBig(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""content.file.too_big"", String(describing: p1))
+        }",0,,
+"internal static func uppercase(_ p1: Int) -> String {
+            return L10n.tr(""Localizable"", ""registration.password.rules.uppercase"", p1)
+          }",0,,
+"open func stream(_ aStream: Stream, handle eventCode: Stream.Event) {
+        if let sec = security, !certValidated && [.hasBytesAvailable, .hasSpaceAvailable].contains(eventCode) {
+            let trust = aStream.property(forKey: kCFStreamPropertySSLPeerTrust as Stream.PropertyKey) as! SecTrust
+            let domain = aStream.property(forKey: kCFStreamSSLPeerName as Stream.PropertyKey) as? String
+            if sec.isValid(trust, domain: domain) {
+                certValidated = true
+            } else {
+                let error = errorWithDetail(""Invalid SSL certificate"", code: 1)
+                disconnectStream(error)
+                return
+            }
+        }
+        if eventCode == .hasBytesAvailable {
+            if aStream == inputStream {
+                processInputStream()
+            }
+        } else if eventCode == .errorOccurred {
+            disconnectStream(aStream.streamError as NSError?)
+        } else if eventCode == .endEncountered {
+            disconnectStream(nil)
+        }
+    }",1,"1,2,3,4,5,6,7,8,9,10,11","if let sec = security, !certValidated && [.hasBytesAvailable, .hasSpaceAvailable].contains(eventCode) {/~/            let trust = aStream.property(forKey: kCFStreamPropertySSLPeerTrust as Stream.PropertyKey) as! SecTrust/~/            let domain = aStream.property(forKey: kCFStreamSSLPeerName as Stream.PropertyKey) as? String/~/            if sec.isValid(trust, domain: domain) {/~/                certValidated = true/~/            } else {/~/                let error = errorWithDetail(""Invalid SSL certificate"", code: 1)/~/                disconnectStream(error)/~/                return/~/            }/~/        }"

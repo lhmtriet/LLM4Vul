@@ -1,0 +1,88 @@
+processed_func,target,flaw_line_index,flaw_line
+"    override fun getCurrentLocation(): Location = getCurrentPath().endLocation
+}",0,,
+"    fun read(path: Path): Baseline {
+        try {
+            Files.newInputStream(path).use {
+                val reader = SAXParserFactory.newInstance().newSAXParser()
+                val handler = BaselineHandler()
+                reader.parse(it, handler)
+                return handler.createBaseline()
+            }
+        } catch (error: SAXParseException) {
+            val (line, column) = error.lineNumber to error.columnNumber
+            throw InvalidState(""Error on position $line:$column while reading the baseline xml file!"", error)
+        }
+    }",1,3,                val reader = SAXParserFactory.newInstance().newSAXParser()
+"    override fun setRegions(regions: List<Region>) {
+        preferences.edit()
+            .putString(KEY_REGIONS, regions.toJson())
+            .apply()
+    }",0,,
+"    fun reportInfected(reportCode: String): Completable {
+
+        return getVerifyToken(reportCode).flatMapCompletable {
+            contactTracingRepository.notifyInfected(it.token, jwtTokenUtils.getOnset(it.token))
+        }.concatWith {
+            preferencesRepository.setInfectionReportDate(Date())
+            it.onComplete()
+        }
+
+    }",1,"0,1,2,3,4,5,6,9","    fun reportInfected(reportCode: String): Completable {/~//~/        return getVerifyToken(reportCode).flatMapCompletable {/~/            contactTracingRepository.notifyInfected(it.token, jwtTokenUtils.getOnset(it.token))/~/        }.concatWith {/~/            preferencesRepository.setInfectionReportDate(Date())/~/            it.onComplete()/~/    }"
+"private fun throwIfUnknownPolymorphicTypeException(e: Exception, deserializer: DeserializationStrategy<*>) {
+        val message = e.message ?: return
+        val match = unknownPolymorphicTypeExceptionMessage.matchEntire(message) ?: return
+        val unknownType = match.groupValues[1]
+        val className = match.groupValues[2]
+
+        val knownTypes = when (deserializer.descriptor.kind) {
+            PolymorphicKind.SEALED -> getKnownTypesForSealedType(deserializer)
+            PolymorphicKind.OPEN -> getKnownTypesForOpenType(className)
+            else -> throw IllegalArgumentException(""Can't get known types for descriptor of kind ${deserializer.descriptor.kind}"")
+        }
+
+        throw UnknownPolymorphicTypeException(unknownType, knownTypes, typeNamePath, e)
+    }",0,,
+"        private fun start(
+            context: Context,
+            delayInMinutes: Long,
+            existingWorkPolicy: ExistingWorkPolicy
+        ) {
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+            val work =
+                OneTimeWorkRequest
+                    .Builder(FakeInfectionReportWorker::class.java)
+                    .setInitialDelay(delayInMinutes, TimeUnit.MINUTES)
+                    .setConstraints(constraints)
+                    .build()
+            WorkManager.getInstance(context)
+                .enqueueUniqueWork(TAG, existingWorkPolicy, work)
+        }",1,"2,11","            delayInMinutes: Long,/~/                    .setInitialDelay(delayInMinutes, TimeUnit.MINUTES)"
+"private fun getKnownTypesForOpenType(className: String): Set<String> {
+        val knownTypes = mutableSetOf<String>()
+
+        serializersModule.dumpTo(object : SerializersModuleCollector {
+            override fun <T : Any> contextual(kClass: KClass<T>, provider: (typeArgumentsSerializers: List<KSerializer<*>>) -> KSerializer<*>) {}
+
+            // FIXME: ideally we'd be able to get the name as used by the SerialModule (eg. the values in 'polyBase2NamedSerializers' in SerialModuleImpl, but these aren't exposed.
+            // The serializer's descriptor's name seems to be the same value.
+            override fun <Base : Any, Sub : Base> polymorphic(baseClass: KClass<Base>, actualClass: KClass<Sub>, actualSerializer: KSerializer<Sub>) {
+                if (baseClass.simpleName == className) {
+                    knownTypes.add(actualSerializer.descriptor.serialName)
+                }
+            }
+
+            override fun <Base : Any> polymorphicDefault(baseClass: KClass<Base>, defaultSerializerProvider: (className: String?) -> DeserializationStrategy<out Base>?) {
+                throw UnsupportedOperationException(""This method should never be called."")
+            }
+        })
+
+        return knownTypes
+    }",0,,
+"override fun checkClientTrusted(
+                                    chain: Array<X509Certificate>,
+                                    authType: String
+                            ) {
+                            }",1,"0,1,2,3,4","override fun checkClientTrusted(/~/                                    chain: Array<X509Certificate>,/~/                                    authType: String/~/                            ) {/~/                            }"

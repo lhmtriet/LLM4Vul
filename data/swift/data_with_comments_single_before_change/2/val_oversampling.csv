@@ -1,0 +1,2201 @@
+processed_func,target,flaw_line_index,flaw_line
+"private(set) var connectionManagerEvent: ConnectionManagerEvent?
+
+    /// The value of HTTP/2 SETTINGS_MAX_CONCURRENT_STREAMS changed.
+    private(set) var maxConcurrentStreamsChange: Int?
+
+    /// An idle task, either scheduling or cancelling an idle timeout.
+    private(set) var idleTask: IdleTask?
+
+    /// Send a GOAWAY frame with the last peer initiated stream ID set to this value.
+    private(set) var sendGoAwayWithLastPeerInitiatedStreamID: HTTP2StreamID?
+
+    /// Whether the channel should be closed.
+    private(set) var shouldCloseChannel: Bool
+
+    fileprivate static let none = Operations()
+
+    fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+      self.sendGoAwayWithLastPeerInitiatedStreamID = streamID
+    }",1,16,fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+"private mutating func generatePingFrame(code: UInt64, ack: Bool) -> HTTP2Frame.FramePayload {
+    if self.activeStreams == 0 {
+      self.sentPingsWithoutData += 1
+    }
+
+    self.lastSentPingDate = self.now()
+    return HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: code), ack: ack)
+  }",1,"0,6","private mutating func generatePingFrame(code: UInt64, ack: Bool) -> HTTP2Frame.FramePayload {/~/    return HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: code), ack: ack)"
+"private mutating func generatePingFrame(code: UInt64, ack: Bool) -> HTTP2Frame.FramePayload {
+    if self.activeStreams == 0 {
+      self.sentPingsWithoutData += 1
+    }
+
+    self.lastSentPingDate = self.now()
+    return HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: code), ack: ack)
+  }",1,"0,6","private mutating func generatePingFrame(code: UInt64, ack: Bool) -> HTTP2Frame.FramePayload {/~/    return HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: code), ack: ack)"
+"  mutating func channelInactive() -> Operations {
+    var operations: Operations = .none
+
+    switch self.state {
+    case let .operating(state):
+      self.state = .closed
+
+      // We unexpectedly became inactive.
+      if !state.hasSeenSettings || state.hasOpenStreams {
+        // Haven't seen settings, or we've seen settings and there are open streams.
+        operations.notifyConnectionManager(about: .inactive)
+      } else {
+        // Have seen settings and there are no open streams.
+        operations.notifyConnectionManager(about: .idle)
+      }
+
+    case let .waitingToIdle(state):
+      self.state = .closed
+
+      // We were going to idle anyway.
+      operations.notifyConnectionManager(about: .idle)
+      operations.cancelIdleTask(state.idleTask)
+
+    case let .quiescing(state):
+      self.state = .closed
+
+      if state.initiatedByUs || state.hasOpenStreams {
+        operations.notifyConnectionManager(about: .inactive)
+      } else {
+        operations.notifyConnectionManager(about: .idle)
+      }
+
+    case let .closing(state):
+      self.state = .closed
+
+      if state.shouldIdle {
+        operations.notifyConnectionManager(about: .idle)
+      } else {
+        operations.notifyConnectionManager(about: .inactive)
+      }
+
+    case .closed:
+      ()
+    }
+
+    return operations
+  }",0,,
+"private func handlePong(_ pingData: HTTP2PingData) -> Action {
+    if pingData.integer == self.pingCode {
+      return .cancelScheduledTimeout
+    } else {
+      return .none
+    }
+  }",1,1,    if pingData.integer == self.pingCode {
+"internal static func otherWantedToTalk(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""content.system.other_wanted_to_talk"", String(describing: p1))
+        }",0,,
+"private func handlePong(_ pingData: HTTP2PingData) -> Action {
+    if pingData.integer == self.pingCode {
+      return .cancelScheduledTimeout
+    } else {
+      return .none
+    }
+  }",1,1,    if pingData.integer == self.pingCode {
+"get {
+            willAccessValue(forKey: #keyPath(legalHoldStatus))
+            defer { didAccessValue(forKey: #keyPath(legalHoldStatus)) }
+
+            if let status = ZMConversationLegalHoldStatus(rawValue: primitiveLegalHoldStatus.int16Value) {
+                return status
+            } else {
+                return .disabled
+            }
+        }
+        set {
+            willChangeValue(forKey: #keyPath(legalHoldStatus))
+            primitiveLegalHoldStatus = NSNumber(value: newValue.rawValue)
+            didChangeValue(forKey: #keyPath(legalHoldStatus))
+        }
+    }",0,,
+"private mutating func generatePingFrame(code: UInt64, ack: Bool) -> HTTP2Frame.FramePayload {
+    if self.activeStreams == 0 {
+      self.sentPingsWithoutData += 1
+    }
+
+    self.lastSentPingDate = self.now()
+    return HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: code), ack: ack)
+  }",1,"0,6","private mutating func generatePingFrame(code: UInt64, ack: Bool) -> HTTP2Frame.FramePayload {/~/    return HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: code), ack: ack)"
+"    public func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
+        // make a copy of the path
+        var path = request.url.path
+
+        // path must be relative.
+        while path.hasPrefix(""/"") {
+            path = String(path.dropFirst())
+        }
+
+        // protect against relative paths
+        guard !path.contains(""../"") else {
+            return request.eventLoop.makeFailedFuture(Abort(.forbidden))
+        }
+
+        // create absolute file path
+        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+
+        // check if file exists and is not a directory
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: filePath, isDirectory: &isDir), !isDir.boolValue else {
+            return next.respond(to: request)
+        }
+
+        // stream the file
+        let res = request.fileio.streamFile(at: filePath)
+        return request.eventLoop.makeSucceededFuture(res)
+    }",1,"1,2,15",        // make a copy of the path/~/        var path = request.url.path/~/        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+"internal static func groupsYou(_ p1: Int) -> String {
+              return L10n.tr(""Localizable"", ""content.system.call.missed-call.groups-you"", p1)
+            }",0,,
+"private func handlePong(_ pingData: HTTP2PingData) -> Action {
+    if pingData.integer == self.pingCode {
+      return .cancelScheduledTimeout
+    } else {
+      return .none
+    }
+  }",1,1,    if pingData.integer == self.pingCode {
+"private func stream(with streamId: AVSClient) -> Stream? {
+        var stream = configuration.videoStreams.first(where: { $0.stream.streamId == streamId })?.stream
+
+        if stream == nil && configuration.floatingVideoStream?.stream.streamId == streamId {
+            stream = configuration.floatingVideoStream?.stream
+        }
+
+        return stream
+    }",0,,
+"    public class func keyPathsForValuesAffectingDisplayName() -> Set<String> {
+        return Set([ZMConversationConversationTypeKey,
+                    ""participantRoles.user.name"",
+                    ""connection.to.name"",
+                    ""connection.to.availability"",
+                    ZMConversationUserDefinedNameKey] +
+                   ZMConversation.participantRolesKeys)
+    }",0,,
+"internal static func time(_ p1: Any) -> String {
+              return L10n.tr(""Localizable"", ""content.message.reply.original_timestamp.time"", String(describing: p1))
+            }",0,,
+"private func resendPendingMessagesAfterPrivacyChanges() {
+        enumerateReverseMessagesThatCausedDegradationUntilFirstSystemMessageOnSyncContext {
+            $0.causedSecurityLevelDegradation = false
+            $0.resend()
+        }
+    }",0,,
+"    public func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
+        // make a copy of the path
+        var path = request.url.path
+
+        // path must be relative.
+        while path.hasPrefix(""/"") {
+            path = String(path.dropFirst())
+        }
+
+        // protect against relative paths
+        guard !path.contains(""../"") else {
+            return request.eventLoop.makeFailedFuture(Abort(.forbidden))
+        }
+
+        // create absolute file path
+        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+
+        // check if file exists and is not a directory
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: filePath, isDirectory: &isDir), !isDir.boolValue else {
+            return next.respond(to: request)
+        }
+
+        // stream the file
+        let res = request.fileio.streamFile(at: filePath)
+        return request.eventLoop.makeSucceededFuture(res)
+    }",1,"1,2,15",        // make a copy of the path/~/        var path = request.url.path/~/        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+"self.init(light: color, dark: color)
+    }
+}
+
+extension UIColor {
+
+    static func from(scheme: ColorSchemeColor, variant: ColorSchemeVariant? = nil) -> UIColor {
+        return ColorScheme.default.color(named: scheme, variant: variant)
+    }
+
+    /// Creates UIColor instance with color corresponding to @p accentColor that can be used to display the name.
+    // NB: the order of coefficients must match ZMAccentColor enum ordering
+    private static let accentColorNameColorBlendingCoefficientsDark: [CGFloat] = [0.8, 0.8, 0.72, 1.0, 0.8, 0.8, 0.8, 0.64]
+    private static let accentColorNameColorBlendingCoefficientsLight: [CGFloat] = [0.8, 0.8, 0.72, 1.0, 0.8, 0.8, 0.64, 1.0]
+
+    /// Creates UIColor instance with color corresponding to @p accentColor that can be used to display the name.
+    class func nameColor(for accentColor: ZMAccentColor, variant: ColorSchemeVariant) -> UIColor {
+
+        assert(accentColor.rawValue <= ZMAccentColor.max.rawValue)
+
+        let coefficientsArray = variant == .dark ? accentColorNameColorBlendingCoefficientsDark : accentColorNameColorBlendingCoefficientsLight
+        let coefficient = coefficientsArray[Int(accentColor.rawValue)]
+
+        let background: UIColor = variant == .dark ? .black : .white
+        return background.mix(UIColor(fromZMAccentColor: accentColor), amount: coefficient)
+    }
+}",1,"17,18,19,22,24","/~/        assert(accentColor.rawValue <= ZMAccentColor.max.rawValue)/~//~//~/        return background.mix(UIColor(fromZMAccentColor: accentColor), amount: coefficient)"
+"    public func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
+        // make a copy of the path
+        var path = request.url.path
+
+        // path must be relative.
+        while path.hasPrefix(""/"") {
+            path = String(path.dropFirst())
+        }
+
+        // protect against relative paths
+        guard !path.contains(""../"") else {
+            return request.eventLoop.makeFailedFuture(Abort(.forbidden))
+        }
+
+        // create absolute file path
+        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+
+        // check if file exists and is not a directory
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: filePath, isDirectory: &isDir), !isDir.boolValue else {
+            return next.respond(to: request)
+        }
+
+        // stream the file
+        let res = request.fileio.streamFile(at: filePath)
+        return request.eventLoop.makeSucceededFuture(res)
+    }",1,"1,2,15",        // make a copy of the path/~/        var path = request.url.path/~/        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+"internal static func lockDescription(_ p1: Any) -> String {
+                return L10n.tr(""Localizable"", ""self.settings.privacy_security.lock_app.subtitle.lock_description"", String(describing: p1))
+              }",0,,
+"    func asUrlDecoded() throws -> String {
+        switch self {
+        case .urlEncoded(let encoded):
+            guard let decoded = encoded.removingPercentEncoding else {
+                throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: [], debugDescription: ""Unable to remove percent encoding for \(encoded)""))
+            }
+            return decoded
+        case .urlDecoded(let decoded):
+            return decoded
+        }
+    }",0,,
+"public func collectFile(at path: String) -> EventLoopFuture<ByteBuffer> {
+        var data = self.allocator.buffer(capacity: 0)
+        return self.readFile(at: path) { new in
+            var new = new
+            data.writeBuffer(&new)
+            return self.request.eventLoop.makeSucceededFuture(())
+        }.map { data }
+    }",0,,
+"    public init(rawValue: Int) {
+        self.rawValue = rawValue
+    }",0,,
+"mutating func streamClosed() -> Action {
+    self.activeStreams -= 1
+    return .none
+  }",0,,
+"  private func schedulePing(in delay: TimeAmount, timeout: TimeAmount) {
+    guard delay != .nanoseconds(.max) else {
+      return
+    }
+
+    self.scheduledPing = self.context?.eventLoop.scheduleRepeatedTask(
+      initialDelay: delay,
+      delay: delay
+    ) { _ in
+      self.handlePingAction(self.pingHandler.pingFired())
+      // `timeout` is less than `interval`, guaranteeing that the close task
+      // will be fired before a new ping is triggered.
+      assert(timeout < delay, ""`timeout` must be less than `interval`"")
+      self.scheduleClose(in: timeout)
+    }
+  }",0,,
+"private mutating func generatePingFrame(code: UInt64, ack: Bool) -> HTTP2Frame.FramePayload {
+    if self.activeStreams == 0 {
+      self.sentPingsWithoutData += 1
+    }
+
+    self.lastSentPingDate = self.now()
+    return HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: code), ack: ack)
+  }",1,"0,6","private mutating func generatePingFrame(code: UInt64, ack: Bool) -> HTTP2Frame.FramePayload {/~/    return HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: code), ack: ack)"
+"    public func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
+        // make a copy of the path
+        var path = request.url.path
+
+        // path must be relative.
+        while path.hasPrefix(""/"") {
+            path = String(path.dropFirst())
+        }
+
+        // protect against relative paths
+        guard !path.contains(""../"") else {
+            return request.eventLoop.makeFailedFuture(Abort(.forbidden))
+        }
+
+        // create absolute file path
+        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+
+        // check if file exists and is not a directory
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: filePath, isDirectory: &isDir), !isDir.boolValue else {
+            return next.respond(to: request)
+        }
+
+        // stream the file
+        let res = request.fileio.streamFile(at: filePath)
+        return request.eventLoop.makeSucceededFuture(res)
+    }",1,"1,2,15",        // make a copy of the path/~/        var path = request.url.path/~/        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+"internal static func peopleStartedUsing(_ p1: Any, _ p2: Int, _ p3: Int) -> String {
+          return L10n.tr(""Localizable"", ""content.system.people_started_using"", String(describing: p1), p2, p3)
+        }",0,,
+"self.init(light: color, dark: color)
+    }
+}
+
+extension UIColor {
+
+    static func from(scheme: ColorSchemeColor, variant: ColorSchemeVariant? = nil) -> UIColor {
+        return ColorScheme.default.color(named: scheme, variant: variant)
+    }
+
+    /// Creates UIColor instance with color corresponding to @p accentColor that can be used to display the name.
+    // NB: the order of coefficients must match ZMAccentColor enum ordering
+    private static let accentColorNameColorBlendingCoefficientsDark: [CGFloat] = [0.8, 0.8, 0.72, 1.0, 0.8, 0.8, 0.8, 0.64]
+    private static let accentColorNameColorBlendingCoefficientsLight: [CGFloat] = [0.8, 0.8, 0.72, 1.0, 0.8, 0.8, 0.64, 1.0]
+
+    /// Creates UIColor instance with color corresponding to @p accentColor that can be used to display the name.
+    class func nameColor(for accentColor: ZMAccentColor, variant: ColorSchemeVariant) -> UIColor {
+
+        assert(accentColor.rawValue <= ZMAccentColor.max.rawValue)
+
+        let coefficientsArray = variant == .dark ? accentColorNameColorBlendingCoefficientsDark : accentColorNameColorBlendingCoefficientsLight
+        let coefficient = coefficientsArray[Int(accentColor.rawValue)]
+
+        let background: UIColor = variant == .dark ? .black : .white
+        return background.mix(UIColor(fromZMAccentColor: accentColor), amount: coefficient)
+    }
+}",1,"17,18,19,22,24","/~/        assert(accentColor.rawValue <= ZMAccentColor.max.rawValue)/~//~//~/        return background.mix(UIColor(fromZMAccentColor: accentColor), amount: coefficient)"
+"private mutating func generatePingFrame(code: UInt64, ack: Bool) -> HTTP2Frame.FramePayload {
+    if self.activeStreams == 0 {
+      self.sentPingsWithoutData += 1
+    }
+
+    self.lastSentPingDate = self.now()
+    return HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: code), ack: ack)
+  }",1,"0,6","private mutating func generatePingFrame(code: UInt64, ack: Bool) -> HTTP2Frame.FramePayload {/~/    return HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: code), ack: ack)"
+"private mutating func generatePingFrame(code: UInt64, ack: Bool) -> HTTP2Frame.FramePayload {
+    if self.activeStreams == 0 {
+      self.sentPingsWithoutData += 1
+    }
+
+    self.lastSentPingDate = self.now()
+    return HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: code), ack: ack)
+  }",1,"0,6","private mutating func generatePingFrame(code: UInt64, ack: Bool) -> HTTP2Frame.FramePayload {/~/    return HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: code), ack: ack)"
+"internal static func peopleWaiting(_ p1: Int) -> String {
+          return L10n.tr(""Localizable"", ""list.connect_request.people_waiting"", p1)
+        }",0,,
+"    private func applySecurityChanges(cause: SecurityChangeCause) {
+        updateLegalHoldState(cause: cause)
+        updateSecurityLevel(cause: cause)
+    }",0,,
+"public func addParticipantsAndUpdateConversationState(usersAndRoles: [(ZMUser, Role?)]) {
+        
+        // Is this a new conversation, or an existing one that is being updated?
+        let doesExistsOnBackend = self.remoteIdentifier != nil
+        
+        let addedRoles = usersAndRoles.compactMap { (user, role) -> ParticipantRole? in
+            guard !user.isAccountDeleted else { return nil }
+            
+            // make sure the role is the right team/conversation role
+            require(
+                role == nil || (role!.team == self.team || role!.conversation == self),
+                ""Tried to add a role that does not belong to the conversation""
+            )
+            
+            guard let (result, pr) = updateExistingOrCreateParticipantRole(for: user, with: role) else { return nil }
+            return (result == .created) ? pr : nil
+        }
+        
+        let addedSelfUser = doesExistsOnBackend && addedRoles.contains(where: {$0.user.isSelfUser})
+        if addedSelfUser {
+            self.markToDownloadRolesIfNeeded()
+            self.needsToBeUpdatedFromBackend = true
+        }
+        
+        if !addedRoles.isEmpty {
+            self.checkIfArchivedStatusChanged(addedSelfUser: addedSelfUser)
+            self.checkIfVerificationLevelChanged(addedUsers: Set(addedRoles.map { $0.user}))
+        }
+    }",1,26,self.checkIfVerificationLevelChanged(addedUsers: Set(addedRoles.map { $0.user}))
+"internal static func titleYou(_ p1: Any) -> String {
+            return L10n.tr(""Localizable"", ""content.system.renamed_conv.title-you"", String(describing: p1))
+          }",0,,
+"    public func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
+        // make a copy of the path
+        var path = request.url.path
+
+        // path must be relative.
+        while path.hasPrefix(""/"") {
+            path = String(path.dropFirst())
+        }
+
+        // protect against relative paths
+        guard !path.contains(""../"") else {
+            return request.eventLoop.makeFailedFuture(Abort(.forbidden))
+        }
+
+        // create absolute file path
+        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+
+        // check if file exists and is not a directory
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: filePath, isDirectory: &isDir), !isDir.boolValue else {
+            return next.respond(to: request)
+        }
+
+        // stream the file
+        let res = request.fileio.streamFile(at: filePath)
+        return request.eventLoop.makeSucceededFuture(res)
+    }",1,"1,2,15",        // make a copy of the path/~/        var path = request.url.path/~/        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+"internal static func message(_ p1: Any) -> String {
+            return L10n.tr(""Localizable"", ""content.message.open_link_alert.message"", String(describing: p1))
+          }",0,,
+"internal static func title(_ p1: Any) -> String {
+              return L10n.tr(""Localizable"", ""landing.custom_backend.more_info.alert.title"", String(describing: p1))
+            }",0,,
+"    private func transition(to appState: AppState, completion: @escaping () -> Void) {
+        applicationWillTransition(to: appState)
+
+        resetAuthenticationCoordinatorIfNeeded(for: appState)
+
+        let completionBlock = { [weak self] in
+            completion()
+            self?.applicationDidTransition(to: appState)
+        }
+
+        switch appState {
+        case .blacklisted:
+            showBlacklisted(completion: completionBlock)
+        case .jailbroken:
+            showJailbroken(completion: completionBlock)
+        case .databaseFailure:
+            showDatabaseLoadingFailure(completion: completionBlock)
+        case .migrating:
+            showLaunchScreen(isLoading: true, completion: completionBlock)
+        case .unauthenticated(error: let error):
+            screenCurtain.delegate = nil
+            configureUnauthenticatedAppearance()
+            showUnauthenticatedFlow(error: error, completion: completionBlock)
+        case .authenticated(completedRegistration: let completedRegistration):
+            configureAuthenticatedAppearance()
+            executeAuthenticatedBlocks()
+            // TODO: [John] Avoid singleton.
+            screenCurtain.delegate = ZMUserSession.shared()
+            showAuthenticated(isComingFromRegistration: completedRegistration,
+                              completion: completionBlock)
+        case .headless:
+            showLaunchScreen(completion: completionBlock)
+        case .loading(account: let toAccount, from: let fromAccount):
+            showSkeleton(fromAccount: fromAccount,
+                         toAccount: toAccount,
+                         completion: completionBlock)
+        case .locked:
+            // TODO: [John] Avoid singleton.
+            screenCurtain.delegate = ZMUserSession.shared()
+            showAppLock(completion: completionBlock)
+        }
+    }",0,,
+"    public func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
+        // make a copy of the path
+        var path = request.url.path
+
+        // path must be relative.
+        while path.hasPrefix(""/"") {
+            path = String(path.dropFirst())
+        }
+
+        // protect against relative paths
+        guard !path.contains(""../"") else {
+            return request.eventLoop.makeFailedFuture(Abort(.forbidden))
+        }
+
+        // create absolute file path
+        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+
+        // check if file exists and is not a directory
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: filePath, isDirectory: &isDir), !isDir.boolValue else {
+            return next.respond(to: request)
+        }
+
+        // stream the file
+        let res = request.fileio.streamFile(at: filePath)
+        return request.eventLoop.makeSucceededFuture(res)
+    }",1,"1,2,15",        // make a copy of the path/~/        var path = request.url.path/~/        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+"    func contentSizeCategoryDidChange() {
+        NSAttributedString.invalidateParagraphStyle()
+        NSAttributedString.invalidateMarkdownStyle()
+        ConversationListCell.invalidateCachedCellSize()
+        defaultFontScheme = FontScheme(contentSizeCategory: UIApplication.shared.preferredContentSizeCategory)
+        AppRootRouter.configureAppearance()
+    }",0,,
+"private mutating func generatePingFrame(code: UInt64, ack: Bool) -> HTTP2Frame.FramePayload {
+    if self.activeStreams == 0 {
+      self.sentPingsWithoutData += 1
+    }
+
+    self.lastSentPingDate = self.now()
+    return HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: code), ack: ack)
+  }",1,"0,6","private mutating func generatePingFrame(code: UInt64, ack: Bool) -> HTTP2Frame.FramePayload {/~/    return HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: code), ack: ack)"
+"    public func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
+        // make a copy of the path
+        var path = request.url.path
+
+        // path must be relative.
+        while path.hasPrefix(""/"") {
+            path = String(path.dropFirst())
+        }
+
+        // protect against relative paths
+        guard !path.contains(""../"") else {
+            return request.eventLoop.makeFailedFuture(Abort(.forbidden))
+        }
+
+        // create absolute file path
+        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+
+        // check if file exists and is not a directory
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: filePath, isDirectory: &isDir), !isDir.boolValue else {
+            return next.respond(to: request)
+        }
+
+        // stream the file
+        let res = request.fileio.streamFile(at: filePath)
+        return request.eventLoop.makeSucceededFuture(res)
+    }",1,"1,2,15",        // make a copy of the path/~/        var path = request.url.path/~/        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+"public func addParticipantsAndUpdateConversationState(usersAndRoles: [(ZMUser, Role?)]) {
+        
+        // Is this a new conversation, or an existing one that is being updated?
+        let doesExistsOnBackend = self.remoteIdentifier != nil
+        
+        let addedRoles = usersAndRoles.compactMap { (user, role) -> ParticipantRole? in
+            guard !user.isAccountDeleted else { return nil }
+            
+            // make sure the role is the right team/conversation role
+            require(
+                role == nil || (role!.team == self.team || role!.conversation == self),
+                ""Tried to add a role that does not belong to the conversation""
+            )
+            
+            guard let (result, pr) = updateExistingOrCreateParticipantRole(for: user, with: role) else { return nil }
+            return (result == .created) ? pr : nil
+        }
+        
+        let addedSelfUser = doesExistsOnBackend && addedRoles.contains(where: {$0.user.isSelfUser})
+        if addedSelfUser {
+            self.markToDownloadRolesIfNeeded()
+            self.needsToBeUpdatedFromBackend = true
+        }
+        
+        if !addedRoles.isEmpty {
+            self.checkIfArchivedStatusChanged(addedSelfUser: addedSelfUser)
+            self.checkIfVerificationLevelChanged(addedUsers: Set(addedRoles.map { $0.user}))
+        }
+    }",1,26,self.checkIfVerificationLevelChanged(addedUsers: Set(addedRoles.map { $0.user}))
+"self.init(light: color, dark: color)
+    }
+}
+
+extension UIColor {
+
+    static func from(scheme: ColorSchemeColor, variant: ColorSchemeVariant? = nil) -> UIColor {
+        return ColorScheme.default.color(named: scheme, variant: variant)
+    }
+
+    /// Creates UIColor instance with color corresponding to @p accentColor that can be used to display the name.
+    // NB: the order of coefficients must match ZMAccentColor enum ordering
+    private static let accentColorNameColorBlendingCoefficientsDark: [CGFloat] = [0.8, 0.8, 0.72, 1.0, 0.8, 0.8, 0.8, 0.64]
+    private static let accentColorNameColorBlendingCoefficientsLight: [CGFloat] = [0.8, 0.8, 0.72, 1.0, 0.8, 0.8, 0.64, 1.0]
+
+    /// Creates UIColor instance with color corresponding to @p accentColor that can be used to display the name.
+    class func nameColor(for accentColor: ZMAccentColor, variant: ColorSchemeVariant) -> UIColor {
+
+        assert(accentColor.rawValue <= ZMAccentColor.max.rawValue)
+
+        let coefficientsArray = variant == .dark ? accentColorNameColorBlendingCoefficientsDark : accentColorNameColorBlendingCoefficientsLight
+        let coefficient = coefficientsArray[Int(accentColor.rawValue)]
+
+        let background: UIColor = variant == .dark ? .black : .white
+        return background.mix(UIColor(fromZMAccentColor: accentColor), amount: coefficient)
+    }
+}",1,"17,18,19,22,24","/~/        assert(accentColor.rawValue <= ZMAccentColor.max.rawValue)/~//~//~/        return background.mix(UIColor(fromZMAccentColor: accentColor), amount: coefficient)"
+"    private func gridAxis(for traitCollection: UITraitCollection) -> UICollectionView.ScrollDirection {
+        let isLandscape = UIApplication.shared.statusBarOrientation.isLandscape
+        switch (traitCollection.userInterfaceIdiom, traitCollection.horizontalSizeClass, isLandscape) {
+        case (.pad, .regular, true):
+            return .horizontal
+        default:
+            return .vertical
+        }
+    }",0,,
+"private mutating func generatePingFrame(code: UInt64, ack: Bool) -> HTTP2Frame.FramePayload {
+    if self.activeStreams == 0 {
+      self.sentPingsWithoutData += 1
+    }
+
+    self.lastSentPingDate = self.now()
+    return HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: code), ack: ack)
+  }",1,"0,6","private mutating func generatePingFrame(code: UInt64, ack: Bool) -> HTTP2Frame.FramePayload {/~/    return HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: code), ack: ack)"
+"    private func streamView(at location: CGPoint) -> BaseVideoPreviewView? {
+        guard let indexPath = gridView.indexPathForItem(at: location) else {
+            return nil
+        }
+        return streamView(for: dataSource[indexPath.row].stream) as? BaseVideoPreviewView
+    }",0,,
+"private func handlePong(_ pingData: HTTP2PingData) -> Action {
+    if pingData.integer == self.pingCode {
+      return .cancelScheduledTimeout
+    } else {
+      return .none
+    }
+  }",1,1,    if pingData.integer == self.pingCode {
+"    private func notifyVisibilityChanged() {
+        NotificationCenter.default.post(
+            name: .videoGridVisibilityChanged,
+            object: nil,
+            userInfo: [VideoGridViewController.isCoveredKey: isCovered]
+        )
+    }",0,,
+"private mutating func generatePingFrame(code: UInt64, ack: Bool) -> HTTP2Frame.FramePayload {
+    if self.activeStreams == 0 {
+      self.sentPingsWithoutData += 1
+    }
+
+    self.lastSentPingDate = self.now()
+    return HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: code), ack: ack)
+  }",1,"0,6","private mutating func generatePingFrame(code: UInt64, ack: Bool) -> HTTP2Frame.FramePayload {/~/    return HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: code), ack: ack)"
+"internal static func group(_ p1: Any) -> String {
+            return L10n.tr(""Localizable"", ""conversation.status.typing.group"", String(describing: p1))
+          }",0,,
+"    private func appendLegalHoldDisabledSystemMessageForConversation() {
+        appendSystemMessage(type: .legalHoldDisabled,
+                            sender: ZMUser.selfUser(in: self.managedObjectContext!),
+                            users: nil,
+                            clients: nil,
+                            timestamp: timestampAfterLastMessage())
+    }",0,,
+"private func handlePong(_ pingData: HTTP2PingData) -> Action {
+    if pingData.integer == self.pingCode {
+      return .cancelScheduledTimeout
+    } else {
+      return .none
+    }
+  }",1,1,    if pingData.integer == self.pingCode {
+"internal static func knowsTwo(_ p1: Any, _ p2: Any) -> String {
+          return L10n.tr(""Localizable"", ""peoplepicker.suggested.knows_two"", String(describing: p1), String(describing: p2))
+        }",0,,
+"    init(arrayLiteral: String...) {
+        self.values = arrayLiteral.map({ (s: String) -> URLQueryFragment in
+            return .urlDecoded(s)
+        })
+        self.children = [:]
+    }",0,,
+"internal static func groups(_ p1: Int) -> String {
+              return L10n.tr(""Localizable"", ""content.system.call.missed-call.groups"", p1)
+            }",0,,
+"private mutating func generatePingFrame(code: UInt64, ack: Bool) -> HTTP2Frame.FramePayload {
+    if self.activeStreams == 0 {
+      self.sentPingsWithoutData += 1
+    }
+
+    self.lastSentPingDate = self.now()
+    return HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: code), ack: ack)
+  }",1,"0,6","private mutating func generatePingFrame(code: UInt64, ack: Bool) -> HTTP2Frame.FramePayload {/~/    return HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: code), ack: ack)"
+"    fileprivate init(fromOperating state: Operating) {
+      self.role = state.role
+      // Idle if there are no open streams and we've seen the first SETTINGS frame.
+      self.shouldIdle = !state.hasOpenStreams && state.hasSeenSettings
+    }",0,,
+"didSet {
+      if self.activeStreams > 0 {
+        self.sentPingsWithoutData = 0
+      }
+    }",0,,
+"    func mainColor(color: UIColor?) -> UIColor {
+        return color ?? UIColor.from(scheme: .textForeground, variant: self)
+    }",0,,
+"self.init(light: color, dark: color)
+    }
+}
+
+extension UIColor {
+
+    static func from(scheme: ColorSchemeColor, variant: ColorSchemeVariant? = nil) -> UIColor {
+        return ColorScheme.default.color(named: scheme, variant: variant)
+    }
+
+    /// Creates UIColor instance with color corresponding to @p accentColor that can be used to display the name.
+    // NB: the order of coefficients must match ZMAccentColor enum ordering
+    private static let accentColorNameColorBlendingCoefficientsDark: [CGFloat] = [0.8, 0.8, 0.72, 1.0, 0.8, 0.8, 0.8, 0.64]
+    private static let accentColorNameColorBlendingCoefficientsLight: [CGFloat] = [0.8, 0.8, 0.72, 1.0, 0.8, 0.8, 0.64, 1.0]
+
+    /// Creates UIColor instance with color corresponding to @p accentColor that can be used to display the name.
+    class func nameColor(for accentColor: ZMAccentColor, variant: ColorSchemeVariant) -> UIColor {
+
+        assert(accentColor.rawValue <= ZMAccentColor.max.rawValue)
+
+        let coefficientsArray = variant == .dark ? accentColorNameColorBlendingCoefficientsDark : accentColorNameColorBlendingCoefficientsLight
+        let coefficient = coefficientsArray[Int(accentColor.rawValue)]
+
+        let background: UIColor = variant == .dark ? .black : .white
+        return background.mix(UIColor(fromZMAccentColor: accentColor), amount: coefficient)
+    }
+}",1,"17,18,19,22,24","/~/        assert(accentColor.rawValue <= ZMAccentColor.max.rawValue)/~//~//~/        return background.mix(UIColor(fromZMAccentColor: accentColor), amount: coefficient)"
+"    class func keyboardAppearance(for variant: ColorSchemeVariant) -> UIKeyboardAppearance {
+        return variant == .light ? .light : .dark
+    }",0,,
+"public func addParticipantsAndUpdateConversationState(usersAndRoles: [(ZMUser, Role?)]) {
+        
+        // Is this a new conversation, or an existing one that is being updated?
+        let doesExistsOnBackend = self.remoteIdentifier != nil
+        
+        let addedRoles = usersAndRoles.compactMap { (user, role) -> ParticipantRole? in
+            guard !user.isAccountDeleted else { return nil }
+            
+            // make sure the role is the right team/conversation role
+            require(
+                role == nil || (role!.team == self.team || role!.conversation == self),
+                ""Tried to add a role that does not belong to the conversation""
+            )
+            
+            guard let (result, pr) = updateExistingOrCreateParticipantRole(for: user, with: role) else { return nil }
+            return (result == .created) ? pr : nil
+        }
+        
+        let addedSelfUser = doesExistsOnBackend && addedRoles.contains(where: {$0.user.isSelfUser})
+        if addedSelfUser {
+            self.markToDownloadRolesIfNeeded()
+            self.needsToBeUpdatedFromBackend = true
+        }
+        
+        if !addedRoles.isEmpty {
+            self.checkIfArchivedStatusChanged(addedSelfUser: addedSelfUser)
+            self.checkIfVerificationLevelChanged(addedUsers: Set(addedRoles.map { $0.user}))
+        }
+    }",1,26,self.checkIfVerificationLevelChanged(addedUsers: Set(addedRoles.map { $0.user}))
+"private(set) var connectionManagerEvent: ConnectionManagerEvent?
+
+    /// The value of HTTP/2 SETTINGS_MAX_CONCURRENT_STREAMS changed.
+    private(set) var maxConcurrentStreamsChange: Int?
+
+    /// An idle task, either scheduling or cancelling an idle timeout.
+    private(set) var idleTask: IdleTask?
+
+    /// Send a GOAWAY frame with the last peer initiated stream ID set to this value.
+    private(set) var sendGoAwayWithLastPeerInitiatedStreamID: HTTP2StreamID?
+
+    /// Whether the channel should be closed.
+    private(set) var shouldCloseChannel: Bool
+
+    fileprivate static let none = Operations()
+
+    fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+      self.sendGoAwayWithLastPeerInitiatedStreamID = streamID
+    }",1,16,fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+"        super.init(nibName: nil, bundle: nil)
+
+        setupViews()
+        createConstraints()
+        updateState()
+        displayIndicatorViewsIfNeeded()
+    }
+
+    required init?(coder aDecoder: NSCoder) {
+        fatalError(""init(coder:) has not been implemented"")
+    }",0,,
+"    override func setupViews() {
+        super.setupViews()
+        previewView.backgroundColor = .clear
+        previewView.translatesAutoresizingMaskIntoConstraints = false
+        insertSubview(previewView, belowSubview: userDetailsView)
+    }",0,,
+"self.init(light: color, dark: color)
+    }
+}
+
+extension UIColor {
+
+    static func from(scheme: ColorSchemeColor, variant: ColorSchemeVariant? = nil) -> UIColor {
+        return ColorScheme.default.color(named: scheme, variant: variant)
+    }
+
+    /// Creates UIColor instance with color corresponding to @p accentColor that can be used to display the name.
+    // NB: the order of coefficients must match ZMAccentColor enum ordering
+    private static let accentColorNameColorBlendingCoefficientsDark: [CGFloat] = [0.8, 0.8, 0.72, 1.0, 0.8, 0.8, 0.8, 0.64]
+    private static let accentColorNameColorBlendingCoefficientsLight: [CGFloat] = [0.8, 0.8, 0.72, 1.0, 0.8, 0.8, 0.64, 1.0]
+
+    /// Creates UIColor instance with color corresponding to @p accentColor that can be used to display the name.
+    class func nameColor(for accentColor: ZMAccentColor, variant: ColorSchemeVariant) -> UIColor {
+
+        assert(accentColor.rawValue <= ZMAccentColor.max.rawValue)
+
+        let coefficientsArray = variant == .dark ? accentColorNameColorBlendingCoefficientsDark : accentColorNameColorBlendingCoefficientsLight
+        let coefficient = coefficientsArray[Int(accentColor.rawValue)]
+
+        let background: UIColor = variant == .dark ? .black : .white
+        return background.mix(UIColor(fromZMAccentColor: accentColor), amount: coefficient)
+    }
+}",1,"17,18,19,22,24","/~/        assert(accentColor.rawValue <= ZMAccentColor.max.rawValue)/~//~//~/        return background.mix(UIColor(fromZMAccentColor: accentColor), amount: coefficient)"
+"public func addParticipantsAndUpdateConversationState(usersAndRoles: [(ZMUser, Role?)]) {
+        
+        // Is this a new conversation, or an existing one that is being updated?
+        let doesExistsOnBackend = self.remoteIdentifier != nil
+        
+        let addedRoles = usersAndRoles.compactMap { (user, role) -> ParticipantRole? in
+            guard !user.isAccountDeleted else { return nil }
+            
+            // make sure the role is the right team/conversation role
+            require(
+                role == nil || (role!.team == self.team || role!.conversation == self),
+                ""Tried to add a role that does not belong to the conversation""
+            )
+            
+            guard let (result, pr) = updateExistingOrCreateParticipantRole(for: user, with: role) else { return nil }
+            return (result == .created) ? pr : nil
+        }
+        
+        let addedSelfUser = doesExistsOnBackend && addedRoles.contains(where: {$0.user.isSelfUser})
+        if addedSelfUser {
+            self.markToDownloadRolesIfNeeded()
+            self.needsToBeUpdatedFromBackend = true
+        }
+        
+        if !addedRoles.isEmpty {
+            self.checkIfArchivedStatusChanged(addedSelfUser: addedSelfUser)
+            self.checkIfVerificationLevelChanged(addedUsers: Set(addedRoles.map { $0.user}))
+        }
+    }",1,26,self.checkIfVerificationLevelChanged(addedUsers: Set(addedRoles.map { $0.user}))
+"internal static func youRemovedOther(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""content.system.you_removed_other"", String(describing: p1))
+        }",0,,
+"private(set) var connectionManagerEvent: ConnectionManagerEvent?
+
+    /// The value of HTTP/2 SETTINGS_MAX_CONCURRENT_STREAMS changed.
+    private(set) var maxConcurrentStreamsChange: Int?
+
+    /// An idle task, either scheduling or cancelling an idle timeout.
+    private(set) var idleTask: IdleTask?
+
+    /// Send a GOAWAY frame with the last peer initiated stream ID set to this value.
+    private(set) var sendGoAwayWithLastPeerInitiatedStreamID: HTTP2StreamID?
+
+    /// Whether the channel should be closed.
+    private(set) var shouldCloseChannel: Bool
+
+    fileprivate static let none = Operations()
+
+    fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+      self.sendGoAwayWithLastPeerInitiatedStreamID = streamID
+    }",1,16,fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+"public func addParticipantsAndUpdateConversationState(usersAndRoles: [(ZMUser, Role?)]) {
+        
+        // Is this a new conversation, or an existing one that is being updated?
+        let doesExistsOnBackend = self.remoteIdentifier != nil
+        
+        let addedRoles = usersAndRoles.compactMap { (user, role) -> ParticipantRole? in
+            guard !user.isAccountDeleted else { return nil }
+            
+            // make sure the role is the right team/conversation role
+            require(
+                role == nil || (role!.team == self.team || role!.conversation == self),
+                ""Tried to add a role that does not belong to the conversation""
+            )
+            
+            guard let (result, pr) = updateExistingOrCreateParticipantRole(for: user, with: role) else { return nil }
+            return (result == .created) ? pr : nil
+        }
+        
+        let addedSelfUser = doesExistsOnBackend && addedRoles.contains(where: {$0.user.isSelfUser})
+        if addedSelfUser {
+            self.markToDownloadRolesIfNeeded()
+            self.needsToBeUpdatedFromBackend = true
+        }
+        
+        if !addedRoles.isEmpty {
+            self.checkIfArchivedStatusChanged(addedSelfUser: addedSelfUser)
+            self.checkIfVerificationLevelChanged(addedUsers: Set(addedRoles.map { $0.user}))
+        }
+    }",1,26,self.checkIfVerificationLevelChanged(addedUsers: Set(addedRoles.map { $0.user}))
+"    deinit {
+        stopCapture()
+    }",0,,
+"    override func createConstraints() {
+        super.createConstraints()
+        previewView.fitInSuperview()
+    }",0,,
+"private(set) var connectionManagerEvent: ConnectionManagerEvent?
+
+    /// The value of HTTP/2 SETTINGS_MAX_CONCURRENT_STREAMS changed.
+    private(set) var maxConcurrentStreamsChange: Int?
+
+    /// An idle task, either scheduling or cancelling an idle timeout.
+    private(set) var idleTask: IdleTask?
+
+    /// Send a GOAWAY frame with the last peer initiated stream ID set to this value.
+    private(set) var sendGoAwayWithLastPeerInitiatedStreamID: HTTP2StreamID?
+
+    /// Whether the channel should be closed.
+    private(set) var shouldCloseChannel: Bool
+
+    fileprivate static let none = Operations()
+
+    fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+      self.sendGoAwayWithLastPeerInitiatedStreamID = streamID
+    }",1,16,fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+"internal static func showAll(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""call.participants.show_all"", String(describing: p1))
+        }",0,,
+"internal static func message(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""url_action.switch_backend.message"", String(describing: p1))
+        }",0,,
+"private mutating func generatePingFrame(code: UInt64, ack: Bool) -> HTTP2Frame.FramePayload {
+    if self.activeStreams == 0 {
+      self.sentPingsWithoutData += 1
+    }
+
+    self.lastSentPingDate = self.now()
+    return HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: code), ack: ack)
+  }",1,"0,6","private mutating func generatePingFrame(code: UInt64, ack: Bool) -> HTTP2Frame.FramePayload {/~/    return HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: code), ack: ack)"
+"    fileprivate init(fromQuiescing state: Quiescing) {
+      self.role = state.role
+      // If we initiated the quiescing then we shouldn't go idle (we want to shutdown instead).
+      self.shouldIdle = !state.initiatedByUs
+    }",0,,
+"    private func updateSecurityLevel(cause: SecurityChangeCause) {
+        switch cause {
+        case .addedUsers, .addedClients, .ignoredClients:
+            degradeSecurityLevelIfNeeded(for: cause)
+
+        case .removedUsers, .removedClients, .verifiedClients:
+            increaseSecurityLevelIfNeeded(for: cause)
+            
+        case .verifyLegalHold:
+            // no-op: verifying legal hold does not impact security level
+            break
+        }
+    }",0,,
+"public func addParticipantsAndUpdateConversationState(usersAndRoles: [(ZMUser, Role?)]) {
+        
+        // Is this a new conversation, or an existing one that is being updated?
+        let doesExistsOnBackend = self.remoteIdentifier != nil
+        
+        let addedRoles = usersAndRoles.compactMap { (user, role) -> ParticipantRole? in
+            guard !user.isAccountDeleted else { return nil }
+            
+            // make sure the role is the right team/conversation role
+            require(
+                role == nil || (role!.team == self.team || role!.conversation == self),
+                ""Tried to add a role that does not belong to the conversation""
+            )
+            
+            guard let (result, pr) = updateExistingOrCreateParticipantRole(for: user, with: role) else { return nil }
+            return (result == .created) ? pr : nil
+        }
+        
+        let addedSelfUser = doesExistsOnBackend && addedRoles.contains(where: {$0.user.isSelfUser})
+        if addedSelfUser {
+            self.markToDownloadRolesIfNeeded()
+            self.needsToBeUpdatedFromBackend = true
+        }
+        
+        if !addedRoles.isEmpty {
+            self.checkIfArchivedStatusChanged(addedSelfUser: addedSelfUser)
+            self.checkIfVerificationLevelChanged(addedUsers: Set(addedRoles.map { $0.user}))
+        }
+    }",1,26,self.checkIfVerificationLevelChanged(addedUsers: Set(addedRoles.map { $0.user}))
+"internal static func participants1Other(_ p1: Any, _ p2: Any) -> String {
+          return L10n.tr(""Localizable"", ""content.system.participants_1_other"", String(describing: p1), String(describing: p2))
+        }",0,,
+"internal static func description(_ p1: Any) -> String {
+                  return L10n.tr(""Localizable"", ""self.settings.account_section.phone_number.change.verify.description"", String(describing: p1))
+                }",0,,
+"internal static func messagePlural(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""self.new_device_alert.message_plural"", String(describing: p1))
+        }",0,,
+"public func addParticipantsAndUpdateConversationState(usersAndRoles: [(ZMUser, Role?)]) {
+        
+        // Is this a new conversation, or an existing one that is being updated?
+        let doesExistsOnBackend = self.remoteIdentifier != nil
+        
+        let addedRoles = usersAndRoles.compactMap { (user, role) -> ParticipantRole? in
+            guard !user.isAccountDeleted else { return nil }
+            
+            // make sure the role is the right team/conversation role
+            require(
+                role == nil || (role!.team == self.team || role!.conversation == self),
+                ""Tried to add a role that does not belong to the conversation""
+            )
+            
+            guard let (result, pr) = updateExistingOrCreateParticipantRole(for: user, with: role) else { return nil }
+            return (result == .created) ? pr : nil
+        }
+        
+        let addedSelfUser = doesExistsOnBackend && addedRoles.contains(where: {$0.user.isSelfUser})
+        if addedSelfUser {
+            self.markToDownloadRolesIfNeeded()
+            self.needsToBeUpdatedFromBackend = true
+        }
+        
+        if !addedRoles.isEmpty {
+            self.checkIfArchivedStatusChanged(addedSelfUser: addedSelfUser)
+            self.checkIfVerificationLevelChanged(addedUsers: Set(addedRoles.map { $0.user}))
+        }
+    }",1,26,self.checkIfVerificationLevelChanged(addedUsers: Set(addedRoles.map { $0.user}))
+"private mutating func generatePingFrame(code: UInt64, ack: Bool) -> HTTP2Frame.FramePayload {
+    if self.activeStreams == 0 {
+      self.sentPingsWithoutData += 1
+    }
+
+    self.lastSentPingDate = self.now()
+    return HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: code), ack: ack)
+  }",1,"0,6","private mutating func generatePingFrame(code: UInt64, ack: Bool) -> HTTP2Frame.FramePayload {/~/    return HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: code), ack: ack)"
+"self.init(light: color, dark: color)
+    }
+}
+
+extension UIColor {
+
+    static func from(scheme: ColorSchemeColor, variant: ColorSchemeVariant? = nil) -> UIColor {
+        return ColorScheme.default.color(named: scheme, variant: variant)
+    }
+
+    /// Creates UIColor instance with color corresponding to @p accentColor that can be used to display the name.
+    // NB: the order of coefficients must match ZMAccentColor enum ordering
+    private static let accentColorNameColorBlendingCoefficientsDark: [CGFloat] = [0.8, 0.8, 0.72, 1.0, 0.8, 0.8, 0.8, 0.64]
+    private static let accentColorNameColorBlendingCoefficientsLight: [CGFloat] = [0.8, 0.8, 0.72, 1.0, 0.8, 0.8, 0.64, 1.0]
+
+    /// Creates UIColor instance with color corresponding to @p accentColor that can be used to display the name.
+    class func nameColor(for accentColor: ZMAccentColor, variant: ColorSchemeVariant) -> UIColor {
+
+        assert(accentColor.rawValue <= ZMAccentColor.max.rawValue)
+
+        let coefficientsArray = variant == .dark ? accentColorNameColorBlendingCoefficientsDark : accentColorNameColorBlendingCoefficientsLight
+        let coefficient = coefficientsArray[Int(accentColor.rawValue)]
+
+        let background: UIColor = variant == .dark ? .black : .white
+        return background.mix(UIColor(fromZMAccentColor: accentColor), amount: coefficient)
+    }
+}",1,"17,18,19,22,24","/~/        assert(accentColor.rawValue <= ZMAccentColor.max.rawValue)/~//~//~/        return background.mix(UIColor(fromZMAccentColor: accentColor), amount: coefficient)"
+"private func handlePong(_ pingData: HTTP2PingData) -> Action {
+    if pingData.integer == self.pingCode {
+      return .cancelScheduledTimeout
+    } else {
+      return .none
+    }
+  }",1,1,    if pingData.integer == self.pingCode {
+"internal static func participantsNOthers(_ p1: Any, _ p2: Int) -> String {
+          return L10n.tr(""Localizable"", ""content.system.participants_n_others"", String(describing: p1), p2)
+        }",0,,
+"private func handlePong(_ pingData: HTTP2PingData) -> Action {
+    if pingData.integer == self.pingCode {
+      return .cancelScheduledTimeout
+    } else {
+      return .none
+    }
+  }",1,1,    if pingData.integer == self.pingCode {
+"internal static func detail(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""legalhold_request.alert.detail"", String(describing: p1))
+        }",0,,
+"private func createConstraints() {
+        for subView in [gridView, thumbnailViewController.view] {
+            subView?.translatesAutoresizingMaskIntoConstraints = false
+            subView?.fitInSuperview()
+        }
+
+        constrain(view, networkConditionView) { view, networkConditionView in
+            networkConditionView.centerX == view.centerX
+            networkConditionView.top == view.safeAreaLayoutGuideOrFallback.top + 24
+        }
+    }",0,,
+"internal static func otherAddedYou(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""content.system.other_added_you"", String(describing: p1))
+        }",0,,
+"public func addParticipantsAndUpdateConversationState(usersAndRoles: [(ZMUser, Role?)]) {
+        
+        // Is this a new conversation, or an existing one that is being updated?
+        let doesExistsOnBackend = self.remoteIdentifier != nil
+        
+        let addedRoles = usersAndRoles.compactMap { (user, role) -> ParticipantRole? in
+            guard !user.isAccountDeleted else { return nil }
+            
+            // make sure the role is the right team/conversation role
+            require(
+                role == nil || (role!.team == self.team || role!.conversation == self),
+                ""Tried to add a role that does not belong to the conversation""
+            )
+            
+            guard let (result, pr) = updateExistingOrCreateParticipantRole(for: user, with: role) else { return nil }
+            return (result == .created) ? pr : nil
+        }
+        
+        let addedSelfUser = doesExistsOnBackend && addedRoles.contains(where: {$0.user.isSelfUser})
+        if addedSelfUser {
+            self.markToDownloadRolesIfNeeded()
+            self.needsToBeUpdatedFromBackend = true
+        }
+        
+        if !addedRoles.isEmpty {
+            self.checkIfArchivedStatusChanged(addedSelfUser: addedSelfUser)
+            self.checkIfVerificationLevelChanged(addedUsers: Set(addedRoles.map { $0.user}))
+        }
+    }",1,26,self.checkIfVerificationLevelChanged(addedUsers: Set(addedRoles.map { $0.user}))
+"private mutating func generatePingFrame(code: UInt64, ack: Bool) -> HTTP2Frame.FramePayload {
+    if self.activeStreams == 0 {
+      self.sentPingsWithoutData += 1
+    }
+
+    self.lastSentPingDate = self.now()
+    return HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: code), ack: ack)
+  }",1,"0,6","private mutating func generatePingFrame(code: UInt64, ack: Bool) -> HTTP2Frame.FramePayload {/~/    return HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: code), ack: ack)"
+"self.init(light: color, dark: color)
+    }
+}
+
+extension UIColor {
+
+    static func from(scheme: ColorSchemeColor, variant: ColorSchemeVariant? = nil) -> UIColor {
+        return ColorScheme.default.color(named: scheme, variant: variant)
+    }
+
+    /// Creates UIColor instance with color corresponding to @p accentColor that can be used to display the name.
+    // NB: the order of coefficients must match ZMAccentColor enum ordering
+    private static let accentColorNameColorBlendingCoefficientsDark: [CGFloat] = [0.8, 0.8, 0.72, 1.0, 0.8, 0.8, 0.8, 0.64]
+    private static let accentColorNameColorBlendingCoefficientsLight: [CGFloat] = [0.8, 0.8, 0.72, 1.0, 0.8, 0.8, 0.64, 1.0]
+
+    /// Creates UIColor instance with color corresponding to @p accentColor that can be used to display the name.
+    class func nameColor(for accentColor: ZMAccentColor, variant: ColorSchemeVariant) -> UIColor {
+
+        assert(accentColor.rawValue <= ZMAccentColor.max.rawValue)
+
+        let coefficientsArray = variant == .dark ? accentColorNameColorBlendingCoefficientsDark : accentColorNameColorBlendingCoefficientsLight
+        let coefficient = coefficientsArray[Int(accentColor.rawValue)]
+
+        let background: UIColor = variant == .dark ? .black : .white
+        return background.mix(UIColor(fromZMAccentColor: accentColor), amount: coefficient)
+    }
+}",1,"17,18,19,22,24","/~/        assert(accentColor.rawValue <= ZMAccentColor.max.rawValue)/~//~//~/        return background.mix(UIColor(fromZMAccentColor: accentColor), amount: coefficient)"
+"internal static func noRequirements(_ p1: Any) -> String {
+            return L10n.tr(""Localizable"", ""registration.password.rules.no_requirements"", String(describing: p1))
+          }",0,,
+"self.init(light: color, dark: color)
+    }
+}
+
+extension UIColor {
+
+    static func from(scheme: ColorSchemeColor, variant: ColorSchemeVariant? = nil) -> UIColor {
+        return ColorScheme.default.color(named: scheme, variant: variant)
+    }
+
+    /// Creates UIColor instance with color corresponding to @p accentColor that can be used to display the name.
+    // NB: the order of coefficients must match ZMAccentColor enum ordering
+    private static let accentColorNameColorBlendingCoefficientsDark: [CGFloat] = [0.8, 0.8, 0.72, 1.0, 0.8, 0.8, 0.8, 0.64]
+    private static let accentColorNameColorBlendingCoefficientsLight: [CGFloat] = [0.8, 0.8, 0.72, 1.0, 0.8, 0.8, 0.64, 1.0]
+
+    /// Creates UIColor instance with color corresponding to @p accentColor that can be used to display the name.
+    class func nameColor(for accentColor: ZMAccentColor, variant: ColorSchemeVariant) -> UIColor {
+
+        assert(accentColor.rawValue <= ZMAccentColor.max.rawValue)
+
+        let coefficientsArray = variant == .dark ? accentColorNameColorBlendingCoefficientsDark : accentColorNameColorBlendingCoefficientsLight
+        let coefficient = coefficientsArray[Int(accentColor.rawValue)]
+
+        let background: UIColor = variant == .dark ? .black : .white
+        return background.mix(UIColor(fromZMAccentColor: accentColor), amount: coefficient)
+    }
+}",1,"17,18,19,22,24","/~/        assert(accentColor.rawValue <= ZMAccentColor.max.rawValue)/~//~//~/        return background.mix(UIColor(fromZMAccentColor: accentColor), amount: coefficient)"
+"self.init(light: color, dark: color)
+    }
+}
+
+extension UIColor {
+
+    static func from(scheme: ColorSchemeColor, variant: ColorSchemeVariant? = nil) -> UIColor {
+        return ColorScheme.default.color(named: scheme, variant: variant)
+    }
+
+    /// Creates UIColor instance with color corresponding to @p accentColor that can be used to display the name.
+    // NB: the order of coefficients must match ZMAccentColor enum ordering
+    private static let accentColorNameColorBlendingCoefficientsDark: [CGFloat] = [0.8, 0.8, 0.72, 1.0, 0.8, 0.8, 0.8, 0.64]
+    private static let accentColorNameColorBlendingCoefficientsLight: [CGFloat] = [0.8, 0.8, 0.72, 1.0, 0.8, 0.8, 0.64, 1.0]
+
+    /// Creates UIColor instance with color corresponding to @p accentColor that can be used to display the name.
+    class func nameColor(for accentColor: ZMAccentColor, variant: ColorSchemeVariant) -> UIColor {
+
+        assert(accentColor.rawValue <= ZMAccentColor.max.rawValue)
+
+        let coefficientsArray = variant == .dark ? accentColorNameColorBlendingCoefficientsDark : accentColorNameColorBlendingCoefficientsLight
+        let coefficient = coefficientsArray[Int(accentColor.rawValue)]
+
+        let background: UIColor = variant == .dark ? .black : .white
+        return background.mix(UIColor(fromZMAccentColor: accentColor), amount: coefficient)
+    }
+}",1,"17,18,19,22,24","/~/        assert(accentColor.rawValue <= ZMAccentColor.max.rawValue)/~//~//~/        return background.mix(UIColor(fromZMAccentColor: accentColor), amount: coefficient)"
+"private mutating func generatePingFrame(code: UInt64, ack: Bool) -> HTTP2Frame.FramePayload {
+    if self.activeStreams == 0 {
+      self.sentPingsWithoutData += 1
+    }
+
+    self.lastSentPingDate = self.now()
+    return HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: code), ack: ack)
+  }",1,"0,6","private mutating func generatePingFrame(code: UInt64, ack: Bool) -> HTTP2Frame.FramePayload {/~/    return HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: code), ack: ack)"
+"internal static func footer(_ p1: Int) -> String {
+            return L10n.tr(""Localizable"", ""participants.section.name.footer"", p1)
+          }",0,,
+"    public init(routes: Routes, middleware: [Middleware] = []) {
+        let options = routes.caseInsensitive ?
+            Set(arrayLiteral: TrieRouter<CachedRoute>.ConfigurationOption.caseInsensitive) : []
+        let router = TrieRouter(CachedRoute.self, options: options)
+        
+        for route in routes.all {
+            // Make a copy of the route to cache middleware chaining.
+            let cached = CachedRoute(
+                route: route,
+                responder: middleware.makeResponder(chainingTo: route.responder)
+            )
+            // remove any empty path components
+            let path = route.path.filter { component in
+                switch component {
+                case .constant(let string):
+                    return string != """"
+                default:
+                    return true
+                }
+            }
+            router.register(cached, at: [.constant(route.method.string)] + path)
+        }
+        self.router = router
+        self.notFoundResponder = middleware.makeResponder(chainingTo: NotFoundResponder())
+    }",0,,
+"    public func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
+        // make a copy of the path
+        var path = request.url.path
+
+        // path must be relative.
+        while path.hasPrefix(""/"") {
+            path = String(path.dropFirst())
+        }
+
+        // protect against relative paths
+        guard !path.contains(""../"") else {
+            return request.eventLoop.makeFailedFuture(Abort(.forbidden))
+        }
+
+        // create absolute file path
+        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+
+        // check if file exists and is not a directory
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: filePath, isDirectory: &isDir), !isDir.boolValue else {
+            return next.respond(to: request)
+        }
+
+        // stream the file
+        let res = request.fileio.streamFile(at: filePath)
+        return request.eventLoop.makeSucceededFuture(res)
+    }",1,"1,2,15",        // make a copy of the path/~/        var path = request.url.path/~/        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+"private(set) var connectionManagerEvent: ConnectionManagerEvent?
+
+    /// The value of HTTP/2 SETTINGS_MAX_CONCURRENT_STREAMS changed.
+    private(set) var maxConcurrentStreamsChange: Int?
+
+    /// An idle task, either scheduling or cancelling an idle timeout.
+    private(set) var idleTask: IdleTask?
+
+    /// Send a GOAWAY frame with the last peer initiated stream ID set to this value.
+    private(set) var sendGoAwayWithLastPeerInitiatedStreamID: HTTP2StreamID?
+
+    /// Whether the channel should be closed.
+    private(set) var shouldCloseChannel: Bool
+
+    fileprivate static let none = Operations()
+
+    fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+      self.sendGoAwayWithLastPeerInitiatedStreamID = streamID
+    }",1,16,fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+"    public func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
+        // make a copy of the path
+        var path = request.url.path
+
+        // path must be relative.
+        while path.hasPrefix(""/"") {
+            path = String(path.dropFirst())
+        }
+
+        // protect against relative paths
+        guard !path.contains(""../"") else {
+            return request.eventLoop.makeFailedFuture(Abort(.forbidden))
+        }
+
+        // create absolute file path
+        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+
+        // check if file exists and is not a directory
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: filePath, isDirectory: &isDir), !isDir.boolValue else {
+            return next.respond(to: request)
+        }
+
+        // stream the file
+        let res = request.fileio.streamFile(at: filePath)
+        return request.eventLoop.makeSucceededFuture(res)
+    }",1,"1,2,15",        // make a copy of the path/~/        var path = request.url.path/~/        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+"    func urlActionRouterWillShowCompanyLoginError() {
+        authenticationCoordinator?.cancelCompanyLogin()
+    }",0,,
+"    private func discardPendingMessagesAfterPrivacyChanges() {
+        guard let syncMOC = managedObjectContext?.zm_sync else { return }
+        syncMOC.performGroupedBlock {
+            guard let conversation = (try? syncMOC.existingObject(with: self.objectID)) as? ZMConversation else { return }
+            conversation.clearMessagesThatCausedSecurityLevelDegradation()
+            syncMOC.saveOrRollback()
+        }
+    }",0,,
+"    func addObserverToken(_ token: NSObjectProtocol) {
+        observerTokens.append(token)
+    }",0,,
+"internal static func text(_ p1: Any) -> String {
+        return L10n.tr(""Localizable"", ""send_invitation.text"", String(describing: p1))
+      }",0,,
+"        didSet {
+            setupAnalyticsSharing()
+        }",0,,
+"    fileprivate func expireAllPendingMessagesBecauseOfSecurityLevelDegradation() {
+        for message in undeliveredMessages {
+            if let clientMessage = message as? ZMClientMessage,
+                let genericMessage = clientMessage.underlyingMessage,
+                genericMessage.hasConfirmation {
+                // Delivery receipt: just expire it
+                message.expire()
+            } else {
+                // All other messages: expire and mark that it caused security degradation
+                message.expire()
+                message.causedSecurityLevelDegradation = true
+            }
+        }
+    }",0,,
+"private func processResponse(_ response: WSResponse) -> Bool {
+        if response.isFin && response.bytesLeft <= 0 {
+            if response.code == .ping {
+                let data = response.buffer! // local copy so it is perverse for writing
+                dequeueWrite(data as Data, code: .pong)
+            } else if response.code == .textFrame {
+                let str: NSString? = NSString(data: response.buffer! as Data, encoding: String.Encoding.utf8.rawValue)
+                if str == nil {
+                    writeError(CloseCode.encoding.rawValue)
+                    return false
+                }
+                if canDispatch {
+                    callbackQueue.async { [weak self] in
+                        guard let s = self else { return }
+                        s.onText?(str! as String)
+                        s.delegate?.websocketDidReceiveMessage(socket: s, text: str! as String)
+                    }
+                }
+            } else if response.code == .binaryFrame {
+                if canDispatch {
+                    let data = response.buffer! // local copy so it is perverse for writing
+                    callbackQueue.async { [weak self] in
+                        guard let s = self else { return }
+                        s.onData?(data as Data)
+                        s.delegate?.websocketDidReceiveData(socket: s, data: data as Data)
+                    }
+                }
+            }
+            readStack.removeLast()
+            return true
+        }
+        return false
+    }",0,,
+    init() { },0,,
+"internal static func message(_ p1: Any) -> String {
+              return L10n.tr(""Localizable"", ""conversation.input_bar.audio_message.too_long_size.message"", String(describing: p1))
+            }",0,,
+"public func addParticipantsAndUpdateConversationState(usersAndRoles: [(ZMUser, Role?)]) {
+        
+        // Is this a new conversation, or an existing one that is being updated?
+        let doesExistsOnBackend = self.remoteIdentifier != nil
+        
+        let addedRoles = usersAndRoles.compactMap { (user, role) -> ParticipantRole? in
+            guard !user.isAccountDeleted else { return nil }
+            
+            // make sure the role is the right team/conversation role
+            require(
+                role == nil || (role!.team == self.team || role!.conversation == self),
+                ""Tried to add a role that does not belong to the conversation""
+            )
+            
+            guard let (result, pr) = updateExistingOrCreateParticipantRole(for: user, with: role) else { return nil }
+            return (result == .created) ? pr : nil
+        }
+        
+        let addedSelfUser = doesExistsOnBackend && addedRoles.contains(where: {$0.user.isSelfUser})
+        if addedSelfUser {
+            self.markToDownloadRolesIfNeeded()
+            self.needsToBeUpdatedFromBackend = true
+        }
+        
+        if !addedRoles.isEmpty {
+            self.checkIfArchivedStatusChanged(addedSelfUser: addedSelfUser)
+            self.checkIfVerificationLevelChanged(addedUsers: Set(addedRoles.map { $0.user}))
+        }
+    }",1,26,self.checkIfVerificationLevelChanged(addedUsers: Set(addedRoles.map { $0.user}))
+"private(set) var connectionManagerEvent: ConnectionManagerEvent?
+
+    /// The value of HTTP/2 SETTINGS_MAX_CONCURRENT_STREAMS changed.
+    private(set) var maxConcurrentStreamsChange: Int?
+
+    /// An idle task, either scheduling or cancelling an idle timeout.
+    private(set) var idleTask: IdleTask?
+
+    /// Send a GOAWAY frame with the last peer initiated stream ID set to this value.
+    private(set) var sendGoAwayWithLastPeerInitiatedStreamID: HTTP2StreamID?
+
+    /// Whether the channel should be closed.
+    private(set) var shouldCloseChannel: Bool
+
+    fileprivate static let none = Operations()
+
+    fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+      self.sendGoAwayWithLastPeerInitiatedStreamID = streamID
+    }",1,16,fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+"private func handlePong(_ pingData: HTTP2PingData) -> Action {
+    if pingData.integer == self.pingCode {
+      return .cancelScheduledTimeout
+    } else {
+      return .none
+    }
+  }",1,1,    if pingData.integer == self.pingCode {
+"private func handlePong(_ pingData: HTTP2PingData) -> Action {
+    if pingData.integer == self.pingCode {
+      return .cancelScheduledTimeout
+    } else {
+      return .none
+    }
+  }",1,1,    if pingData.integer == self.pingCode {
+"private mutating func generatePingFrame(code: UInt64, ack: Bool) -> HTTP2Frame.FramePayload {
+    if self.activeStreams == 0 {
+      self.sentPingsWithoutData += 1
+    }
+
+    self.lastSentPingDate = self.now()
+    return HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: code), ack: ack)
+  }",1,"0,6","private mutating func generatePingFrame(code: UInt64, ack: Bool) -> HTTP2Frame.FramePayload {/~/    return HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: code), ack: ack)"
+"self.init(light: color, dark: color)
+    }
+}
+
+extension UIColor {
+
+    static func from(scheme: ColorSchemeColor, variant: ColorSchemeVariant? = nil) -> UIColor {
+        return ColorScheme.default.color(named: scheme, variant: variant)
+    }
+
+    /// Creates UIColor instance with color corresponding to @p accentColor that can be used to display the name.
+    // NB: the order of coefficients must match ZMAccentColor enum ordering
+    private static let accentColorNameColorBlendingCoefficientsDark: [CGFloat] = [0.8, 0.8, 0.72, 1.0, 0.8, 0.8, 0.8, 0.64]
+    private static let accentColorNameColorBlendingCoefficientsLight: [CGFloat] = [0.8, 0.8, 0.72, 1.0, 0.8, 0.8, 0.64, 1.0]
+
+    /// Creates UIColor instance with color corresponding to @p accentColor that can be used to display the name.
+    class func nameColor(for accentColor: ZMAccentColor, variant: ColorSchemeVariant) -> UIColor {
+
+        assert(accentColor.rawValue <= ZMAccentColor.max.rawValue)
+
+        let coefficientsArray = variant == .dark ? accentColorNameColorBlendingCoefficientsDark : accentColorNameColorBlendingCoefficientsLight
+        let coefficient = coefficientsArray[Int(accentColor.rawValue)]
+
+        let background: UIColor = variant == .dark ? .black : .white
+        return background.mix(UIColor(fromZMAccentColor: accentColor), amount: coefficient)
+    }
+}",1,"17,18,19,22,24","/~/        assert(accentColor.rawValue <= ZMAccentColor.max.rawValue)/~//~//~/        return background.mix(UIColor(fromZMAccentColor: accentColor), amount: coefficient)"
+"public func addParticipantsAndUpdateConversationState(usersAndRoles: [(ZMUser, Role?)]) {
+        
+        // Is this a new conversation, or an existing one that is being updated?
+        let doesExistsOnBackend = self.remoteIdentifier != nil
+        
+        let addedRoles = usersAndRoles.compactMap { (user, role) -> ParticipantRole? in
+            guard !user.isAccountDeleted else { return nil }
+            
+            // make sure the role is the right team/conversation role
+            require(
+                role == nil || (role!.team == self.team || role!.conversation == self),
+                ""Tried to add a role that does not belong to the conversation""
+            )
+            
+            guard let (result, pr) = updateExistingOrCreateParticipantRole(for: user, with: role) else { return nil }
+            return (result == .created) ? pr : nil
+        }
+        
+        let addedSelfUser = doesExistsOnBackend && addedRoles.contains(where: {$0.user.isSelfUser})
+        if addedSelfUser {
+            self.markToDownloadRolesIfNeeded()
+            self.needsToBeUpdatedFromBackend = true
+        }
+        
+        if !addedRoles.isEmpty {
+            self.checkIfArchivedStatusChanged(addedSelfUser: addedSelfUser)
+            self.checkIfVerificationLevelChanged(addedUsers: Set(addedRoles.map { $0.user}))
+        }
+    }",1,26,self.checkIfVerificationLevelChanged(addedUsers: Set(addedRoles.map { $0.user}))
+"    func updateOverlayWindowFrame(size: CGSize? = nil) {
+        if let size = size {
+            screenCurtain.frame.size = size
+        } else {
+            screenCurtain.frame = UIApplication.shared.keyWindow?.frame ?? UIScreen.main.bounds
+        }
+    }",0,,
+"    public func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
+        // make a copy of the path
+        var path = request.url.path
+
+        // path must be relative.
+        while path.hasPrefix(""/"") {
+            path = String(path.dropFirst())
+        }
+
+        // protect against relative paths
+        guard !path.contains(""../"") else {
+            return request.eventLoop.makeFailedFuture(Abort(.forbidden))
+        }
+
+        // create absolute file path
+        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+
+        // check if file exists and is not a directory
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: filePath, isDirectory: &isDir), !isDir.boolValue else {
+            return next.respond(to: request)
+        }
+
+        // stream the file
+        let res = request.fileio.streamFile(at: filePath)
+        return request.eventLoop.makeSucceededFuture(res)
+    }",1,"1,2,15",        // make a copy of the path/~/        var path = request.url.path/~/        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+"self.init(light: color, dark: color)
+    }
+}
+
+extension UIColor {
+
+    static func from(scheme: ColorSchemeColor, variant: ColorSchemeVariant? = nil) -> UIColor {
+        return ColorScheme.default.color(named: scheme, variant: variant)
+    }
+
+    /// Creates UIColor instance with color corresponding to @p accentColor that can be used to display the name.
+    // NB: the order of coefficients must match ZMAccentColor enum ordering
+    private static let accentColorNameColorBlendingCoefficientsDark: [CGFloat] = [0.8, 0.8, 0.72, 1.0, 0.8, 0.8, 0.8, 0.64]
+    private static let accentColorNameColorBlendingCoefficientsLight: [CGFloat] = [0.8, 0.8, 0.72, 1.0, 0.8, 0.8, 0.64, 1.0]
+
+    /// Creates UIColor instance with color corresponding to @p accentColor that can be used to display the name.
+    class func nameColor(for accentColor: ZMAccentColor, variant: ColorSchemeVariant) -> UIColor {
+
+        assert(accentColor.rawValue <= ZMAccentColor.max.rawValue)
+
+        let coefficientsArray = variant == .dark ? accentColorNameColorBlendingCoefficientsDark : accentColorNameColorBlendingCoefficientsLight
+        let coefficient = coefficientsArray[Int(accentColor.rawValue)]
+
+        let background: UIColor = variant == .dark ? .black : .white
+        return background.mix(UIColor(fromZMAccentColor: accentColor), amount: coefficient)
+    }
+}",1,"17,18,19,22,24","/~/        assert(accentColor.rawValue <= ZMAccentColor.max.rawValue)/~//~//~/        return background.mix(UIColor(fromZMAccentColor: accentColor), amount: coefficient)"
+"    func startCapture() {
+        previewView.startVideoCapture()
+    }",0,,
+"internal static func incoming(_ p1: Any) -> String {
+            return L10n.tr(""Localizable"", ""voice.status.one_to_one.incoming"", String(describing: p1))
+          }",0,,
+"private mutating func generatePingFrame(code: UInt64, ack: Bool) -> HTTP2Frame.FramePayload {
+    if self.activeStreams == 0 {
+      self.sentPingsWithoutData += 1
+    }
+
+    self.lastSentPingDate = self.now()
+    return HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: code), ack: ack)
+  }",1,"0,6","private mutating func generatePingFrame(code: UInt64, ack: Bool) -> HTTP2Frame.FramePayload {/~/    return HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: code), ack: ack)"
+"    public func performQuickAction(for shortcutItem: UIApplicationShortcutItem,
+                                   completionHandler: ((Bool) -> Void)?) {
+        quickActionsManager.performAction(for: shortcutItem,
+                                          completionHandler: completionHandler)
+    }",0,,
+"internal static func `left`(_ p1: Any) -> String {
+              return L10n.tr(""Localizable"", ""content.system.conversation.other.left"", String(describing: p1))
+            }",0,,
+"internal static func instructions(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""registration.verify_phone_number.instructions"", String(describing: p1))
+        }",0,,
+"private func handlePong(_ pingData: HTTP2PingData) -> Action {
+    if pingData.integer == self.pingCode {
+      return .cancelScheduledTimeout
+    } else {
+      return .none
+    }
+  }",1,1,    if pingData.integer == self.pingCode {
+"self.init(light: color, dark: color)
+    }
+}
+
+extension UIColor {
+
+    static func from(scheme: ColorSchemeColor, variant: ColorSchemeVariant? = nil) -> UIColor {
+        return ColorScheme.default.color(named: scheme, variant: variant)
+    }
+
+    /// Creates UIColor instance with color corresponding to @p accentColor that can be used to display the name.
+    // NB: the order of coefficients must match ZMAccentColor enum ordering
+    private static let accentColorNameColorBlendingCoefficientsDark: [CGFloat] = [0.8, 0.8, 0.72, 1.0, 0.8, 0.8, 0.8, 0.64]
+    private static let accentColorNameColorBlendingCoefficientsLight: [CGFloat] = [0.8, 0.8, 0.72, 1.0, 0.8, 0.8, 0.64, 1.0]
+
+    /// Creates UIColor instance with color corresponding to @p accentColor that can be used to display the name.
+    class func nameColor(for accentColor: ZMAccentColor, variant: ColorSchemeVariant) -> UIColor {
+
+        assert(accentColor.rawValue <= ZMAccentColor.max.rawValue)
+
+        let coefficientsArray = variant == .dark ? accentColorNameColorBlendingCoefficientsDark : accentColorNameColorBlendingCoefficientsLight
+        let coefficient = coefficientsArray[Int(accentColor.rawValue)]
+
+        let background: UIColor = variant == .dark ? .black : .white
+        return background.mix(UIColor(fromZMAccentColor: accentColor), amount: coefficient)
+    }
+}",1,"17,18,19,22,24","/~/        assert(accentColor.rawValue <= ZMAccentColor.max.rawValue)/~//~//~/        return background.mix(UIColor(fromZMAccentColor: accentColor), amount: coefficient)"
+"self.init(light: color, dark: color)
+    }
+}
+
+extension UIColor {
+
+    static func from(scheme: ColorSchemeColor, variant: ColorSchemeVariant? = nil) -> UIColor {
+        return ColorScheme.default.color(named: scheme, variant: variant)
+    }
+
+    /// Creates UIColor instance with color corresponding to @p accentColor that can be used to display the name.
+    // NB: the order of coefficients must match ZMAccentColor enum ordering
+    private static let accentColorNameColorBlendingCoefficientsDark: [CGFloat] = [0.8, 0.8, 0.72, 1.0, 0.8, 0.8, 0.8, 0.64]
+    private static let accentColorNameColorBlendingCoefficientsLight: [CGFloat] = [0.8, 0.8, 0.72, 1.0, 0.8, 0.8, 0.64, 1.0]
+
+    /// Creates UIColor instance with color corresponding to @p accentColor that can be used to display the name.
+    class func nameColor(for accentColor: ZMAccentColor, variant: ColorSchemeVariant) -> UIColor {
+
+        assert(accentColor.rawValue <= ZMAccentColor.max.rawValue)
+
+        let coefficientsArray = variant == .dark ? accentColorNameColorBlendingCoefficientsDark : accentColorNameColorBlendingCoefficientsLight
+        let coefficient = coefficientsArray[Int(accentColor.rawValue)]
+
+        let background: UIColor = variant == .dark ? .black : .white
+        return background.mix(UIColor(fromZMAccentColor: accentColor), amount: coefficient)
+    }
+}",1,"17,18,19,22,24","/~/        assert(accentColor.rawValue <= ZMAccentColor.max.rawValue)/~//~//~/        return background.mix(UIColor(fromZMAccentColor: accentColor), amount: coefficient)"
+"    func appStateCalculator(_: AppStateCalculator,
+                            didCalculate appState: AppState,
+                            completion: @escaping () -> Void) {
+        enqueueTransition(to: appState, completion: completion)
+    }",0,,
+"    init(values: [URLQueryFragment] = [], children: [String: URLEncodedFormData] = [:]) {
+        self.values = values
+        self.children = children
+    }",0,,
+"private func handlePong(_ pingData: HTTP2PingData) -> Action {
+    if pingData.integer == self.pingCode {
+      return .cancelScheduledTimeout
+    } else {
+      return .none
+    }
+  }",1,1,    if pingData.integer == self.pingCode {
+"  private func idleTimeoutFired() {
+    self.perform(operations: self.stateMachine.idleTimeoutTaskFired())
+  }",0,,
+"self.init(light: color, dark: color)
+    }
+}
+
+extension UIColor {
+
+    static func from(scheme: ColorSchemeColor, variant: ColorSchemeVariant? = nil) -> UIColor {
+        return ColorScheme.default.color(named: scheme, variant: variant)
+    }
+
+    /// Creates UIColor instance with color corresponding to @p accentColor that can be used to display the name.
+    // NB: the order of coefficients must match ZMAccentColor enum ordering
+    private static let accentColorNameColorBlendingCoefficientsDark: [CGFloat] = [0.8, 0.8, 0.72, 1.0, 0.8, 0.8, 0.8, 0.64]
+    private static let accentColorNameColorBlendingCoefficientsLight: [CGFloat] = [0.8, 0.8, 0.72, 1.0, 0.8, 0.8, 0.64, 1.0]
+
+    /// Creates UIColor instance with color corresponding to @p accentColor that can be used to display the name.
+    class func nameColor(for accentColor: ZMAccentColor, variant: ColorSchemeVariant) -> UIColor {
+
+        assert(accentColor.rawValue <= ZMAccentColor.max.rawValue)
+
+        let coefficientsArray = variant == .dark ? accentColorNameColorBlendingCoefficientsDark : accentColorNameColorBlendingCoefficientsLight
+        let coefficient = coefficientsArray[Int(accentColor.rawValue)]
+
+        let background: UIColor = variant == .dark ? .black : .white
+        return background.mix(UIColor(fromZMAccentColor: accentColor), amount: coefficient)
+    }
+}",1,"17,18,19,22,24","/~/        assert(accentColor.rawValue <= ZMAccentColor.max.rawValue)/~//~//~/        return background.mix(UIColor(fromZMAccentColor: accentColor), amount: coefficient)"
+"fileprivate func colorPair(accentColor: UIColor) -> ColorPair {
+        switch self {
+        case .textForeground:
+            return ColorPair(light: .graphite, dark: .white)
+        case .textBackground:
+            return ColorPair(light: .white, dark: .backgroundGraphite)
+        case .textDimmed:
+            return ColorPair(both: .lightGraphite)
+        case .textPlaceholder:
+            return ColorPair(both: .lightGraphiteAlpha64)
+        case .separator:
+            return ColorPair(light: .lightGraphiteAlpha48, dark: .lightGraphiteAlpha24)
+        case .barBackground:
+            return ColorPair(light: .white, dark: .backgroundLightGraphite)
+        case .background:
+            return ColorPair(light: .white, dark: .backgroundGraphite)
+        case .contentBackground:
+            return ColorPair(light: .white97, dark: .backgroundGraphite)
+        case .iconNormal:
+            return ColorPair(light: .graphite, dark: .white)
+        case .iconSelected:
+            return ColorPair(light: .white, dark: .black)
+        case .iconHighlighted:
+            return ColorPair(both: .white)
+        case .iconShadow:
+            return ColorPair(light: .blackAlpha8, dark: .blackAlpha24)
+        case .iconHighlight:
+            return ColorPair(light: .white, dark: .whiteAlpha16)
+        case .iconBackgroundSelected:
+            return ColorPair(light: accentColor, dark: .white)
+        case .iconBackgroundSelectedNoAccent:
+            return ColorPair(light: .graphite, dark: .white)
+        case .popUpButtonOverlayShadow:
+            return ColorPair(light: .blackAlpha24, dark: .black)
+        case .buttonHighlighted:
+            return ColorPair(light: .whiteAlpha24, dark: .blackAlpha24)
+        case .buttonEmptyText:
+            return ColorPair(light: accentColor, dark: .white)
+        case .buttonFaded:
+            return ColorPair(light: .graphiteAlpha40, dark: .whiteAlpha40)
+        case .tabNormal:
+            return ColorPair(light: .blackAlpha48, dark: .whiteAlpha56)
+        case .tabSelected:
+            return ColorPair(light: .graphite, dark: .white)
+        case .tabHighlighted:
+            return ColorPair(light: .lightGraphite, dark: .lightGraphiteAlpha48)
+        case .backgroundOverlay:
+            return ColorPair(light: .blackAlpha24, dark: .blackAlpha48)
+        case .backgroundOverlayWithoutPicture:
+            return ColorPair(both: .blackAlpha80)
+        case .avatarBorder:
+            return ColorPair(light: .blackAlpha8, dark: .whiteAlpha16)
+        case .audioButtonOverlay:
+            return ColorPair(both: .lightGraphiteAlpha24)
+        case .placeholderBackground:
+            return ColorPair(light: .lightGraphiteWhite, dark: .lightGraphiteDark)
+        case .loadingDotActive:
+            return ColorPair(light: .graphiteAlpha40, dark: .whiteAlpha40)
+        case .loadingDotInactive:
+            return ColorPair(light: .graphiteAlpha16, dark: .whiteAlpha16)
+        case .paleSeparator:
+            return ColorPair(both: .lightGraphiteAlpha24)
+        case .listAvatarInitials:
+            return ColorPair(both: .blackAlpha40)
+        case .sectionBackground:
+            return ColorPair(both: .clear)
+        case .sectionBackgroundHighlighted:
+            return ColorPair(light: .graphiteAlpha4, dark: .backgroundLightGraphite)
+        case .sectionText:
+            return ColorPair(light: .blackAlpha40, dark: .whiteAlpha40)
+        case .tokenFieldBackground:
+            return ColorPair(light: .blackAlpha4, dark: .whiteAlpha16)
+        case .tokenFieldTextPlaceHolder:
+            return ColorPair(light: .lightGraphite, dark: .whiteAlpha40)
+        case .cellSeparator:
+            return ColorPair(light: .graphiteAlpha8, dark: .whiteAlpha8)
+        case .searchBarBackground:
+            return ColorPair(light: .white, dark: .whiteAlpha8)
+        case .iconGuest:
+            return ColorPair(light: .backgroundGraphiteAlpha40, dark: .whiteAlpha64)
+        case .selfMentionHighlight:
+            return ColorPair(light: .amberAlpha48, dark: .amberAlpha80)
+        case .cellHighlight:
+            return ColorPair(light: .white97, dark: .whiteAlpha16)
+        case .replyBorder:
+            return ColorPair(light: UIColor(white: 233.0/255.0, alpha: 1),
+                             dark: UIColor(white: 114.0/255.0, alpha: 1))
+        case .replyHighlight:
+            return ColorPair(light: UIColor(rgb: 0x33373A, alpha: 0.24),
+                             dark: UIColor(white: 1, alpha: 0.24))
+
+        case .secondaryAction:
+            return ColorPair(light: UIColor(rgb: 0xE8ECEE), dark: .backgroundLightGraphite)
+        case .secondaryActionDimmed:
+            return ColorPair(light: UIColor(rgb: 0xE8ECEE, alpha: 0.24), dark: UIColor.backgroundLightGraphite.withAlphaComponent(0.24))
+
+        case .errorIndicator:
+            return ColorPair(light: UIColor(rgb: 0xE60606), dark: UIColor(rgb: 0xFC3E37))
+
+        case .landingScreen:
+            return ColorPair(light: .graphiteDark, dark: .white)
+
+        case .utilityError:
+            return ColorPair(light: UIColor(rgb: 0xE41734), dark: UIColor(rgb: 0xFC7887))
+        case .utilityNeutral:
+            return ColorPair(light: UIColor(rgb: 0x0772DE), dark: UIColor(rgb: 0x26BDFF))
+        case .utilitySuccess:
+            return ColorPair(light: UIColor(rgb: 0x148545), dark: UIColor(rgb: 0x35C763))
+
+        case .textSecurityNotClassified:
+            return ColorPair(light: .white, dark: .graphite)
+        case .backgroundSecurityNotClassified:
+            return ColorPair(light: .graphite, dark: .white)
+
+        }
+    }",0,,
+"    private func updateGridViewAxis() {
+        let newAxis = gridAxis(for: traitCollection)
+        guard newAxis != gridView.layoutDirection else { return }
+        gridView.layoutDirection = newAxis
+    }",0,,
+"public func addParticipantsAndUpdateConversationState(usersAndRoles: [(ZMUser, Role?)]) {
+        
+        // Is this a new conversation, or an existing one that is being updated?
+        let doesExistsOnBackend = self.remoteIdentifier != nil
+        
+        let addedRoles = usersAndRoles.compactMap { (user, role) -> ParticipantRole? in
+            guard !user.isAccountDeleted else { return nil }
+            
+            // make sure the role is the right team/conversation role
+            require(
+                role == nil || (role!.team == self.team || role!.conversation == self),
+                ""Tried to add a role that does not belong to the conversation""
+            )
+            
+            guard let (result, pr) = updateExistingOrCreateParticipantRole(for: user, with: role) else { return nil }
+            return (result == .created) ? pr : nil
+        }
+        
+        let addedSelfUser = doesExistsOnBackend && addedRoles.contains(where: {$0.user.isSelfUser})
+        if addedSelfUser {
+            self.markToDownloadRolesIfNeeded()
+            self.needsToBeUpdatedFromBackend = true
+        }
+        
+        if !addedRoles.isEmpty {
+            self.checkIfArchivedStatusChanged(addedSelfUser: addedSelfUser)
+            self.checkIfVerificationLevelChanged(addedUsers: Set(addedRoles.map { $0.user}))
+        }
+    }",1,26,self.checkIfVerificationLevelChanged(addedUsers: Set(addedRoles.map { $0.user}))
+"    func nameAccent(for color: ZMAccentColor, variant: ColorSchemeVariant) -> UIColor {
+        return UIColor.nameColor(for: color, variant: variant)
+    }",0,,
+"  private func now() -> NIODeadline {
+    return self._testingOnlyNow ?? .now()
+  }",0,,
+"self.init(light: color, dark: color)
+    }
+}
+
+extension UIColor {
+
+    static func from(scheme: ColorSchemeColor, variant: ColorSchemeVariant? = nil) -> UIColor {
+        return ColorScheme.default.color(named: scheme, variant: variant)
+    }
+
+    /// Creates UIColor instance with color corresponding to @p accentColor that can be used to display the name.
+    // NB: the order of coefficients must match ZMAccentColor enum ordering
+    private static let accentColorNameColorBlendingCoefficientsDark: [CGFloat] = [0.8, 0.8, 0.72, 1.0, 0.8, 0.8, 0.8, 0.64]
+    private static let accentColorNameColorBlendingCoefficientsLight: [CGFloat] = [0.8, 0.8, 0.72, 1.0, 0.8, 0.8, 0.64, 1.0]
+
+    /// Creates UIColor instance with color corresponding to @p accentColor that can be used to display the name.
+    class func nameColor(for accentColor: ZMAccentColor, variant: ColorSchemeVariant) -> UIColor {
+
+        assert(accentColor.rawValue <= ZMAccentColor.max.rawValue)
+
+        let coefficientsArray = variant == .dark ? accentColorNameColorBlendingCoefficientsDark : accentColorNameColorBlendingCoefficientsLight
+        let coefficient = coefficientsArray[Int(accentColor.rawValue)]
+
+        let background: UIColor = variant == .dark ? .black : .white
+        return background.mix(UIColor(fromZMAccentColor: accentColor), amount: coefficient)
+    }
+}",1,"17,18,19,22,24","/~/        assert(accentColor.rawValue <= ZMAccentColor.max.rawValue)/~//~//~/        return background.mix(UIColor(fromZMAccentColor: accentColor), amount: coefficient)"
+"private mutating func generatePingFrame(code: UInt64, ack: Bool) -> HTTP2Frame.FramePayload {
+    if self.activeStreams == 0 {
+      self.sentPingsWithoutData += 1
+    }
+
+    self.lastSentPingDate = self.now()
+    return HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: code), ack: ack)
+  }",1,"0,6","private mutating func generatePingFrame(code: UInt64, ack: Bool) -> HTTP2Frame.FramePayload {/~/    return HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: code), ack: ack)"
+"private static func readUint64(_ buffer: UnsafePointer<UInt8>, offset: Int) -> UInt64 {
+        var value = UInt64(0)
+        for i in 0...7 {
+            value = (value << 8) | UInt64(buffer[offset + i])
+        }
+        return value
+    }",0,,
+"self.init(light: color, dark: color)
+    }
+}
+
+extension UIColor {
+
+    static func from(scheme: ColorSchemeColor, variant: ColorSchemeVariant? = nil) -> UIColor {
+        return ColorScheme.default.color(named: scheme, variant: variant)
+    }
+
+    /// Creates UIColor instance with color corresponding to @p accentColor that can be used to display the name.
+    // NB: the order of coefficients must match ZMAccentColor enum ordering
+    private static let accentColorNameColorBlendingCoefficientsDark: [CGFloat] = [0.8, 0.8, 0.72, 1.0, 0.8, 0.8, 0.8, 0.64]
+    private static let accentColorNameColorBlendingCoefficientsLight: [CGFloat] = [0.8, 0.8, 0.72, 1.0, 0.8, 0.8, 0.64, 1.0]
+
+    /// Creates UIColor instance with color corresponding to @p accentColor that can be used to display the name.
+    class func nameColor(for accentColor: ZMAccentColor, variant: ColorSchemeVariant) -> UIColor {
+
+        assert(accentColor.rawValue <= ZMAccentColor.max.rawValue)
+
+        let coefficientsArray = variant == .dark ? accentColorNameColorBlendingCoefficientsDark : accentColorNameColorBlendingCoefficientsLight
+        let coefficient = coefficientsArray[Int(accentColor.rawValue)]
+
+        let background: UIColor = variant == .dark ? .black : .white
+        return background.mix(UIColor(fromZMAccentColor: accentColor), amount: coefficient)
+    }
+}",1,"17,18,19,22,24","/~/        assert(accentColor.rawValue <= ZMAccentColor.max.rawValue)/~//~//~/        return background.mix(UIColor(fromZMAccentColor: accentColor), amount: coefficient)"
+"mutating func read(pingData: HTTP2PingData, ack: Bool) -> Action {
+    if ack {
+      return self.handlePong(pingData)
+    } else {
+      return self.handlePing(pingData)
+    }
+  }",0,,
+"internal static func user(_ p1: Any) -> String {
+              return L10n.tr(""Localizable"", ""call.degraded.alert.message.user"", String(describing: p1))
+            }",0,,
+"private mutating func generatePingFrame(code: UInt64, ack: Bool) -> HTTP2Frame.FramePayload {
+    if self.activeStreams == 0 {
+      self.sentPingsWithoutData += 1
+    }
+
+    self.lastSentPingDate = self.now()
+    return HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: code), ack: ack)
+  }",1,"0,6","private mutating func generatePingFrame(code: UInt64, ack: Bool) -> HTTP2Frame.FramePayload {/~/    return HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: code), ack: ack)"
+"private(set) var connectionManagerEvent: ConnectionManagerEvent?
+
+    /// The value of HTTP/2 SETTINGS_MAX_CONCURRENT_STREAMS changed.
+    private(set) var maxConcurrentStreamsChange: Int?
+
+    /// An idle task, either scheduling or cancelling an idle timeout.
+    private(set) var idleTask: IdleTask?
+
+    /// Send a GOAWAY frame with the last peer initiated stream ID set to this value.
+    private(set) var sendGoAwayWithLastPeerInitiatedStreamID: HTTP2StreamID?
+
+    /// Whether the channel should be closed.
+    private(set) var shouldCloseChannel: Bool
+
+    fileprivate static let none = Operations()
+
+    fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+      self.sendGoAwayWithLastPeerInitiatedStreamID = streamID
+    }",1,16,fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+"private(set) var connectionManagerEvent: ConnectionManagerEvent?
+
+    /// The value of HTTP/2 SETTINGS_MAX_CONCURRENT_STREAMS changed.
+    private(set) var maxConcurrentStreamsChange: Int?
+
+    /// An idle task, either scheduling or cancelling an idle timeout.
+    private(set) var idleTask: IdleTask?
+
+    /// Send a GOAWAY frame with the last peer initiated stream ID set to this value.
+    private(set) var sendGoAwayWithLastPeerInitiatedStreamID: HTTP2StreamID?
+
+    /// Whether the channel should be closed.
+    private(set) var shouldCloseChannel: Bool
+
+    fileprivate static let none = Operations()
+
+    fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+      self.sendGoAwayWithLastPeerInitiatedStreamID = streamID
+    }",1,16,fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+"    public func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
+        // make a copy of the path
+        var path = request.url.path
+
+        // path must be relative.
+        while path.hasPrefix(""/"") {
+            path = String(path.dropFirst())
+        }
+
+        // protect against relative paths
+        guard !path.contains(""../"") else {
+            return request.eventLoop.makeFailedFuture(Abort(.forbidden))
+        }
+
+        // create absolute file path
+        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+
+        // check if file exists and is not a directory
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: filePath, isDirectory: &isDir), !isDir.boolValue else {
+            return next.respond(to: request)
+        }
+
+        // stream the file
+        let res = request.fileio.streamFile(at: filePath)
+        return request.eventLoop.makeSucceededFuture(res)
+    }",1,"1,2,15",        // make a copy of the path/~/        var path = request.url.path/~/        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+"    public func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
+        // make a copy of the path
+        var path = request.url.path
+
+        // path must be relative.
+        while path.hasPrefix(""/"") {
+            path = String(path.dropFirst())
+        }
+
+        // protect against relative paths
+        guard !path.contains(""../"") else {
+            return request.eventLoop.makeFailedFuture(Abort(.forbidden))
+        }
+
+        // create absolute file path
+        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+
+        // check if file exists and is not a directory
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: filePath, isDirectory: &isDir), !isDir.boolValue else {
+            return next.respond(to: request)
+        }
+
+        // stream the file
+        let res = request.fileio.streamFile(at: filePath)
+        return request.eventLoop.makeSucceededFuture(res)
+    }",1,"1,2,15",        // make a copy of the path/~/        var path = request.url.path/~/        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+"self.init(light: color, dark: color)
+    }
+}
+
+extension UIColor {
+
+    static func from(scheme: ColorSchemeColor, variant: ColorSchemeVariant? = nil) -> UIColor {
+        return ColorScheme.default.color(named: scheme, variant: variant)
+    }
+
+    /// Creates UIColor instance with color corresponding to @p accentColor that can be used to display the name.
+    // NB: the order of coefficients must match ZMAccentColor enum ordering
+    private static let accentColorNameColorBlendingCoefficientsDark: [CGFloat] = [0.8, 0.8, 0.72, 1.0, 0.8, 0.8, 0.8, 0.64]
+    private static let accentColorNameColorBlendingCoefficientsLight: [CGFloat] = [0.8, 0.8, 0.72, 1.0, 0.8, 0.8, 0.64, 1.0]
+
+    /// Creates UIColor instance with color corresponding to @p accentColor that can be used to display the name.
+    class func nameColor(for accentColor: ZMAccentColor, variant: ColorSchemeVariant) -> UIColor {
+
+        assert(accentColor.rawValue <= ZMAccentColor.max.rawValue)
+
+        let coefficientsArray = variant == .dark ? accentColorNameColorBlendingCoefficientsDark : accentColorNameColorBlendingCoefficientsLight
+        let coefficient = coefficientsArray[Int(accentColor.rawValue)]
+
+        let background: UIColor = variant == .dark ? .black : .white
+        return background.mix(UIColor(fromZMAccentColor: accentColor), amount: coefficient)
+    }
+}",1,"17,18,19,22,24","/~/        assert(accentColor.rawValue <= ZMAccentColor.max.rawValue)/~//~//~/        return background.mix(UIColor(fromZMAccentColor: accentColor), amount: coefficient)"
+"    @objc(acknowledgePrivacyWarningWithResendIntent:) public func acknowledgePrivacyWarning(withResendIntent shouldResendMessages: Bool) {
+        acknowledgePrivacyChanges()
+
+        if shouldResendMessages {
+            resendPendingMessagesAfterPrivacyChanges()
+        } else {
+            discardPendingMessagesAfterPrivacyChanges()
+        }
+    }",0,,
+"private mutating func generatePingFrame(code: UInt64, ack: Bool) -> HTTP2Frame.FramePayload {
+    if self.activeStreams == 0 {
+      self.sentPingsWithoutData += 1
+    }
+
+    self.lastSentPingDate = self.now()
+    return HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: code), ack: ack)
+  }",1,"0,6","private mutating func generatePingFrame(code: UInt64, ack: Bool) -> HTTP2Frame.FramePayload {/~/    return HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: code), ack: ack)"
+"    public func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
+        // make a copy of the path
+        var path = request.url.path
+
+        // path must be relative.
+        while path.hasPrefix(""/"") {
+            path = String(path.dropFirst())
+        }
+
+        // protect against relative paths
+        guard !path.contains(""../"") else {
+            return request.eventLoop.makeFailedFuture(Abort(.forbidden))
+        }
+
+        // create absolute file path
+        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+
+        // check if file exists and is not a directory
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: filePath, isDirectory: &isDir), !isDir.boolValue else {
+            return next.respond(to: request)
+        }
+
+        // stream the file
+        let res = request.fileio.streamFile(at: filePath)
+        return request.eventLoop.makeSucceededFuture(res)
+    }",1,"1,2,15",        // make a copy of the path/~/        var path = request.url.path/~/        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+"internal static func subtitleSendDate(_ p1: Any) -> String {
+        return L10n.tr(""Localizable"", ""message_details.subtitle_send_date"", String(describing: p1))
+      }",0,,
+"  func handlerAdded(context: ChannelHandlerContext) {
+    self.context = context
+  }",0,,
+"    public func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
+        // make a copy of the path
+        var path = request.url.path
+
+        // path must be relative.
+        while path.hasPrefix(""/"") {
+            path = String(path.dropFirst())
+        }
+
+        // protect against relative paths
+        guard !path.contains(""../"") else {
+            return request.eventLoop.makeFailedFuture(Abort(.forbidden))
+        }
+
+        // create absolute file path
+        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+
+        // check if file exists and is not a directory
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: filePath, isDirectory: &isDir), !isDir.boolValue else {
+            return next.respond(to: request)
+        }
+
+        // stream the file
+        let res = request.fileio.streamFile(at: filePath)
+        return request.eventLoop.makeSucceededFuture(res)
+    }",1,"1,2,15",        // make a copy of the path/~/        var path = request.url.path/~/        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+"internal static func inConversation(_ p1: Any, _ p2: Any) -> String {
+        return L10n.tr(""Localizable"", ""notifications.in_conversation"", String(describing: p1), String(describing: p2))
+      }",0,,
+"private mutating func generatePingFrame(code: UInt64, ack: Bool) -> HTTP2Frame.FramePayload {
+    if self.activeStreams == 0 {
+      self.sentPingsWithoutData += 1
+    }
+
+    self.lastSentPingDate = self.now()
+    return HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: code), ack: ack)
+  }",1,"0,6","private mutating func generatePingFrame(code: UInt64, ack: Bool) -> HTTP2Frame.FramePayload {/~/    return HTTP2Frame.FramePayload.ping(HTTP2PingData(withInteger: code), ack: ack)"
+"private func handlePong(_ pingData: HTTP2PingData) -> Action {
+    if pingData.integer == self.pingCode {
+      return .cancelScheduledTimeout
+    } else {
+      return .none
+    }
+  }",1,1,    if pingData.integer == self.pingCode {

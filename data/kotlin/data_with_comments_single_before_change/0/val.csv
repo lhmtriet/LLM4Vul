@@ -1,0 +1,127 @@
+processed_func,target,flaw_line_index,flaw_line
+"        override fun syncInterval(): Long {
+            val newDelayDays: Double =
+                ExponentialDistribution.sampleFromStandard() / SAMPLING_RATE
+            return (newDelayDays * FACTOR_DAY_MILLIS) as Long
+        }",1,3,            return (newDelayDays * FACTOR_DAY_MILLIS) as Long
+"        override fun syncInterval(): Long {
+            val newDelayDays: Double =
+                ExponentialDistribution.sampleFromStandard() / SAMPLING_RATE
+            return (newDelayDays * FACTOR_DAY_MILLIS).toLong()
+        }",0,,
+"    override fun setUuid(uuid: String) {
+        preferences
+            .edit()
+            .putString(KEY_UUID, uuid)
+            .apply()
+    }",0,,
+"    override fun setInfectionReportDate(date: Date) {
+        preferences.edit()
+            .putLong(KEY_INFECTION_REPORT_DATE, date.time)
+            .apply()
+    }",0,,
+"    override fun setHealingTime(healingTime: HealingTime) {
+        preferences.edit()
+            .putString(KEY_HEALING_TIME, healingTime.toJson())
+            .apply()
+    }",0,,
+"    override fun getRegions(): List<Region> {
+        val itemType = object : TypeToken<List<Region>>() {}.type
+        return Gson().fromJson(
+            preferences.getString(
+                KEY_REGIONS, ""[]""
+            ),
+            itemType
+        )
+    }",0,,
+"override fun doWork(): Result {
+        val now = clock.currentTimeMillis()
+        var tDummy = inputData.getLong(KEY_T_DUMMY, now)
+        while (tDummy < now) {
+            // only do request if it was planned to do in the last 48h
+            if (tDummy >= now - FACTOR_HOUR_MILLIS * MAX_DELAY_HOURS) {
+                if (BuildConfig.DEBUG)
+                    DP3T.addWorkerStartedToHistory(applicationContext, TAG)
+                reportFakeInfectionUseCase.reportFakeInfection().subscribe()
+            }
+            tDummy += clock.syncInterval();
+            preferencesRepository.setTDummy(tDummy)
+        }
+
+        start(applicationContext, tDummy, ExistingWorkPolicy.REPLACE)
+        return Result.success()
+    }",0,,
+"        get() = currentKey.content
+}",0,,
+"    fun reportInfected(reportCode: String): Completable {
+
+        return getVerifyToken(reportCode).flatMapCompletable {
+            contactTracingRepository.notifyInfected(it.token, jwtTokenUtils.getOnset(it.token))
+        }.concatWith {
+            preferencesRepository.setInfectionReportDate(Date())
+            it.onComplete()
+        }
+
+    }",1,"0,1,2,3,4,5,6,9","    fun reportInfected(reportCode: String): Completable {/~//~/        return getVerifyToken(reportCode).flatMapCompletable {/~/            contactTracingRepository.notifyInfected(it.token, jwtTokenUtils.getOnset(it.token))/~/        }.concatWith {/~/            preferencesRepository.setInfectionReportDate(Date())/~/            it.onComplete()/~/    }"
+"        private fun createPolymorphicMapDeserializer(node: YamlMap, context: SerializersModule, configuration: YamlConfiguration): YamlPolymorphicInput {
+            val desiredKey = configuration.polymorphismPropertyName
+            when (val typeName = node.getValue(desiredKey)) {
+                is YamlList -> throw InvalidPropertyValueException(desiredKey, ""expected a string, but got a list"", typeName.path)
+                is YamlMap -> throw InvalidPropertyValueException(desiredKey, ""expected a string, but got a map"", typeName.path)
+                is YamlNull -> throw InvalidPropertyValueException(desiredKey, ""expected a string, but got a null value"", typeName.path)
+                is YamlTaggedNode -> throw InvalidPropertyValueException(desiredKey, ""expected a string, but got a tagged value"", typeName.path)
+                is YamlScalar -> {
+                    val remainingProperties = node.withoutKey(desiredKey)
+
+                    return YamlPolymorphicInput(typeName.content, typeName.path, remainingProperties, context, configuration)
+                }
+            }
+        }",0,,
+"            return this.get(desiredKey) ?: throw MissingRequiredPropertyException(desiredKey, this.path)
+        }
+
+        private fun YamlMap.withoutKey(key: String): YamlMap {
+            return this.copy(entries = entries.filterKeys { it.content != key })
+        }",0,,
+"        fun start(context: Context) {
+            start(context, getRandomDelay(), ExistingWorkPolicy.KEEP)
+        }",1,"0,1","        fun start(context: Context) {/~/            start(context, getRandomDelay(), ExistingWorkPolicy.KEEP)"
+"    override fun getCurrentPath(): YamlPath = node.path
+}",0,,
+"    override fun getCurrentLocation(): Location = getCurrentPath().endLocation
+}",0,,
+"            override fun <Base : Any> polymorphicDefault(baseClass: KClass<Base>, defaultSerializerProvider: (className: String?) -> DeserializationStrategy<out Base>?) {
+                throw UnsupportedOperationException(""This method should never be called."")
+            }",0,,
+"    override fun setExposed(exposed: Boolean) {
+        preferences.edit()
+            .putBoolean(KEY_WAS_EXPOSED, exposed)
+            .apply()
+    }",0,,
+"private fun throwIfUnknownPolymorphicTypeException(e: Exception, deserializer: DeserializationStrategy<*>) {
+        val message = e.message ?: return
+        val match = unknownPolymorphicTypeExceptionMessage.matchEntire(message) ?: return
+        val unknownType = match.groupValues[1]
+        val className = match.groupValues[2]
+
+        val knownTypes = when (deserializer.descriptor.kind) {
+            PolymorphicKind.SEALED -> getKnownTypesForSealedType(deserializer)
+            PolymorphicKind.OPEN -> getKnownTypesForOpenType(className)
+            else -> throw IllegalArgumentException(""Can't get known types for descriptor of kind ${deserializer.descriptor.kind}"")
+        }
+
+        throw UnknownPolymorphicTypeException(unknownType, knownTypes, typeNamePath, e)
+    }",0,,
+"    fun read(path: Path): Baseline {
+        try {
+            Files.newInputStream(path).use {
+                val reader = SAXParserFactory.newInstance().newSAXParser()
+                val handler = BaselineHandler()
+                reader.parse(it, handler)
+                return handler.createBaseline()
+            }
+        } catch (error: SAXParseException) {
+            val (line, column) = error.lineNumber to error.columnNumber
+            throw InvalidState(""Error on position $line:$column while reading the baseline xml file!"", error)
+        }
+    }",1,3,                val reader = SAXParserFactory.newInstance().newSAXParser()

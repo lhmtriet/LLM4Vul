@@ -1,0 +1,541 @@
+processed_func,target,flaw_line_index,flaw_line
+"    pub fn name(&self) -> Option<&str> {
+        self.name.as_deref()
+    }",0,,
+"fn sock_send(command: &str) -> std::io::Result<()> {
+    let mut stream = UnixStream::connect(""/tmp/swhkd.sock"")?;
+    stream.write_all(command.as_bytes())?;
+    Ok(())
+}",1,1,"    let mut stream = UnixStream::connect(""/tmp/swhkd.sock"")?;"
+"fn store_block(post_log: bool, block_number: U256) {
+		let mut transactions = Vec::new();
+		let mut statuses = Vec::new();
+		let mut receipts = Vec::new();
+		let mut logs_bloom = Bloom::default();
+		let mut cumulative_gas_used = U256::zero();
+		for (transaction, status, receipt) in Pending::<T>::get() {
+			transactions.push(transaction);
+			statuses.push(status);
+			receipts.push(receipt.clone());
+			let (logs, used_gas) = match receipt {
+				Receipt::Legacy(d) | Receipt::EIP2930(d) | Receipt::EIP1559(d) => {
+					(d.logs.clone(), d.used_gas)
+				}
+			};
+			cumulative_gas_used = used_gas;
+			Self::logs_bloom(logs, &mut logs_bloom);
+		}
+
+		let ommers = Vec::<ethereum::Header>::new();
+		let receipts_root = ethereum::util::ordered_trie_root(receipts.iter().map(rlp::encode));
+		let partial_header = ethereum::PartialHeader {
+			parent_hash: if block_number > U256::zero() {
+				BlockHash::<T>::get(block_number - 1)
+			} else {
+				H256::default()
+			},
+			beneficiary: pallet_evm::Pallet::<T>::find_author(),
+			state_root: T::StateRoot::get(),
+			receipts_root,
+			logs_bloom,
+			difficulty: U256::zero(),
+			number: block_number,
+			gas_limit: T::BlockGasLimit::get(),
+			gas_used: cumulative_gas_used,
+			timestamp: UniqueSaturatedInto::<u64>::unique_saturated_into(
+				pallet_timestamp::Pallet::<T>::get(),
+			),
+			extra_data: Vec::new(),
+			mix_hash: H256::default(),
+			nonce: H64::default(),
+		};
+		let block = ethereum::Block::new(partial_header, transactions.clone(), ommers);
+
+		CurrentBlock::<T>::put(block.clone());
+		CurrentReceipts::<T>::put(receipts.clone());
+		CurrentTransactionStatuses::<T>::put(statuses.clone());
+		BlockHash::<T>::insert(block_number, block.header.hash());
+
+		if post_log {
+			let digest = DigestItem::Consensus(
+				FRONTIER_ENGINE_ID,
+				PostLog::Hashes(fp_consensus::Hashes::from_block(block)).encode(),
+			);
+			frame_system::Pallet::<T>::deposit_log(digest);
+		}
+	}",0,,
+"fn calculate_multiplication_complexity(base_length: u64, mod_length: u64) -> u64 {
+		let max_length = max(base_length, mod_length);
+		let mut words = max_length / 8;
+		if max_length % 8 > 0 {
+			words += 1;
+		}
+
+		// TODO: prevent/handle overflow
+		words * words
+	}",1,7,		// TODO: prevent/handle overflow
+"pub fn execute(&mut self, action: Vec<u8>) {
+            self.sender.send(WhatToDo::NewJob(action)).unwrap();
+        }",0,,
+"fn is_empty(&self, address: H160) -> bool {
+		Pallet::<T>::is_account_empty(&address)
+	}",0,,
+"fn insert(&self, func: &mut Function) {
+        match self {
+            Self::Gc => {
+                func.instruction(Instruction::Call(0));
+            }
+            Self::Get(x) => {
+                func.instruction(Instruction::I32Const(*x));
+                func.instruction(Instruction::TableGet { table: 0 });
+                func.instruction(Instruction::Drop);
+            }
+            Self::SetFromParam(x, y) => {
+                func.instruction(Instruction::I32Const(*x));
+                func.instruction(Instruction::LocalGet(*y));
+                func.instruction(Instruction::TableSet { table: 0 });
+            }
+            Self::SetFromGet(x, y) => {
+                func.instruction(Instruction::I32Const(*x));
+                func.instruction(Instruction::I32Const(*y));
+                func.instruction(Instruction::TableGet { table: 0 });
+                func.instruction(Instruction::TableSet { table: 0 });
+            }
+        }
+    }",1,"0,6,11,12,16,17","fn insert(&self, func: &mut Function) {/~/                func.instruction(Instruction::I32Const(*x));/~/                func.instruction(Instruction::I32Const(*x));/~/                func.instruction(Instruction::LocalGet(*y));/~/                func.instruction(Instruction::I32Const(*x));/~/                func.instruction(Instruction::I32Const(*y));"
+"pub unsafe fn instance_handle_from_raw(
+    ptr: *mut Instance,
+    needs_inst_drop: bool,
+) -> InstanceHandle {
+    InstanceHandle {
+        inst: NonNull::new_unchecked(ptr),
+        needs_inst_drop,
+    }
+}",0,,
+"	fn is_web_proxy_token_valid(&self, token: &str) -> bool;
+}
+
+impl<F> WebProxyTokens for F where F: Fn(String) -> bool + Send + Sync {
+	fn is_web_proxy_token_valid(&self, token: &str) -> bool { self(token.to_owned()) }
+}",1,"0,3,4","	fn is_web_proxy_token_valid(&self, token: &str) -> bool;/~/impl<F> WebProxyTokens for F where F: Fn(String) -> bool + Send + Sync {/~/	fn is_web_proxy_token_valid(&self, token: &str) -> bool { self(token.to_owned()) }"
+"    pub fn strong_count(&self) -> usize {
+        self.extern_data().ref_count.load(Ordering::SeqCst)
+    }",0,,
+"    pub fn null() -> Val {
+        Val::ExternRef(None)
+    }",0,,
+"	fn default() -> Self {
+		let data_dir = default_data_path();
+		Configuration {
+			enabled: true,
+			dapps_path: replace_home(&data_dir, ""$BASE/dapps"").into(),
+			extra_dapps: vec![],
+		}
+	}",0,,
+"    pub async fn run(&mut self) -> TResult<()> {
+        loop {
+            // Take the permit first, but we won't use it right now
+            // that's why we will forget it
+            self.base.climit.acquire().await.unwrap().forget();
+            let stream = self.accept().await?;
+            let mut chandle = ConnectionHandler::new(
+                self.base.db.clone(),
+                Connection::new(stream),
+                self.base.climit.clone(),
+                Terminator::new(self.base.signal.subscribe()),
+                self.base.terminate_tx.clone(),
+            );
+            tokio::spawn(async move {
+                if let Err(e) = chandle.run().await {
+                    log::error!(""Error: {}"", e);
+                }
+            });
+        }
+    }",1,5,            let stream = self.accept().await?;
+"    fn deref_mut(&mut self) -> &mut T {
+        if cfg!(debug_assertions) {
+            &mut self.inner
+        } else {
+            panic!(
+                ""only deref `DebugOnly` when `cfg(debug_assertions)` or \
+                 inside a `debug_assert!(..)`""
+            )
+        }
+    }",0,,
+"fn drop(&mut self) {
+        // Make sure that the permit is returned to the semaphore
+        // in the case that there is a panic inside
+        self.climit.add_permits(1);
+    }",0,,
+"	fn generate_web_proxy_token(&self) -> Result<String, Error> {
+		Ok(self.signer.generate_web_proxy_access_token())
+	}",1,"0,1","	fn generate_web_proxy_token(&self) -> Result<String, Error> {/~/		Ok(self.signer.generate_web_proxy_access_token())"
+"fn lookup_stack_map(&self, pc: usize) -> Option<&StackMap> {
+        let text_offset = pc - self.start;
+        let (index, func_offset) = self.module.func_by_text_offset(text_offset)?;
+        let info = self.module.func_info(index);
+
+        // Do a binary search to find the stack map for the given offset.
+        //
+        // Because GC safepoints are technically only associated with a single
+        // PC, we should ideally only care about `Ok(index)` values returned
+        // from the binary search. However, safepoints are inserted right before
+        // calls, and there are two things that can disturb the PC/offset
+        // associated with the safepoint versus the PC we actually use to query
+        // for the stack map:
+        //
+        // 1. The `backtrace` crate gives us the PC in a frame that will be
+        //    *returned to*, and where execution will continue from, rather than
+        //    the PC of the call we are currently at. So we would need to
+        //    disassemble one instruction backwards to query the actual PC for
+        //    the stack map.
+        //
+        //    TODO: One thing we *could* do to make this a little less error
+        //    prone, would be to assert/check that the nearest GC safepoint
+        //    found is within `max_encoded_size(any kind of call instruction)`
+        //    our queried PC for the target architecture.
+        //
+        // 2. Cranelift's stack maps only handle the stack, not
+        //    registers. However, some references that are arguments to a call
+        //    may need to be in registers. In these cases, what Cranelift will
+        //    do is:
+        //
+        //      a. spill all the live references,
+        //      b. insert a GC safepoint for those references,
+        //      c. reload the references into registers, and finally
+        //      d. make the call.
+        //
+        //    Step (c) adds drift between the GC safepoint and the location of
+        //    the call, which is where we actually walk the stack frame and
+        //    collect its live references.
+        //
+        //    Luckily, the spill stack slots for the live references are still
+        //    up to date, so we can still find all the on-stack roots.
+        //    Furthermore, we do not have a moving GC, so we don't need to worry
+        //    whether the following code will reuse the references in registers
+        //    (which would not have been updated to point to the moved objects)
+        //    or reload from the stack slots (which would have been updated to
+        //    point to the moved objects).
+
+        let index = match info
+            .stack_maps
+            .binary_search_by_key(&func_offset, |i| i.code_offset)
+        {
+            // Exact hit.
+            Ok(i) => i,
+
+            // `Err(0)` means that the associated stack map would have been the
+            // first element in the array if this pc had an associated stack
+            // map, but this pc does not have an associated stack map. This can
+            // only happen inside a Wasm frame if there are no live refs at this
+            // pc.
+            Err(0) => return None,
+
+            Err(i) => i - 1,
+        };
+
+        Some(&info.stack_maps[index].stack_map)
+    }",1,"6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,51,54,55,56,57,58,60","///~/        // Because GC safepoints are technically only associated with a single/~/        // PC, we should ideally only care about `Ok(index)` values returned/~/        // from the binary search. However, safepoints are inserted right before/~/        // calls, and there are two things that can disturb the PC/offset/~/        // associated with the safepoint versus the PC we actually use to query/~/        // for the stack map:/~/        ///~/        // 1. The `backtrace` crate gives us the PC in a frame that will be/~/        //    *returned to*, and where execution will continue from, rather than/~/        //    the PC of the call we are currently at. So we would need to/~/        //    disassemble one instruction backwards to query the actual PC for/~/        //    the stack map./~/        ///~/        //    TODO: One thing we *could* do to make this a little less error/~/        //    prone, would be to assert/check that the nearest GC safepoint/~/        //    found is within `max_encoded_size(any kind of call instruction)`/~/        //    our queried PC for the target architecture./~/        ///~/        // 2. Cranelift's stack maps only handle the stack, not/~/        //    registers. However, some references that are arguments to a call/~/        //    may need to be in registers. In these cases, what Cranelift will/~/        //    do is:/~/        ///~/        //      a. spill all the live references,/~/        //      b. insert a GC safepoint for those references,/~/        //      c. reload the references into registers, and finally/~/        //      d. make the call./~/        ///~/        //    Step (c) adds drift between the GC safepoint and the location of/~/        //    the call, which is where we actually walk the stack frame and/~/        //    collect its live references./~/        ///~/        //    Luckily, the spill stack slots for the live references are still/~/        //    up to date, so we can still find all the on-stack roots./~/        //    Furthermore, we do not have a moving GC, so we don't need to worry/~/        //    whether the following code will reuse the references in registers/~/        //    (which would not have been updated to point to the moved objects)/~/        //    or reload from the stack slots (which would have been updated to/~/        //    point to the moved objects)./~//~/            // Exact hit./~/            // `Err(0)` means that the associated stack map would have been the/~/            // first element in the array if this pc had an associated stack/~/            // map, but this pc does not have an associated stack map. This can/~/            // only happen inside a Wasm frame if there are no live refs at this/~/            // pc./~/"
+"pub fn seteuid(uid: u32) {
+    let uid = nix::unistd::Uid::from_raw(uid);
+    match nix::unistd::seteuid(uid) {
+        Ok(_) => log::debug!(""Dropping privileges...""),
+        Err(e) => {
+            log::error!(""Failed to set UID: {:#?}"", e);
+            exit(1);
+        }
+    }
+}",1,"1,5","    let uid = nix::unistd::Uid::from_raw(uid);/~/            log::error!(""Failed to set UID: {:#?}"", e);"
+"pub(crate) fn tokenize(mut input: &str) -> Vec<(Token, Span)> {
+    let mut result = vec![];
+    let mut offset = 0;
+
+    loop {
+        let input_len = input.len();
+        input = input.trim_start();
+        while input.starts_with('#') {
+            input = input.trim_start_matches(|c| c != '\n').trim_start();
+        }
+        offset += input_len - input.len();
+
+        match input.chars().next() {
+            None => break,
+            Some(c) => {
+                let (len, token) = consume_chain! {
+                    input, c;
+
+                    if input.starts_with(""<%"") => (2, Token::BStart);
+                    if input.starts_with(""%>"") => (2, Token::BEnd);
+                    if input.starts_with("">>"") => (2, Token::LookAhead);
+                    if input.starts_with(""<<"") => (2, Token::LookBehind);
+                    if input.starts_with(""::"") => (2, Token::Backref);
+
+                    if c == '%' => (1, Token::BWord);
+                    if c == '*' => (1, Token::Star);
+                    if c == '+' => (1, Token::Plus);
+                    if c == '?' => (1, Token::QuestionMark);
+                    if c == '|' => (1, Token::Pipe);
+                    if c == ':' => (1, Token::Colon);
+                    if c == ')' => (1, Token::CloseParen);
+                    if c == '{' => (1, Token::OpenBrace);
+                    if c == '}' => (1, Token::CloseBrace);
+                    if c == ',' => (1, Token::Comma);
+                    if c == '!' => (1, Token::Not);
+                    if c == '[' => (1, Token::OpenBracket);
+                    if c == '-' => (1, Token::Dash);
+                    if c == ']' => (1, Token::CloseBracket);
+                    if c == '.' => (1, Token::Dot);
+                    if c == ';' => (1, Token::Semicolon);
+                    if c == '=' => (1, Token::Equals);
+
+                    if c == '\'' => match input[1..].find('\'') {
+                        Some(len_inner) => (len_inner + 2, Token::String),
+                        None => (input.len(), Token::ErrorMsg(ParseErrorMsg::UnclosedString)),
+                    };
+
+                    if c == '""' => match find_unescaped_quote(&input[1..]) {
+                        Some(len_inner) => (len_inner + 2, Token::String),
+                        None => (input.len(), Token::ErrorMsg(ParseErrorMsg::UnclosedString)),
+                    };
+
+                    if let Some(rest) = input.strip_prefix(""U+"") => {
+                        match rest.find(|c: char| !c.is_ascii_hexdigit()) {
+                            Some(0) => (1, Token::Error),
+                            Some(len_inner) => (len_inner + 2, Token::CodePoint),
+                            None => (input.len(), Token::CodePoint),
+                        }
+                    };
+
+                    if matches!(c, '0'..='9') => (
+                        input.find(|c: char| !matches!(c, '0'..='9')).unwrap_or(input.len()),
+                        Token::Number,
+                    );
+
+                    if c.is_alphabetic() || c == '_' => (
+                        input.find(|c: char| !c.is_alphanumeric() && c != '_').unwrap_or(input.len()),
+                        Token::Identifier,
+                    );
+
+                    if c == '^' => (1, Token::ErrorMsg(ParseErrorMsg::Caret));
+                    if c == '$' => (1, Token::ErrorMsg(ParseErrorMsg::Dollar));
+
+                    if let Some(rest) = input.strip_prefix(""(?"") => (
+                        match rest.chars().next() {
+                            Some('<') => {
+                                let name_len = rest.chars()
+                                    .skip(1)
+                                    .take_while(char::is_ascii_alphanumeric)
+                                    .count();
+
+                                if name_len > 0 && matches!(rest.chars().nth(1 + name_len), Some('>')) {
+                                    4 + name_len
+                                } else if let Some('=' | '!') = rest.chars().nth(1) {
+                                    4
+                                } else {
+                                    3
+                                }
+                            }
+                            Some('P') if matches!(rest.chars().nth(1), Some('<')) => {
+                                let name_len = rest.chars()
+                                    .skip(2)
+                                    .take_while(char::is_ascii_alphanumeric)
+                                    .count();
+
+                                if name_len > 0 && matches!(rest.chars().nth(2 + name_len), Some('>')) {
+                                    5 + name_len
+                                } else {
+                                    4
+                                }
+                            },
+                            Some('>' | '!' | ':' | '=' | '(' | '|') => 3,
+                            _ => 2,
+                        },
+                        Token::ErrorMsg(ParseErrorMsg::SpecialGroup),
+                    );
+                    if c == '(' => (1, Token::OpenParen);
+
+                    if c == '\\' => {
+                        if input.starts_with(""\\u{"") || input.starts_with(""\\x{"") {
+                            match input[3..].find('}') {
+                                Some(len) => (len + 4, Token::ErrorMsg(ParseErrorMsg::BackslashUnicode)),
+                                None => (2, Token::ErrorMsg(ParseErrorMsg::Backslash)),
+                            }
+                        } else if let Some(rest) = input.strip_prefix(""\\u"") {
+                            match rest.find(|c: char| !c.is_ascii_hexdigit()).unwrap_or(rest.len()) {
+                                4.. => (6, Token::ErrorMsg(ParseErrorMsg::BackslashU4)),
+                                _ => (2, Token::ErrorMsg(ParseErrorMsg::Backslash)),
+                            }
+                        } else if let Some(rest) = input.strip_prefix(""\\x"") {
+                            match rest.find(|c: char| !c.is_ascii_hexdigit()).unwrap_or(rest.len()) {
+                                2.. => (4, Token::ErrorMsg(ParseErrorMsg::BackslashX2)),
+                                _ => (2, Token::ErrorMsg(ParseErrorMsg::Backslash)),
+                            }
+                        } else if let Some(rest) = input.strip_prefix(""\\k<"") {
+                            match rest.find('>') {
+                                Some(len) => (len + 4, Token::ErrorMsg(ParseErrorMsg::BackslashK)),
+                                _ => (2, Token::ErrorMsg(ParseErrorMsg::Backslash)),
+                            }
+                        } else if input.len() >= 2 {
+                            (2, Token::ErrorMsg(ParseErrorMsg::Backslash))
+                        } else {
+                            (1, Token::Error)
+                        }
+                    };
+                };
+
+                let start = offset;
+                offset += len;
+                input = &input[len..];
+                result.push((token, Span::new(start, offset)));
+            }
+        }
+    }
+
+    result
+}",1,"129,130","} else if input.len() >= 2 {/~/                            (2, Token::ErrorMsg(ParseErrorMsg::Backslash))"
+"fn correct_and_deposit_fee(
+		who: &H160,
+		corrected_fee: U256,
+		base_fee: U256,
+		already_withdrawn: Self::LiquidityInfo,
+	) -> Self::LiquidityInfo {
+		if let Some(paid) = already_withdrawn {
+			let account_id = T::AddressMapping::into_account_id(*who);
+
+			// Calculate how much refund we should return
+			let refund_amount = paid
+				.peek()
+				.saturating_sub(corrected_fee.low_u128().unique_saturated_into());
+			// refund to the account that paid the fees. If this fails, the
+			// account might have dropped below the existential balance. In
+			// that case we don't refund anything.
+			let refund_imbalance = C::deposit_into_existing(&account_id, refund_amount)
+				.unwrap_or_else(|_| C::PositiveImbalance::zero());
+
+			// Make sure this works with 0 ExistentialDeposit
+			// https://github.com/paritytech/substrate/issues/10117
+			// If we tried to refund something, the account still empty and the ED is set to 0,
+			// we call `make_free_balance_be` with the refunded amount.
+			let refund_imbalance = if C::minimum_balance().is_zero()
+				&& refund_amount > C::Balance::zero()
+				&& C::total_balance(&account_id).is_zero()
+			{
+				// Known bug: Substrate tried to refund to a zeroed AccountData, but
+				// interpreted the account to not exist.
+				match C::make_free_balance_be(&account_id, refund_amount) {
+					SignedImbalance::Positive(p) => p,
+					_ => C::PositiveImbalance::zero(),
+				}
+			} else {
+				refund_imbalance
+			};
+
+			// merge the imbalance caused by paying the fees and refunding parts of it again.
+			let adjusted_paid = paid
+				.offset(refund_imbalance)
+				.same()
+				.unwrap_or_else(|_| C::NegativeImbalance::zero());
+
+			let (base_fee, tip) = adjusted_paid.split(base_fee.low_u128().unique_saturated_into());
+			// Handle base fee. Can be either burned, rationed, etc ...
+			OU::on_unbalanced(base_fee);
+			return Some(tip);
+		}
+		None
+	}",1,"12,43",".saturating_sub(corrected_fee.low_u128().unique_saturated_into());/~/			let (base_fee, tip) = adjusted_paid.split(base_fee.low_u128().unique_saturated_into());"
+"    pub async fn run(&mut self) -> TResult<()> {
+        loop {
+            // Take the permit first, but we won't use it right now
+            // that's why we will forget it
+            self.base.climit.acquire().await.unwrap().forget();
+            let stream = self.accept().await?;
+            let mut sslhandle = ConnectionHandler::new(
+                self.base.db.clone(),
+                Connection::new(stream),
+                self.base.climit.clone(),
+                Terminator::new(self.base.signal.subscribe()),
+                self.base.terminate_tx.clone(),
+            );
+            tokio::spawn(async move {
+                if let Err(e) = sslhandle.run().await {
+                    log::error!(""Error: {}"", e);
+                }
+            });
+        }
+    }",1,5,            let stream = self.accept().await?;
+"pub fn atou16(bytes: &[u8]) -> Result<u16, Error> {
+    if cfg!(debug_assertions) && bytes.len() >= 5 {
+        panic!(""atou16 accepts up to 4 bytes"");
+    }
+    if bytes.len() == 0 {
+        return Err(Error::InvalidFormat(""Not a number""));
+    }
+    let mut n = 0;
+    for &c in bytes {
+        if c < ASCII_0 || ASCII_9 < c {
+            return Err(Error::InvalidFormat(""Not a number""));
+        }
+        n = n * 10 + (c - ASCII_0) as u16;
+    }
+    Ok(n)
+}",0,,
+"    pub fn get_func_name(&self, func_index: FuncIndex) -> Option<&str> {
+        self.function_names.get(func_index).map(String::as_ref)
+    }",0,,
+"    pub fn new(
+        params: impl IntoIterator<Item = ValType>,
+        results: impl IntoIterator<Item = ValType>,
+    ) -> FuncType {
+        FuncType {
+            sig: WasmFuncType {
+                params: params.into_iter().map(|t| t.to_wasm_type()).collect(),
+                returns: results.into_iter().map(|t| t.to_wasm_type()).collect(),
+            },
+        }
+    }",1,"5,6,7,8","            sig: WasmFuncType {/~/                params: params.into_iter().map(|t| t.to_wasm_type()).collect(),/~/                returns: results.into_iter().map(|t| t.to_wasm_type()).collect(),/~/            },"
+"fn parse_dbtest(mut input: syn::ItemFn, rand: u16) -> Result<TokenStream, syn::Error> {
+    let sig = &mut input.sig;
+    let fname = sig.ident.to_string();
+    let body = &input.block;
+    let attrs = &input.attrs;
+    let vis = &input.vis;
+    let header = quote! {
+        #[::core::prelude::v1::test]
+    };
+    if sig.asyncness.is_none() {
+        let msg = ""`dbtest` functions need to be async"";
+        return Err(syn::Error::new_spanned(sig.fn_token, msg));
+    }
+    sig.asyncness = None;
+    let body = quote! {
+        let asyncdb = crate::coredb::CoreDB::new(
+            crate::config::BGSave::Disabled,
+            crate::config::SnapshotConfig::default(),
+            None
+        ).unwrap();
+        let addr = crate::tests::start_test_server(#rand, Some(asyncdb.clone())).await;
+        let mut stream = tokio::net::TcpStream::connect(&addr).await.unwrap();
+        #body
+        stream.shutdown(::std::net::Shutdown::Write).unwrap();
+        asyncdb.finish_db();
+        drop(asyncdb);
+    };
+    let result = quote! {
+        #header
+        #(#attrs)*
+        #vis #sig {
+            tokio::runtime::Builder::new_multi_thread()
+            .worker_threads(4)
+            .thread_name(#fname)
+            .thread_stack_size(3 * 1024 * 1024)
+            .enable_all()
+            .build()
+            .unwrap()
+            .block_on(async { #body });
+        }
+    };
+    Ok(result.into())
+}",1,23,        stream.shutdown(::std::net::Shutdown::Write).unwrap();
+"    fn tls_write(&mut self) -> io::Result<usize> {
+        self.tls_session.write_tls(&mut self.socket)
+    }",0,,

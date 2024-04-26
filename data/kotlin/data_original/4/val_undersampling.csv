@@ -1,0 +1,35 @@
+processed_func,target
+"    override fun getTDummy(): Long {
+        return preferences.getLong(KEY_T_DUMMY, -1)
+    }",0
+"    fun write(baseline: Baseline, path: Path) {
+        try {
+            Files.newBufferedWriter(path).addFinalNewLine().use {
+                it.streamXml().prettyPrinter().save(baseline)
+            }
+        } catch (error: XMLStreamException) {
+            val (line, column) = error.positions
+            throw InvalidState(""Error on position $line:$column while writing the baseline xml file!"", error)
+        }
+    }",0
+"                            override fun checkClientTrusted(
+                                    chain: Array<X509Certificate>,
+                                    authType: String
+                            ) {
+                            }",1
+"        private fun getRandomDelay(): Long = Random.nextLong(180, 360)
+
+    }",1
+"    override fun exampleRequest(): Either<Throwable, String> = callService {
+        apiInterface.test()
+    }
+
+}",1
+"        fun sampleFromStandard(): Double {
+            val random = SecureRandom()
+            return -ln(1.0 - random.nextDouble())
+        }",0
+"    override fun getCurrentLocation(): Location = getCurrentPath().endLocation
+}",0
+"    override fun decodeElementIndex(descriptor: SerialDescriptor): Int = 0
+}",1

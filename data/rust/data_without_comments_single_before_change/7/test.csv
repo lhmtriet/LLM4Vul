@@ -1,0 +1,4168 @@
+processed_func,target,flaw_line_index,flaw_line
+"fn test_sdiv64_reg() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov r0, 0xc
+        lsh r0, 32
+        mov r1, 4
+        sdiv r0, r1
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x300000000 } },
+        5
+    );
+}",0,,
+"fn test_string_stack() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov r1, 0x78636261
+        stxw [r10-8], r1
+        mov r6, 0x0
+        stxb [r10-4], r6
+        stxb [r10-12], r6
+        mov r1, 0x79636261
+        stxw [r10-16], r1
+        mov r1, r10
+        add r1, -8
+        mov r2, r1
+        syscall BpfStrCmp
+        mov r1, r0
+        mov r0, 0x1
+        lsh r1, 0x20
+        rsh r1, 0x20
+        jne r1, 0x0, +11
+        mov r1, r10
+        add r1, -8
+        mov r2, r10
+        add r2, -16
+        syscall BpfStrCmp
+        mov r1, r0
+        lsh r1, 0x20
+        rsh r1, 0x20
+        mov r0, 0x1
+        jeq r1, r6, +1
+        mov r0, 0x0
+        exit"",
+        [],
+        (
+            b""BpfStrCmp"" => syscalls::BpfStrCmp::init::<BpfSyscallContext, UserError>; syscalls::BpfStrCmp::call,
+        ),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x0 } },
+        28
+    );
+}",0,,
+"fn test_arsh32_reg() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov32 r0, 0xf8
+        mov32 r1, 16
+        lsh32 r0, 28
+        arsh32 r0, r1
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0xffff8000 } },
+        5
+    );
+}",0,,
+"fn new(size: usize) -> Self {
+        SuffixCache {
+            sparse: vec![0usize; size].into(),
+            dense: Vec::with_capacity(size),
+        }
+    }",0,,
+"pub fn read16<R>(reader: &mut R) -> Result<u16, io::Error> where R: io::Read {
+    let mut buf = [0u8; 2];
+    reader.read_exact(&mut buf)?;
+    Ok(u16::from_be_bytes(buf))
+}",0,,
+"fn test_parse_less_version_487() {
+    let output = b""less 487 (GNU regular expressions)
+Copyright (C) 1984-2016  Mark Nudelman
+
+less comes with NO WARRANTY, to the extent permitted by law.
+For information about the terms of redistribution,
+see the file named README in the less distribution.
+Homepage: http://www.greenwoodsoftware.com/less"";
+
+    assert_eq!(Some(487), parse_less_version(output));
+}",0,,
+"fn hash<H>(&self, hasher: &mut H)
+    where
+        H: Hasher,
+    {
+        VMExternRef::hash(&self.0, hasher)
+    }",0,,
+"fn drop(&mut self) {
+            self.live_refs.fetch_sub(1, SeqCst);
+        }",0,,
+"fn test_err_reg_stack_depth() {
+    let config = Config::default();
+    test_interpreter_and_jit_asm!(
+        ""
+        mov64 r0, 0x1
+        lsh64 r0, 0x20
+        callx r0
+        exit"",
+        [],
+        (),
+        0,
+        {
+            |_vm, res: Result| {
+                matches!(res.unwrap_err(),
+                    EbpfError::CallDepthExceeded(pc, depth)
+                    if pc == 31 && depth == config.max_call_depth
+                )
+            }
+        },
+        60
+    );
+}",0,,
+"pub fn from_int(v: u32) -> Self {
+        let mut scalar = Self::default();
+        scalar.set_int(v);
+        scalar
+    }",0,,
+"    pub fn get_embed_ctx<T: Any>(&self) -> Option<Result<Ref<'_, T>, BorrowError>> {
+        self.embed_ctx.try_get::<T>()
+    }
+
+    
+    pub fn get_embed_ctx_mut<T: Any>(&self) -> Option<Result<RefMut<'_, T>, BorrowMutError>> {
+        self.embed_ctx.try_get_mut::<T>()
+    }",0,,
+"    fn mul(self, other: &'a Scalar) -> Scalar {
+        let mut ret = Scalar::default();
+        ret.mul_in_place(self, other);
+        ret
+    }
+}
+
+impl<'a> MulAssign<&'a Scalar> for Scalar {
+    fn mul_assign(&mut self, other: &'a Scalar) {
+        let mut ret = Scalar::default();
+        ret.mul_in_place(self, other);
+        *self = ret;
+    }",0,,
+"pub fn serialize_compressed(&self) -> [u8; util::COMPRESSED_PUBLIC_KEY_SIZE] {
+        use util::{TAG_PUBKEY_ODD, TAG_PUBKEY_EVEN};
+
+        debug_assert!(!self.0.is_infinity());
+
+        let mut ret = [0u8; 33];
+        let mut elem = self.0.clone();
+
+        elem.x.normalize_var();
+        elem.y.normalize_var();
+        elem.x.fill_b32(array_mut_ref!(ret, 1, 32));
+        ret[0] = if elem.y.is_odd() {
+            TAG_PUBKEY_ODD
+        } else {
+            TAG_PUBKEY_EVEN
+        };
+
+        ret
+    }",0,,
+"fn test_entrypoint_exit() {
+    
+    
+    
+    
+    
+    
+    for dynamic_stack_frames in [false, true] {
+        let config = Config {
+            dynamic_stack_frames,
+            ..Config::default()
+        };
+
+        
+        
+        test_interpreter_and_jit_asm!(
+            ""
+            entrypoint:
+            call foo
+            mov r0, 42
+            exit
+            foo:
+            mov r0, 12
+            exit"",
+            config,
+            [],
+            (),
+            0,
+            { |_vm, res: Result| { res.unwrap() == 42 } },
+            5
+        );
+    }
+}",0,,
+"fn gee_i_sure_hope_refcounting_is_atomic() -> anyhow::Result<()> {
+    let mut config = Config::new();
+    config.wasm_reference_types(true);
+    config.epoch_interruption(true);
+    let engine = Engine::new(&config)?;
+    let mut store = Store::new(&engine, ());
+    let module = Module::new(
+        &engine,
+        r#""
+            (module
+                (global (mut externref) (ref.null extern))
+                (table 1 externref)
+
+                (func (export ""run"") (param externref)
+                    local.get 0
+                    global.set 0
+                    i32.const 0
+                    local.get 0
+                    table.set 0
+                    loop
+                        global.get 0
+                        global.set 0
+
+                        i32.const 0
+                        i32.const 0
+                        table.get
+                        table.set
+
+                        local.get 0
+                        call $f
+
+                        br 0
+                    end
+                )
+
+                (func $f (param externref))
+            )
+        ""#,
+    )?;
+
+    let instance = Instance::new(&mut store, &module, &[])?;
+    let run = instance.get_typed_func::<Option<ExternRef>, (), _>(&mut store, ""run"")?;
+
+    let flag = Arc::new(AtomicBool::new(false));
+    let externref = ExternRef::new(SetFlagOnDrop(flag.clone()));
+    let externref2 = externref.clone();
+
+    let child = std::thread::spawn(move || run.call(&mut store, Some(externref2)));
+
+    for _ in 0..10000 {
+        drop(externref.clone());
+    }
+    engine.increment_epoch();
+
+    assert!(child.join().unwrap().is_err());
+    assert!(!flag.load(SeqCst));
+    assert_eq!(externref.strong_count(), 1);
+    drop(externref);
+    assert!(flag.load(SeqCst));
+
+    Ok(())
+}",0,,
+"fn test_err_static_jmp_lddw() {
+    test_interpreter_and_jit_asm!(
+        ""
+        ja 2
+        mov r0, r0
+        lddw r0, 0x1122334455667788
+        exit
+        "",
+        [],
+        (),
+        0,
+        {
+            |_vm, res: Result| {
+                matches!(res.unwrap_err(),
+                    EbpfError::UnsupportedInstruction(pc) if pc == 32
+                )
+            }
+        },
+        2
+    );
+    test_interpreter_and_jit_asm!(
+        ""
+        mov r0, 0
+        mov r1, 0
+        mov r2, 0
+        lddw r0, 0x1
+        ja +2
+        lddw r1, 0x1
+        lddw r2, 0x1
+        add r1, r2
+        add r0, r1
+        exit
+        "",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x2 } },
+        9
+    );
+    test_interpreter_and_jit_asm!(
+        ""
+        jeq r0, 0, 1
+        lddw r0, 0x1122334455667788
+        exit
+        "",
+        [],
+        (),
+        0,
+        {
+            |_vm, res: Result| {
+                matches!(res.unwrap_err(),
+                    EbpfError::UnsupportedInstruction(pc) if pc == 31
+                )
+            }
+        },
+        2
+    );
+    test_interpreter_and_jit_asm!(
+        ""
+        call 3
+        mov r0, r0
+        mov r0, r0
+        lddw r0, 0x1122334455667788
+        exit
+        "",
+        [],
+        (),
+        0,
+        {
+            |_vm, res: Result| {
+                matches!(res.unwrap_err(),
+                    EbpfError::UnsupportedInstruction(pc) if pc == 33
+                )
+            }
+        },
+        2
+    );
+}",0,,
+"pub(super) fn parse_special_char<'i, 'b>(input: Input<'i, 'b>) -> PResult<'i, 'b, char> {
+    try_map(
+        Token::Identifier,
+        |(s, _)| {
+            Ok(match s {
+                ""n"" => '\n',
+                ""r"" => '\r',
+                ""t"" => '\t',
+                ""a"" => '\u{07}',
+                ""e"" => '\u{1B}',
+                ""f"" => '\u{0C}',
+                _ => return Err(ParseErrorKind::Incomplete),
+            })
+        },
+        nom::Err::Error,
+    )(input)
+}",0,,
+"pub fn register(&mut self, module: &Module) {
+        let compiled_module = module.compiled_module();
+
+        
+        
+        
+        
+        
+        
+        if compiled_module.finished_functions().len() == 0 {
+            self.modules_without_code.push(compiled_module.clone());
+            return;
+        }
+
+        
+        
+        let code = compiled_module.code();
+        assert!(!code.is_empty());
+        let start = code.as_ptr() as usize;
+        let end = start + code.len() - 1;
+
+        
+        
+        
+        if let Some(m) = self.modules_with_code.get(&end) {
+            assert_eq!(m.start, start);
+            return;
+        }
+
+        
+        if let Some((_, prev)) = self.modules_with_code.range(end..).next() {
+            assert!(prev.start > end);
+        }
+
+        if let Some((prev_end, _)) = self.modules_with_code.range(..=start).next_back() {
+            assert!(*prev_end < start);
+        }
+
+        let prev = self.modules_with_code.insert(
+            end,
+            Arc::new(RegisteredModule {
+                start,
+                module: compiled_module.clone(),
+                signatures: module.signatures().clone(),
+            }),
+        );
+        assert!(prev.is_none());
+
+        GLOBAL_MODULES.write().unwrap().register(start, end, module);
+    }",0,,
+"fn test_err_ldxdw_oob() {
+    test_interpreter_and_jit_asm!(
+        ""
+        ldxdw r0, [r1+6]
+        exit"",
+        [
+            0xaa, 0xbb, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 
+            0x77, 0x88, 0xcc, 0xdd, 
+        ],
+        (),
+        0,
+        {
+            |_vm, res: Result| {
+                matches!(res.unwrap_err(),
+                    EbpfError::AccessViolation(pc, access_type, vm_addr, len, name)
+                    if access_type == AccessType::Load && pc == 29 && vm_addr == 0x400000006 && len == 8 && name == ""input""
+                )
+            }
+        },
+        1
+    );
+}",0,,
+"pub fn instantiate_with_config(
+    wasm: &[u8],
+    known_valid: bool,
+    mut config: Config,
+    timeout: Timeout,
+) {
+    crate::init_fuzzing();
+
+    config.interruptable(match &timeout {
+        Timeout::Time(_) => true,
+        _ => false,
+    });
+    config.consume_fuel(match &timeout {
+        Timeout::Fuel(_) => true,
+        _ => false,
+    });
+    let engine = Engine::new(&config).unwrap();
+    let mut store = create_store(&engine);
+
+    let mut timeout_state = SignalOnDrop::default();
+    match timeout {
+        Timeout::Fuel(fuel) => store.add_fuel(fuel).unwrap(),
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        Timeout::Time(timeout) => {
+            let handle = store.interrupt_handle().unwrap();
+            timeout_state.spawn_timeout(timeout, move || handle.interrupt());
+        }
+        Timeout::None => {}
+    }
+
+    log_wasm(wasm);
+    let module = match Module::new(&engine, wasm) {
+        Ok(module) => module,
+        Err(_) if !known_valid => return,
+        Err(e) => panic!(""failed to compile module: {:?}"", e),
+    };
+
+    instantiate_with_dummy(&mut store, &module);
+}",0,,
+"pub fn heap(&self) -> &[u8] {
+        unsafe { self.alloc.heap() }
+    }",0,,
+"		pub fn transact(
+			origin: OriginFor<T>,
+			transaction: Transaction,
+		) -> DispatchResultWithPostInfo {
+			ensure_none(origin)?;
+
+			Self::do_transact(transaction)
+		}",0,,
+"fn is_inside_user_space(addr: *const u8, len: usize) -> bool {
+        let current = current!();
+        let user_range = current.vm().get_process_range();
+        let ur_start = user_range.start();
+        let ur_end = user_range.end();
+        let addr_start = addr as usize;
+        addr_start >= ur_start && addr_start < ur_end && ur_end - addr_start >= len
+    }",0,,
+"pub fn pre_migrate_block_v2() -> Result<(), &'static str> {
+		let item = b""CurrentBlock"";
+		let block_v0 = frame_support::storage::migration::get_storage_value::<ethereum::BlockV0>(
+			Self::name().as_bytes(),
+			item,
+			&[],
+		);
+		if let Some(block_v0) = block_v0 {
+			Self::set_temp_storage(block_v0.header.number, ""number"");
+			Self::set_temp_storage(block_v0.header.parent_hash, ""parent_hash"");
+			Self::set_temp_storage(block_v0.transactions.len() as u64, ""transaction_len"");
+		}
+		Ok(())
+	}
+
+	#[cfg(feature = ""try-runtime"")]
+	pub fn post_migrate_block_v2() -> Result<(), &'static str> {
+		let v0_number =
+			Self::get_temp_storage(""number"").expect(""We stored a number; it should be there; qed"");
+		let v0_parent_hash = Self::get_temp_storage(""parent_hash"")
+			.expect(""We stored a parent hash; it should be there; qed"");
+		let v0_transaction_len: u64 = Self::get_temp_storage(""transaction_len"")
+			.expect(""We stored a transaction count; it should be there; qed"");
+
+		let item = b""CurrentBlock"";
+		let block_v2 = frame_support::storage::migration::get_storage_value::<ethereum::BlockV2>(
+			Self::name().as_bytes(),
+			item,
+			&[],
+		);
+
+		assert!(block_v2.is_some());
+
+		let block_v2 = block_v2.unwrap();
+		assert_eq!(block_v2.header.number, v0_number);
+		assert_eq!(block_v2.header.parent_hash, v0_parent_hash);
+		assert_eq!(block_v2.transactions.len() as u64, v0_transaction_len);
+		Ok(())
+	}",0,,
+"    pub fn unwrap_returned(self) -> UntypedRetVal {
+        self.returned().unwrap()
+    }",0,,
+"    pub fn new_secure_only(base: BaseListener, ssl: SslOpts) -> Result<Self, String> {
+        let bindaddr = bindaddr!(base);
+        let slf = MultiListener::SecureOnly(
+            SslListener::new_pem_based_ssl_connection(ssl.key, ssl.chain, base, ssl.passfile)
+                .map_err(|e| format!(""Couldn't bind to secure port: {}"", e))?,
+        );
+        log::info!(""Server started on: skyhash-secure://{}"", bindaddr);
+        Ok(slf)
+    }",0,,
+"    pub fn is_bound_expired(&self) -> bool {
+        self.state.is_bound_expired()
+    }",0,,
+"    fn deref(&self) -> &T {
+        if cfg!(debug_assertions) {
+            &self.inner
+        } else {
+            panic!(
+                ""only deref `DebugOnly` when `cfg(debug_assertions)` or \
+                 inside a `debug_assert!(..)`""
+            )
+        }
+    }",0,,
+"    fn tls_write(&mut self) -> io::Result<usize> {
+        self.tls_session.write_tls(&mut self.socket)
+    }",0,,
+"fn drop(&mut self) {
+            self.live_refs.fetch_sub(1, SeqCst);
+        }",0,,
+"pub fn _list_syntax_themes_for_machines(writer: &mut dyn Write) -> std::io::Result<()> {
+    let assets = HighlightingAssets::new();
+    let themes = &assets.theme_set.themes;
+    for (theme, _) in themes
+        .iter()
+        .sorted_by_key(|(t, _)| is_light_syntax_theme(*t))
+    {
+        writeln!(
+            writer,
+            ""{}\t{}"",
+            if is_light_syntax_theme(theme) {
+                ""light""
+            } else {
+                ""dark""
+            },
+            theme
+        )?;
+    }
+    Ok(())
+}",0,,
+"fn test_engine(engine: &Engine) -> anyhow::Result<()> {
+        let mut store = Store::new(&engine, ());
+        let flag = Arc::new(AtomicBool::new(false));
+        let externref = ExternRef::new(SetFlagOnDrop(flag.clone()));
+        Table::new(
+            &mut store,
+            TableType::new(ValType::ExternRef, 1, None),
+            externref.into(),
+        )?;
+        drop(store);
+        assert!(flag.load(SeqCst));
+
+        let mut store = Store::new(&engine, ());
+        let module = Module::new(
+            &engine,
+            r#""
+            (module
+                (table 1 externref)
+
+                (func (export ""run"") (param externref)
+                    i32.const 0
+                    local.get 0
+                    table.set 0
+                )
+            )
+        ""#,
+        )?;
+        let instance = Instance::new(&mut store, &module, &[])?;
+        let run = instance.get_typed_func::<Option<ExternRef>, (), _>(&mut store, ""run"")?;
+        let flag = Arc::new(AtomicBool::new(false));
+        let externref = ExternRef::new(SetFlagOnDrop(flag.clone()));
+        run.call(&mut store, Some(externref))?;
+        drop(store);
+        assert!(flag.load(SeqCst));
+        Ok(())
+    }",0,,
+"    fn new() -> KeyboardState {
+        KeyboardState { state_modifiers: HashSet::new(), state_keysyms: AttributeSet::new() }
+    }",0,,
+"    pub(crate) fn from_wasmtime_global(global: &Global) -> GlobalType {
+        let ty = ValType::from_wasm_type(&global.wasm_ty);
+        let mutability = if global.mutability {
+            Mutability::Var
+        } else {
+            Mutability::Const
+        };
+        GlobalType::new(ty, mutability)
+    }",0,,
+"    pub fn exiting_host(&self) -> bool {
+        match self {
+            CallHook::ReturningFromHost | CallHook::CallingWasm => true,
+            _ => false,
+        }
+    }",0,,
+"fn test_bounce() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov r0, 1
+        mov r6, r0
+        mov r7, r6
+        mov r8, r7
+        mov r9, r8
+        mov r0, r9
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x1 } },
+        7
+    );
+}",0,,
+"    pub fn is_ref(&self) -> bool {
+        match self {
+            ValType::ExternRef | ValType::FuncRef => true,
+            _ => false,
+        }
+    }",0,,
+"fn decode_into_slice_fits_in_precisely_sized_slice() {
+        let mut orig_data = Vec::new();
+        let mut encoded_data = String::new();
+        let mut decode_buf = Vec::new();
+
+        let input_len_range = Uniform::new(0, 1000);
+
+        let mut rng = rand::rngs::SmallRng::from_entropy();
+
+        for _ in 0..10_000 {
+            orig_data.clear();
+            encoded_data.clear();
+            decode_buf.clear();
+
+            let input_len = input_len_range.sample(&mut rng);
+
+            for _ in 0..input_len {
+                orig_data.push(rng.gen());
+            }
+
+            let config = random_config(&mut rng);
+            encode_config_buf(&orig_data, config, &mut encoded_data);
+            assert_encode_sanity(&encoded_data, config, input_len);
+
+            decode_buf.resize(input_len, 0);
+
+            
+            let decode_bytes_written =
+                decode_config_slice(&encoded_data, config, &mut decode_buf[..]).unwrap();
+
+            assert_eq!(orig_data.len(), decode_bytes_written);
+            assert_eq!(orig_data, decode_buf);
+        }
+    }",0,,
+"fn test_empty_input() -> std::result::Result<(), PrecompileFailure> {
+		let input: [u8; 0] = [];
+
+		let cost: u64 = 1;
+
+		let context: Context = Context {
+			address: Default::default(),
+			caller: Default::default(),
+			apparent_value: From::from(0),
+		};
+
+		match Modexp::execute(&input, Some(cost), &context, false) {
+			Ok(_) => {
+				panic!(""Test not expected to pass"");
+			}
+			Err(e) => {
+				assert_eq!(
+					e,
+					PrecompileFailure::Error {
+						exit_status: ExitError::Other(
+							""input must contain at least 96 bytes"".into()
+						)
+					}
+				);
+				Ok(())
+			}
+		}
+	}",0,,
+"fn test_mul_loop() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov r0, 0x7
+        add r1, 0xa
+        lsh r1, 0x20
+        rsh r1, 0x20
+        jeq r1, 0x0, +4
+        mov r0, 0x7
+        mul r0, 0x7
+        add r1, -1
+        jne r1, 0x0, -3
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x75db9c97 } },
+        37
+    );
+}",0,,
+"fn test_jgt_reg() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov r0, 0
+        mov r1, 5
+        mov r2, 6
+        mov r3, 4
+        jgt r1, r2, +2
+        jgt r1, r1, +1
+        jgt r1, r3, +1
+        exit
+        mov r0, 1
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x1 } },
+        9
+    );
+}",0,,
+"    pub(crate) fn from_wasmtime_table(table: &Table) -> TableType {
+        TableType { ty: table.clone() }
+    }",0,,
+"fn test_jeq_reg() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov32 r0, 0
+        mov32 r1, 0xa
+        mov32 r2, 0xb
+        jeq r1, r2, +4
+        mov32 r0, 1
+        mov32 r1, 0xb
+        jeq r1, r2, +1
+        mov32 r0, 2
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x1 } },
+        8
+    );
+}",0,,
+"pub fn new(pubkey: &PublicKey, seckey: &SecretKey) -> Result<SharedSecret, Error> {
+        let inner = match ECMULT_CONTEXT.ecdh_raw(&pubkey.0, &seckey.0) {
+            Some(val) => val,
+            None => return Err(Error::InvalidSecretKey),
+        };
+
+        Ok(SharedSecret(inner))
+    }",0,,
+"pub fn heap_u32(&self) -> &[u32] {
+        unsafe { self.alloc.heap_u32() }
+    }",0,,
+"    fn unwrap(self) -> Inst {
+        match self {
+            MaybeInst::Compiled(inst) => inst,
+            _ => unreachable!(
+                ""must be called on a compiled instruction, \
+                 instead it was called on: {:?}"",
+                self
+            ),
+        }
+    }",0,,
+"    pub fn call(&self, mut store: impl AsContextMut, params: &[Val]) -> Result<Box<[Val]>> {
+        assert!(
+            !store.as_context().async_support(),
+            ""must use `call_async` when async support is enabled on the config"",
+        );
+        let my_ty = self.ty(&store);
+        self.call_impl(&mut store.as_context_mut(), my_ty, params)
+    }",0,,
+"fn c(&mut self, expr: &Hir) -> ResultOrEmpty {
+        use crate::prog;
+        use regex_syntax::hir::HirKind::*;
+
+        self.check_size()?;
+        match *expr.kind() {
+            Empty => Ok(None),
+            Literal(hir::Literal::Unicode(c)) => self.c_char(c),
+            Literal(hir::Literal::Byte(b)) => {
+                assert!(self.compiled.uses_bytes());
+                self.c_byte(b)
+            }
+            Class(hir::Class::Unicode(ref cls)) => self.c_class(cls.ranges()),
+            Class(hir::Class::Bytes(ref cls)) => {
+                if self.compiled.uses_bytes() {
+                    self.c_class_bytes(cls.ranges())
+                } else {
+                    assert!(cls.is_all_ascii());
+                    let mut char_ranges = vec![];
+                    for r in cls.iter() {
+                        let (s, e) = (r.start() as char, r.end() as char);
+                        char_ranges.push(hir::ClassUnicodeRange::new(s, e));
+                    }
+                    self.c_class(&char_ranges)
+                }
+            }
+            Anchor(hir::Anchor::StartLine) if self.compiled.is_reverse => {
+                self.byte_classes.set_range(b'\n', b'\n');
+                self.c_empty_look(prog::EmptyLook::EndLine)
+            }
+            Anchor(hir::Anchor::StartLine) => {
+                self.byte_classes.set_range(b'\n', b'\n');
+                self.c_empty_look(prog::EmptyLook::StartLine)
+            }
+            Anchor(hir::Anchor::EndLine) if self.compiled.is_reverse => {
+                self.byte_classes.set_range(b'\n', b'\n');
+                self.c_empty_look(prog::EmptyLook::StartLine)
+            }
+            Anchor(hir::Anchor::EndLine) => {
+                self.byte_classes.set_range(b'\n', b'\n');
+                self.c_empty_look(prog::EmptyLook::EndLine)
+            }
+            Anchor(hir::Anchor::StartText) if self.compiled.is_reverse => {
+                self.c_empty_look(prog::EmptyLook::EndText)
+            }
+            Anchor(hir::Anchor::StartText) => {
+                self.c_empty_look(prog::EmptyLook::StartText)
+            }
+            Anchor(hir::Anchor::EndText) if self.compiled.is_reverse => {
+                self.c_empty_look(prog::EmptyLook::StartText)
+            }
+            Anchor(hir::Anchor::EndText) => {
+                self.c_empty_look(prog::EmptyLook::EndText)
+            }
+            WordBoundary(hir::WordBoundary::Unicode) => {
+                if !cfg!(feature = ""unicode-perl"") {
+                    return Err(Error::Syntax(
+                        ""Unicode word boundaries are unavailable when \
+                         the unicode-perl feature is disabled""
+                            .to_string(),
+                    ));
+                }
+                self.compiled.has_unicode_word_boundary = true;
+                self.byte_classes.set_word_boundary();
+                
+                
+                
+                
+                
+                
+                self.byte_classes.set_range(0, 0x7F);
+                self.c_empty_look(prog::EmptyLook::WordBoundary)
+            }
+            WordBoundary(hir::WordBoundary::UnicodeNegate) => {
+                if !cfg!(feature = ""unicode-perl"") {
+                    return Err(Error::Syntax(
+                        ""Unicode word boundaries are unavailable when \
+                         the unicode-perl feature is disabled""
+                            .to_string(),
+                    ));
+                }
+                self.compiled.has_unicode_word_boundary = true;
+                self.byte_classes.set_word_boundary();
+                
+                self.byte_classes.set_range(0, 0x7F);
+                self.c_empty_look(prog::EmptyLook::NotWordBoundary)
+            }
+            WordBoundary(hir::WordBoundary::Ascii) => {
+                self.byte_classes.set_word_boundary();
+                self.c_empty_look(prog::EmptyLook::WordBoundaryAscii)
+            }
+            WordBoundary(hir::WordBoundary::AsciiNegate) => {
+                self.byte_classes.set_word_boundary();
+                self.c_empty_look(prog::EmptyLook::NotWordBoundaryAscii)
+            }
+            Group(ref g) => match g.kind {
+                hir::GroupKind::NonCapturing => self.c(&g.hir),
+                hir::GroupKind::CaptureIndex(index) => {
+                    if index as usize >= self.compiled.captures.len() {
+                        self.compiled.captures.push(None);
+                    }
+                    self.c_capture(2 * index as usize, &g.hir)
+                }
+                hir::GroupKind::CaptureName { index, ref name } => {
+                    if index as usize >= self.compiled.captures.len() {
+                        let n = name.to_string();
+                        self.compiled.captures.push(Some(n.clone()));
+                        self.capture_name_idx.insert(n, index as usize);
+                    }
+                    self.c_capture(2 * index as usize, &g.hir)
+                }
+            },
+            Concat(ref es) => {
+                if self.compiled.is_reverse {
+                    self.c_concat(es.iter().rev())
+                } else {
+                    self.c_concat(es)
+                }
+            }
+            Alternation(ref es) => self.c_alternate(&**es),
+            Repetition(ref rep) => self.c_repeat(rep),
+        }
+    }",1,6,"            Empty => Ok(None),"
+"fn test_parse_less_version_wrong_program() {
+    let output = b""more from util-linux 2.34"";
+
+    assert_eq!(None, parse_less_version(output));
+}",0,,
+"fn check_overflow(&self) -> bool {
+        let mut yes: bool = false;
+        let mut no: bool = false;
+        no = no || (self.0[7] < SECP256K1_N_7); 
+        no = no || (self.0[6] < SECP256K1_N_6); 
+        no = no || (self.0[5] < SECP256K1_N_5); 
+        no = no || (self.0[4] < SECP256K1_N_4);
+        yes = yes || ((self.0[4] > SECP256K1_N_4) && !no);
+        no = no || ((self.0[3] < SECP256K1_N_3) && !yes);
+        yes = yes || ((self.0[3] > SECP256K1_N_3) && !no);
+        no = no || ((self.0[2] < SECP256K1_N_2) && !yes);
+        yes = yes || ((self.0[2] > SECP256K1_N_2) && !no);
+        no = no || ((self.0[1] < SECP256K1_N_1) && !yes);
+        yes = yes || ((self.0[1] > SECP256K1_N_1) && !no);
+        yes = yes || ((self.0[0] >= SECP256K1_N_0) && !no);
+        return yes;
+    }",1,"1,2,3,4,5,6,7,8,9,10,11,12,13,14,15",let mut yes: bool = false;/~/        let mut no: bool = false;/~/        no = no || (self.0[7] < SECP256K1_N_7); /* No need for a > check. *//~/        no = no || (self.0[6] < SECP256K1_N_6); /* No need for a > check. *//~/        no = no || (self.0[5] < SECP256K1_N_5); /* No need for a > check. *//~/        no = no || (self.0[4] < SECP256K1_N_4);/~/        yes = yes || ((self.0[4] > SECP256K1_N_4) && !no);/~/        no = no || ((self.0[3] < SECP256K1_N_3) && !yes);/~/        yes = yes || ((self.0[3] > SECP256K1_N_3) && !no);/~/        no = no || ((self.0[2] < SECP256K1_N_2) && !yes);/~/        yes = yes || ((self.0[2] > SECP256K1_N_2) && !no);/~/        no = no || ((self.0[1] < SECP256K1_N_1) && !yes);/~/        yes = yes || ((self.0[1] > SECP256K1_N_1) && !no);/~/        yes = yes || ((self.0[0] >= SECP256K1_N_0) && !no);/~/        return yes;
+"pub fn b32(&self) -> [u8; 32] {
+        let mut bin = [0u8; 32];
+        self.fill_b32(&mut bin);
+        bin
+    }",0,,
+"    pub const fn pad(self, pad: bool) -> Config {
+        Config { pad, ..self }
+    }",0,,
+"pub fn find_author() -> H160 {
+		let digest = <frame_system::Pallet<T>>::digest();
+		let pre_runtime_digests = digest.logs.iter().filter_map(|d| d.as_pre_runtime());
+
+		T::FindAuthor::find_author(pre_runtime_digests).unwrap_or_default()
+	}",0,,
+"pub(crate) unsafe fn read_value_from(
+        store: &mut StoreOpaque,
+        p: *const u128,
+        ty: ValType,
+    ) -> Val {
+        match ty {
+            ValType::I32 => Val::I32(ptr::read(p as *const i32)),
+            ValType::I64 => Val::I64(ptr::read(p as *const i64)),
+            ValType::F32 => Val::F32(ptr::read(p as *const u32)),
+            ValType::F64 => Val::F64(ptr::read(p as *const u64)),
+            ValType::V128 => Val::V128(ptr::read(p as *const u128)),
+            ValType::ExternRef => {
+                let raw = ptr::read(p as *const *mut u8);
+                if raw.is_null() {
+                    Val::ExternRef(None)
+                } else {
+                    Val::ExternRef(Some(ExternRef {
+                        inner: VMExternRef::clone_from_raw(raw),
+                    }))
+                }
+            }
+            ValType::FuncRef => {
+                let func = ptr::read(p as *const *mut runtime::VMCallerCheckedAnyfunc);
+                from_checked_anyfunc(func, store)
+            }
+        }
+    }",0,,
+"    fn from(val: ExternRef) -> Val {
+        Val::ExternRef(Some(val))
+    }",0,,
+"        fn drop(&mut self) {
+            
+            for _ in &mut self.workers {
+                self.sender.send(WhatToDo::Nothing).unwrap();
+            }
+            
+            for worker in &mut self.workers {
+                if let Some(thread) = worker.thread.take() {
+                    thread.join().unwrap();
+                }
+            }
+        }",0,,
+"fn table_end_is_at_correct_offset() {
+        let table = VMExternRefActivationsTable::new();
+
+        let table_ptr = &table as *const _;
+        let end_ptr = &table.alloc.end as *const _;
+
+        let actual_offset = (end_ptr as usize) - (table_ptr as usize);
+
+        let offsets = wasmtime_environ::VMOffsets::from(wasmtime_environ::VMOffsetsFields {
+            ptr: 8,
+            num_signature_ids: 0,
+            num_imported_functions: 0,
+            num_imported_tables: 0,
+            num_imported_memories: 0,
+            num_imported_globals: 0,
+            num_defined_functions: 0,
+            num_defined_tables: 0,
+            num_defined_memories: 0,
+            num_defined_globals: 0,
+        });
+        assert_eq!(
+            offsets.vm_extern_ref_activation_table_end() as usize,
+            actual_offset
+        );
+    }",0,,
+"pub fn is_empty(&self) -> bool {
+		self.len() == 0
+	}",0,,
+"	pub fn dapps_middleware(
+		_deps: Dependencies,
+		_dapps_path: PathBuf,
+		_extra_dapps: Vec<PathBuf>,
+		_dapps_domain: String,
+	) -> Result<Middleware, String> {
+		Err(""Your Parity version has been compiled without WebApps support."".into())
+	}",0,,
+"pub async fn run(
+    listener: TcpListener,
+    bgsave_cfg: BGSave,
+    snapshot_cfg: SnapshotConfig,
+    sig: impl Future,
+    restore_filepath: Option<PathBuf>,
+) {
+    let (signal, _) = broadcast::channel(1);
+    let (terminate_tx, terminate_rx) = mpsc::channel(1);
+    let db = match CoreDB::new(bgsave_cfg, snapshot_cfg, restore_filepath) {
+        Ok(d) => d,
+        Err(e) => {
+            eprintln!(""ERROR: {}"", e);
+            process::exit(0x100);
+        }
+    };
+    match fs::create_dir_all(&*DIR_REMOTE_SNAPSHOT) {
+        Ok(_) => (),
+        Err(e) => match e.kind() {
+            ErrorKind::AlreadyExists => (),
+            _ => {
+                log::error!(""Failed to create snapshot directories: '{}'"", e);
+                process::exit(0x100);
+            }
+        },
+    }
+    log::info!(
+        ""Started server on terrapipe://{}"",
+        listener
+            .local_addr()
+            .expect(""The local address couldn't be fetched. Please file a bug report"")
+    );
+    let mut server = Listener {
+        listener,
+        db,
+        climit: Arc::new(Semaphore::new(50000)),
+        signal,
+        terminate_tx,
+        terminate_rx,
+    };
+    tokio::select! {
+        _ = server.run() => {}
+        _ = sig => {
+            log::info!(""Signalling all workers to shut down"");
+        }
+    }
+    let Listener {
+        mut terminate_rx,
+        terminate_tx,
+        signal,
+        db,
+        ..
+    } = server;
+    if let Ok(_) = db.flush_db() {
+        log::info!(""Successfully saved data to disk"");
+        ()
+    } else {
+        log::error!(""Failed to flush data to disk"");
+        loop {
+            
+            log::warn!(""Press enter to try again..."");
+            io::stdout().flush().unwrap();
+            io::stdin().read(&mut [0]).unwrap();
+            if let Ok(_) = db.flush_db() {
+                log::info!(""Successfully saved data to disk"");
+                break;
+            } else {
+                continue;
+            }
+        }
+    }
+    drop(signal);
+    drop(terminate_tx);
+    let _ = terminate_rx.recv().await;
+    terminal::write_info(""Goodbye :)\n"").unwrap();
+}",0,,
+"    fn test_diff_empty_vs_non_empty_file() {
+        _do_diff_test(""/dev/null"", ""/etc/passwd"", true);
+    }",0,,
+"fn test_parse_less_version_529() {
+    let output = b""less 529 (Spencer V8 regular expressions)
+Copyright (C) 1984-2017  Mark Nudelman
+
+less comes with NO WARRANTY, to the extent permitted by law.
+For information about the terms of redistribution,
+see the file named README in the less distribution.
+Homepage: http://www.greenwoodsoftware.com/less"";
+
+    assert_eq!(Some(529), parse_less_version(output));
+}",0,,
+"    pub fn bindex_to_bb(&self, block: BlockIndex) -> Option<ir::Block> {
+        self.block_order.lowered_order()[block as usize].orig_block()
+    }",0,,
+"fn test_err_mod64_by_zero_reg() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov32 r0, 1
+        mov32 r1, 0
+        mod r0, r1
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| matches!(res.unwrap_err(), EbpfError::DivideByZero(pc) if pc == 31) },
+        3
+    );
+}",0,,
+"async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let args = set_command_line_args().get_matches();
+    env::set_var(""RUST_LOG"", ""swhkd=warn"");
+
+    if args.is_present(""debug"") {
+        env::set_var(""RUST_LOG"", ""swhkd=trace"");
+    }
+
+    env_logger::init();
+    log::trace!(""Logger initialized."");
+
+    let pidfile: String = String::from(""/tmp/swhkd.pid"");
+    if Path::new(&pidfile).exists() {
+        log::trace!(""Reading {} file and checking for running instances."", pidfile);
+        let swhkd_pid = match fs::read_to_string(&pidfile) {
+            Ok(swhkd_pid) => swhkd_pid,
+            Err(e) => {
+                log::error!(""Unable to read {} to check all running instances"", e);
+                exit(1);
+            }
+        };
+        log::debug!(""Previous PID: {}"", swhkd_pid);
+
+        let mut sys = System::new_all();
+        sys.refresh_all();
+        for (pid, process) in sys.processes() {
+            if pid.to_string() == swhkd_pid && process.exe() == env::current_exe().unwrap() {
+                log::error!(""Swhkd is already running!"");
+                log::error!(""pid of existing swhkd process: {}"", pid.to_string());
+                log::error!(""To close the existing swhkd process, run `sudo killall swhkd`"");
+                exit(1);
+            }
+        }
+    }
+
+    match fs::write(&pidfile, id().to_string()) {
+        Ok(_) => {}
+        Err(e) => {
+            log::error!(""Unable to write to {}: {}"", pidfile, e);
+            exit(1);
+        }
+    }
+
+    if check_user_permissions().is_err() {
+        exit(1);
+    }
+
+    let load_config = || {
+        seteuid(env::var(""PKEXEC_UID"").unwrap().parse::<u32>().unwrap()); 
+        let config_file_path: std::path::PathBuf = if args.is_present(""config"") {
+            Path::new(args.value_of(""config"").unwrap()).to_path_buf()
+        } else {
+            fetch_xdg_config_path()
+        };
+
+        log::debug!(""Using config file path: {:#?}"", config_file_path);
+
+        let hotkeys = match config::load(&config_file_path) {
+            Err(e) => {
+                log::error!(""Config Error: {}"", e);
+                exit(1);
+            }
+            Ok(out) => out,
+        };
+
+        for hotkey in &hotkeys {
+            log::debug!(""hotkey: {:#?}"", hotkey);
+        }
+
+        hotkeys
+    };
+
+    let mut hotkeys = load_config();
+    seteuid(0); 
+    log::trace!(""Attempting to find all keyboard file descriptors."");
+    let keyboard_devices: Vec<Device> =
+        evdev::enumerate().filter(check_device_is_keyboard).collect();
+
+    let mut uinput_device = match uinput::create_uinput_device() {
+        Ok(dev) => dev,
+        Err(e) => {
+            log::error!(""Err: {:#?}"", e);
+            exit(1);
+        }
+    };
+
+    if keyboard_devices.is_empty() {
+        log::error!(""No valid keyboard device was detected!"");
+        exit(1);
+    }
+    log::debug!(""{} Keyboard device(s) detected."", keyboard_devices.len());
+
+    let modifiers_map: HashMap<Key, config::Modifier> = HashMap::from([
+        (Key::KEY_LEFTMETA, config::Modifier::Super),
+        (Key::KEY_RIGHTMETA, config::Modifier::Super),
+        (Key::KEY_LEFTMETA, config::Modifier::Super),
+        (Key::KEY_RIGHTMETA, config::Modifier::Super),
+        (Key::KEY_LEFTALT, config::Modifier::Alt),
+        (Key::KEY_RIGHTALT, config::Modifier::Alt),
+        (Key::KEY_LEFTCTRL, config::Modifier::Control),
+        (Key::KEY_RIGHTCTRL, config::Modifier::Control),
+        (Key::KEY_LEFTSHIFT, config::Modifier::Shift),
+        (Key::KEY_RIGHTSHIFT, config::Modifier::Shift),
+    ]);
+
+    let repeat_cooldown_duration: u64 = if args.is_present(""cooldown"") {
+        args.value_of(""cooldown"").unwrap().parse::<u64>().unwrap()
+    } else {
+        250
+    };
+
+    let mut signals = Signals::new(&[
+        SIGUSR1, SIGUSR2, SIGHUP, SIGABRT, SIGBUS, SIGCHLD, SIGCONT, SIGINT, SIGPIPE, SIGQUIT,
+        SIGSYS, SIGTERM, SIGTRAP, SIGTSTP, SIGVTALRM, SIGXCPU, SIGXFSZ,
+    ])?;
+
+    let mut execution_is_paused = false;
+    let mut last_hotkey: Option<config::Hotkey> = None;
+    let mut pending_release: bool = false;
+    let mut keyboard_states: Vec<KeyboardState> = Vec::new();
+    let mut keyboard_stream_map = StreamMap::new();
+
+    for (i, mut device) in keyboard_devices.into_iter().enumerate() {
+        let _ = device.grab();
+        keyboard_stream_map.insert(i, device.into_event_stream()?);
+        keyboard_states.push(KeyboardState::new());
+    }
+
+    
+    let hotkey_repeat_timer = sleep(Duration::from_millis(0));
+    tokio::pin!(hotkey_repeat_timer);
+
+    loop {
+        select! {
+            _ = &mut hotkey_repeat_timer, if &last_hotkey.is_some() => {
+                let hotkey = last_hotkey.clone().unwrap();
+                if hotkey.keybinding.on_release {
+                    continue;
+                }
+                send_command(hotkey.clone());
+                hotkey_repeat_timer.as_mut().reset(Instant::now() + Duration::from_millis(repeat_cooldown_duration));
+            }
+
+            Some(signal) = signals.next() => {
+                match signal {
+                    SIGUSR1 => {
+                        execution_is_paused = true;
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.ungrab();
+                        }
+                    }
+
+                    SIGUSR2 => {
+                        execution_is_paused = false;
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.grab();
+                        }
+                    }
+
+                    SIGHUP => {
+                        hotkeys = load_config();
+                    }
+
+                    SIGINT => {
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.ungrab();
+                        }
+                        log::warn!(""Received SIGINT signal, exiting..."");
+                        exit(1);
+                    }
+
+                    _ => {
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.ungrab();
+                        }
+
+                        log::warn!(""Received signal: {:#?}"", signal);
+                        log::warn!(""Exiting..."");
+                        exit(1);
+                    }
+                }
+            }
+
+            Some((i, Ok(event))) = keyboard_stream_map.next() => {
+                let keyboard_state = &mut keyboard_states[i];
+
+                let key = match event.kind() {
+                    InputEventKind::Key(keycode) => keycode,
+                    _ => continue
+                };
+
+                match event.value() {
+                    
+                    1 => {
+                        if let Some(modifier) = modifiers_map.get(&key) {
+                            keyboard_state.state_modifiers.insert(*modifier);
+                        } else {
+                            keyboard_state.state_keysyms.insert(key);
+                        }
+                    }
+
+                    
+                    0 => {
+                        if last_hotkey.is_some() && pending_release {
+                            pending_release = false;
+                            send_command(last_hotkey.clone().unwrap());
+                            last_hotkey = None;
+                        }
+                        if let Some(modifier) = modifiers_map.get(&key) {
+                            if let Some(hotkey) = &last_hotkey {
+                                if hotkey.modifiers().contains(modifier) {
+                                    last_hotkey = None;
+                                }
+                            }
+                            keyboard_state.state_modifiers.remove(modifier);
+                        } else if keyboard_state.state_keysyms.contains(key) {
+                            if let Some(hotkey) = &last_hotkey {
+                                if key == hotkey.keysym() {
+                                    last_hotkey = None;
+                                }
+                            }
+                            keyboard_state.state_keysyms.remove(key);
+                        }
+                    }
+
+                    _ => {}
+                }
+
+                let possible_hotkeys: Vec<&config::Hotkey> = hotkeys.iter()
+                    .filter(|hotkey| hotkey.modifiers().len() == keyboard_state.state_modifiers.len())
+                    .collect();
+
+                let event_in_hotkeys = hotkeys.iter().any(|hotkey| {
+                    hotkey.keysym().code() == event.code() &&
+                    keyboard_state.state_modifiers
+                        .iter()
+                        .all(|x| hotkey.modifiers().contains(x)) &&
+                    keyboard_state.state_modifiers.len() == hotkey.modifiers().len()
+                    && !hotkey.is_send()
+                        });
+
+                
+                if !event_in_hotkeys {
+                    uinput_device.emit(&[event]).unwrap();
+                }
+
+                if execution_is_paused || possible_hotkeys.is_empty() || last_hotkey.is_some() {
+                    continue;
+                }
+
+                log::debug!(""state_modifiers: {:#?}"", keyboard_state.state_modifiers);
+                log::debug!(""state_keysyms: {:#?}"", keyboard_state.state_keysyms);
+                log::debug!(""hotkey: {:#?}"", possible_hotkeys);
+
+                for hotkey in possible_hotkeys {
+                    
+                    if keyboard_state.state_modifiers.iter().all(|x| hotkey.modifiers().contains(x))
+                        && keyboard_state.state_modifiers.len() == hotkey.modifiers().len()
+                        && keyboard_state.state_keysyms.contains(hotkey.keysym())
+                    {
+                        last_hotkey = Some(hotkey.clone());
+                        if pending_release { break; }
+                        if hotkey.is_on_release() {
+                            pending_release = true;
+                            break;
+                        }
+                        send_command(hotkey.clone());
+                        hotkey_repeat_timer.as_mut().reset(Instant::now() + Duration::from_millis(repeat_cooldown_duration));
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}",1,"11,48","let pidfile: String = String::from(""/tmp/swhkd.pid"");/~/        seteuid(env::var(""PKEXEC_UID"").unwrap().parse::<u32>().unwrap()); // Dropping privileges to invoking user."
+"    fn insert_precise_stack_root(
+        precise_stack_roots: &mut HashSet<VMExternRefWithTraits>,
+        root: NonNull<VMExternData>,
+    ) {
+        let root = unsafe { VMExternRef::clone_from_raw(root.as_ptr() as *mut _) };
+        precise_stack_roots.insert(VMExternRefWithTraits(root));
+    }",0,,
+"    fn init_hang_limit<T>(store: &mut Store<T>, instance: Instance) {
+        match instance.get_export(&mut *store, ""hangLimitInitializer"") {
+            None => return,
+            Some(Extern::Func(f)) => {
+                f.call(store, &[])
+                    .expect(""initializing the hang limit should not fail"");
+            }
+            Some(_) => panic!(""unexpected hangLimitInitializer export""),
+        }
+    }",0,,
+"fn test_tcp_sack_nomatch() {
+    test_interpreter_and_jit_asm!(
+        TCP_SACK_ASM,
+        TCP_SACK_NOMATCH,
+        (),
+        0,
+        { |_vm, res: Result| res.unwrap() == 0x0 },
+        55
+    );
+}",0,,
+"fn test_reloc_64_64() {
+    
+    
+    
+    test_interpreter_and_jit_elf!(
+        ""tests/elfs/reloc_64_64.so"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == ebpf::MM_PROGRAM_START + 0xe8 } },
+        2
+    );
+}",0,,
+"pub fn read64<R>(reader: &mut R) -> Result<u64, io::Error> where R: io::Read {
+    let mut buf = [0u8; 8];
+    reader.read_exact(&mut buf)?;
+    Ok(u64::from_be_bytes(buf))
+}",0,,
+"pub fn decode_config_buf<T: AsRef<[u8]>>(
+    input: T,
+    config: Config,
+    buffer: &mut Vec<u8>,
+) -> Result<(), DecodeError> {
+    let input_bytes = input.as_ref();
+
+    let starting_output_len = buffer.len();
+
+    let num_chunks = num_chunks(input_bytes);
+    let decoded_len_estimate = num_chunks
+        .checked_mul(DECODED_CHUNK_LEN)
+        .and_then(|p| p.checked_add(starting_output_len))
+        .expect(""Overflow when calculating output buffer length"");
+    buffer.resize(decoded_len_estimate, 0);
+
+    let bytes_written;
+    {
+        let buffer_slice = &mut buffer.as_mut_slice()[starting_output_len..];
+        bytes_written = decode_helper(input_bytes, num_chunks, config, buffer_slice)?;
+    }
+
+    buffer.truncate(starting_output_len + bytes_written);
+
+    Ok(())
+}",0,,
+"fn read16_len() {
+        let mut reader = Cursor::new([]);
+        assert_err_kind!(read16(&mut reader), ErrorKind::UnexpectedEof);
+        let mut reader = Cursor::new([0x01]);
+        assert_err_kind!(read16(&mut reader), ErrorKind::UnexpectedEof);
+        let mut reader = Cursor::new([0x01, 0x02]);
+        assert_ok!(read16(&mut reader), 0x0102);
+        let mut reader = Cursor::new([0x01, 0x02, 0x03]);
+        let mut buf = Vec::new();
+        assert_ok!(read16(&mut reader), 0x0102);
+        assert_ok!(reader.read_to_end(&mut buf), 1);
+        assert_eq!(buf, [0x03]);
+    }",0,,
+"fn blank_sig(isa: &dyn TargetIsa, call_conv: CallConv) -> ir::Signature {
+    let pointer_type = isa.pointer_type();
+    let mut sig = ir::Signature::new(call_conv);
+    
+    sig.params.push(ir::AbiParam::special(
+        pointer_type,
+        ir::ArgumentPurpose::VMContext,
+    ));
+    sig.params.push(ir::AbiParam::new(pointer_type));
+    return sig;
+}",0,,
+"pub fn recover(message: &Message, signature: &Signature, recovery_id: &RecoveryId) -> Result<PublicKey, Error> {
+    ECMULT_CONTEXT.recover_raw(&signature.r, &signature.s, recovery_id.0, &message.0).map(|v| PublicKey(v))
+}",0,,
+"pub(crate) unsafe fn from_checked_anyfunc(
+    anyfunc: *mut wasmtime_runtime::VMCallerCheckedAnyfunc,
+    store: &mut StoreOpaque,
+) -> Val {
+    Val::FuncRef(Func::from_caller_checked_anyfunc(store, anyfunc))
+}",0,,
+"pub(crate) fn tokenize(mut input: &str) -> Vec<(Token, Span)> {
+    let mut result = vec![];
+    let mut offset = 0;
+
+    loop {
+        let input_len = input.len();
+        input = input.trim_start();
+        while input.starts_with('#') {
+            input = input.trim_start_matches(|c| c != '\n').trim_start();
+        }
+        offset += input_len - input.len();
+
+        match input.chars().next() {
+            None => break,
+            Some(c) => {
+                let (len, token) = consume_chain! {
+                    input, c;
+
+                    if input.starts_with(""<%"") => (2, Token::BStart);
+                    if input.starts_with(""%>"") => (2, Token::BEnd);
+                    if input.starts_with("">>"") => (2, Token::LookAhead);
+                    if input.starts_with(""<<"") => (2, Token::LookBehind);
+                    if input.starts_with(""::"") => (2, Token::Backref);
+
+                    if c == '%' => (1, Token::BWord);
+                    if c == '*' => (1, Token::Star);
+                    if c == '+' => (1, Token::Plus);
+                    if c == '?' => (1, Token::QuestionMark);
+                    if c == '|' => (1, Token::Pipe);
+                    if c == ':' => (1, Token::Colon);
+                    if c == ')' => (1, Token::CloseParen);
+                    if c == '{' => (1, Token::OpenBrace);
+                    if c == '}' => (1, Token::CloseBrace);
+                    if c == ',' => (1, Token::Comma);
+                    if c == '!' => (1, Token::Not);
+                    if c == '[' => (1, Token::OpenBracket);
+                    if c == '-' => (1, Token::Dash);
+                    if c == ']' => (1, Token::CloseBracket);
+                    if c == '.' => (1, Token::Dot);
+                    if c == ';' => (1, Token::Semicolon);
+                    if c == '=' => (1, Token::Equals);
+
+                    if c == '\'' => match input[1..].find('\'') {
+                        Some(len_inner) => (len_inner + 2, Token::String),
+                        None => (input.len(), Token::ErrorMsg(ParseErrorMsg::UnclosedString)),
+                    };
+
+                    if c == '""' => match find_unescaped_quote(&input[1..]) {
+                        Some(len_inner) => (len_inner + 2, Token::String),
+                        None => (input.len(), Token::ErrorMsg(ParseErrorMsg::UnclosedString)),
+                    };
+
+                    if let Some(rest) = input.strip_prefix(""U+"") => {
+                        match rest.find(|c: char| !c.is_ascii_hexdigit()) {
+                            Some(0) => (1, Token::Error),
+                            Some(len_inner) => (len_inner + 2, Token::CodePoint),
+                            None => (input.len(), Token::CodePoint),
+                        }
+                    };
+
+                    if matches!(c, '0'..='9') => (
+                        input.find(|c: char| !matches!(c, '0'..='9')).unwrap_or(input.len()),
+                        Token::Number,
+                    );
+
+                    if c.is_alphabetic() || c == '_' => (
+                        input.find(|c: char| !c.is_alphanumeric() && c != '_').unwrap_or(input.len()),
+                        Token::Identifier,
+                    );
+
+                    if c == '^' => (1, Token::ErrorMsg(ParseErrorMsg::Caret));
+                    if c == '$' => (1, Token::ErrorMsg(ParseErrorMsg::Dollar));
+
+                    if let Some(rest) = input.strip_prefix(""(?"") => (
+                        match rest.chars().next() {
+                            Some('<') => {
+                                let name_len = rest.chars()
+                                    .skip(1)
+                                    .take_while(char::is_ascii_alphanumeric)
+                                    .count();
+
+                                if name_len > 0 && matches!(rest.chars().nth(1 + name_len), Some('>')) {
+                                    4 + name_len
+                                } else if let Some('=' | '!') = rest.chars().nth(1) {
+                                    4
+                                } else {
+                                    3
+                                }
+                            }
+                            Some('P') if matches!(rest.chars().nth(1), Some('<')) => {
+                                let name_len = rest.chars()
+                                    .skip(2)
+                                    .take_while(char::is_ascii_alphanumeric)
+                                    .count();
+
+                                if name_len > 0 && matches!(rest.chars().nth(2 + name_len), Some('>')) {
+                                    5 + name_len
+                                } else {
+                                    4
+                                }
+                            },
+                            Some('>' | '!' | ':' | '=' | '(' | '|') => 3,
+                            _ => 2,
+                        },
+                        Token::ErrorMsg(ParseErrorMsg::SpecialGroup),
+                    );
+                    if c == '(' => (1, Token::OpenParen);
+
+                    if c == '\\' => {
+                        if input.starts_with(""\\u{"") || input.starts_with(""\\x{"") {
+                            match input[3..].find('}') {
+                                Some(len) => (len + 4, Token::ErrorMsg(ParseErrorMsg::BackslashUnicode)),
+                                None => (2, Token::ErrorMsg(ParseErrorMsg::Backslash)),
+                            }
+                        } else if let Some(rest) = input.strip_prefix(""\\u"") {
+                            match rest.find(|c: char| !c.is_ascii_hexdigit()).unwrap_or(rest.len()) {
+                                4.. => (6, Token::ErrorMsg(ParseErrorMsg::BackslashU4)),
+                                _ => (2, Token::ErrorMsg(ParseErrorMsg::Backslash)),
+                            }
+                        } else if let Some(rest) = input.strip_prefix(""\\x"") {
+                            match rest.find(|c: char| !c.is_ascii_hexdigit()).unwrap_or(rest.len()) {
+                                2.. => (4, Token::ErrorMsg(ParseErrorMsg::BackslashX2)),
+                                _ => (2, Token::ErrorMsg(ParseErrorMsg::Backslash)),
+                            }
+                        } else if let Some(rest) = input.strip_prefix(""\\k<"") {
+                            match rest.find('>') {
+                                Some(len) => (len + 4, Token::ErrorMsg(ParseErrorMsg::BackslashK)),
+                                _ => (2, Token::ErrorMsg(ParseErrorMsg::Backslash)),
+                            }
+                        } else if input.len() >= 2 {
+                            (2, Token::ErrorMsg(ParseErrorMsg::Backslash))
+                        } else {
+                            (1, Token::Error)
+                        }
+                    };
+                };
+
+                let start = offset;
+                offset += len;
+                input = &input[len..];
+                result.push((token, Span::new(start, offset)));
+            }
+        }
+    }
+
+    result
+}",1,"129,130","} else if input.len() >= 2 {/~/                            (2, Token::ErrorMsg(ParseErrorMsg::Backslash))"
+"fn test_lddw() {
+    test_interpreter_and_jit_asm!(
+        ""
+        lddw r0, 0x1122334455667788
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x1122334455667788 } },
+        2
+    );
+    test_interpreter_and_jit_asm!(
+        ""
+        lddw r0, 0x0000000080000000
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x80000000 } },
+        2
+    );
+}",0,,
+"fn test_tcp_sack_match() {
+    test_interpreter_and_jit_asm!(
+        TCP_SACK_ASM,
+        TCP_SACK_MATCH,
+        (),
+        0,
+        { |_vm, res: Result| res.unwrap() == 0x1 },
+        79
+    );
+}",0,,
+"    pub fn constants(&mut self) -> &mut VCodeConstants {
+        &mut self.vcode.constants
+    }",0,,
+"fn execute<'config, 'precompiles, F, R>(
+		source: H160,
+		value: U256,
+		gas_limit: u64,
+		max_fee_per_gas: Option<U256>,
+		max_priority_fee_per_gas: Option<U256>,
+		config: &'config evm::Config,
+		precompiles: &'precompiles T::PrecompilesType,
+		is_transactional: bool,
+		f: F,
+	) -> Result<ExecutionInfo<R>, RunnerError<Error<T>>>
+	where
+		F: FnOnce(
+			&mut StackExecutor<
+				'config,
+				'precompiles,
+				SubstrateStackState<'_, 'config, T>,
+				T::PrecompilesType,
+			>,
+		) -> (ExitReason, R),
+	{
+		let (base_fee, weight) = T::FeeCalculator::min_gas_price();
+		let max_fee_per_gas = match (max_fee_per_gas, is_transactional) {
+			(Some(max_fee_per_gas), _) => max_fee_per_gas,
+			
+			
+			(None, false) => Default::default(),
+			
+			_ => {
+				return Err(RunnerError {
+					error: Error::<T>::GasPriceTooLow,
+					weight,
+				})
+			}
+		};
+
+		
+		let total_fee = max_fee_per_gas
+			.checked_mul(U256::from(gas_limit))
+			.ok_or(RunnerError {
+				error: Error::<T>::FeeOverflow,
+				weight,
+			})?;
+
+		
+		let fee = T::OnChargeTransaction::withdraw_fee(&source, total_fee)
+			.map_err(|e| RunnerError { error: e, weight })?;
+
+		
+		let vicinity = Vicinity {
+			gas_price: base_fee,
+			origin: source,
+		};
+
+		let metadata = StackSubstateMetadata::new(gas_limit, config);
+		let state = SubstrateStackState::new(&vicinity, metadata);
+		let mut executor = StackExecutor::new_with_precompiles(state, config, precompiles);
+
+		let (reason, retv) = f(&mut executor);
+
+		
+		let used_gas = U256::from(executor.used_gas());
+		let actual_fee = if let Some(max_priority_fee) = max_priority_fee_per_gas {
+			let actual_priority_fee = max_fee_per_gas
+				.saturating_sub(base_fee)
+				.min(max_priority_fee)
+				.saturating_mul(used_gas);
+			executor
+				.fee(base_fee)
+				.checked_add(actual_priority_fee)
+				.unwrap_or_else(U256::max_value)
+		} else {
+			executor.fee(base_fee)
+		};
+		log::debug!(
+			target: ""evm"",
+			""Execution {:?} [source: {:?}, value: {}, gas_limit: {}, actual_fee: {}, is_transactional: {}]"",
+			reason,
+			source,
+			value,
+			gas_limit,
+			actual_fee,
+			is_transactional
+		);
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		let actual_priority_fee = T::OnChargeTransaction::correct_and_deposit_fee(
+			&source,
+			
+			actual_fee,
+			
+			executor.fee(base_fee),
+			
+			fee,
+		);
+		T::OnChargeTransaction::pay_priority_fee(actual_priority_fee);
+
+		let state = executor.into_state();
+
+		for address in state.substate.deletes {
+			log::debug!(
+				target: ""evm"",
+				""Deleting account at {:?}"",
+				address
+			);
+			Pallet::<T>::remove_account(&address)
+		}
+
+		for log in &state.substate.logs {
+			log::trace!(
+				target: ""evm"",
+				""Inserting log for {:?}, topics ({}) {:?}, data ({}): {:?}]"",
+				log.address,
+				log.topics.len(),
+				log.topics,
+				log.data.len(),
+				log.data
+			);
+			Pallet::<T>::deposit_event(Event::<T>::Log(Log {
+				address: log.address,
+				topics: log.topics.clone(),
+				data: log.data.clone(),
+			}));
+		}
+
+		Ok(ExecutionInfo {
+			value: retv,
+			exit_reason: reason,
+			used_gas,
+			logs: state.substate.logs,
+		})
+	}",0,,
+"pub fn parse(p: &[u8; util::FULL_PUBLIC_KEY_SIZE]) -> Result<PublicKey, Error> {
+        use util::{TAG_PUBKEY_FULL, TAG_PUBKEY_HYBRID_EVEN, TAG_PUBKEY_HYBRID_ODD};
+
+        if !(p[0] == TAG_PUBKEY_FULL || p[0] == TAG_PUBKEY_HYBRID_EVEN || p[0] == TAG_PUBKEY_HYBRID_ODD) {
+            return Err(Error::InvalidPublicKey);
+        }
+        let mut x = Field::default();
+        let mut y = Field::default();
+        if !x.set_b32(array_ref!(p, 1, 32)) {
+            return Err(Error::InvalidPublicKey);
+        }
+        if !y.set_b32(array_ref!(p, 33, 32)) {
+            return Err(Error::InvalidPublicKey);
+        }
+        let mut elem = Affine::default();
+        elem.set_xy(&x, &y);
+        if (p[0] == TAG_PUBKEY_HYBRID_EVEN || p[0] == TAG_PUBKEY_HYBRID_ODD) &&
+            (y.is_odd() != (p[0] == TAG_PUBKEY_HYBRID_ODD))
+        {
+            return Err(Error::InvalidPublicKey);
+        }
+        if elem.is_infinity() {
+            return Err(Error::InvalidPublicKey);
+        }
+        if elem.is_valid_var() {
+            return Ok(PublicKey(elem));
+        } else {
+            return Err(Error::InvalidPublicKey);
+        }
+    }",0,,
+"pub fn read8<R>(reader: &mut R) -> Result<u8, io::Error> where R: io::Read {
+    let mut buf = [0u8; 1];
+    reader.read_exact(&mut buf).and(Ok(buf[0]))
+}",0,,
+"fn test_ldindh() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov64 r1, 0x5
+        ldindh r1, 0x3
+        exit"",
+        [
+            0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 
+            0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 
+        ],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x9988 } },
+        3
+    );
+}",0,,
+"    pub(crate) fn lookup_trap_code(&self, pc: usize) -> Option<TrapCode> {
+        let (module, offset) = self.module(pc)?;
+        wasmtime_environ::lookup_trap_code(module.module.trap_data(), offset)
+    }",0,,
+"	fn exit_revert(&mut self) -> Result<(), ExitError> {
+		self.substate.exit_revert()
+	}",0,,
+"fn test_parse_less_version_581_2() {
+    let output = b""less 581.2 (PCRE2 regular expressions)
+Copyright (C) 1984-2021  Mark Nudelman
+
+less comes with NO WARRANTY, to the extent permitted by law.
+For information about the terms of redistribution,
+see the file named README in the less distribution.
+Home page: https://greenwoodsoftware.com/less"";
+
+    assert_eq!(Some(581), parse_less_version(output));
+}",0,,
+"pub fn random<R: Rng>(rng: &mut R) -> SecretKey {
+        loop {
+            let mut ret = [0u8; util::SECRET_KEY_SIZE];
+            rng.fill_bytes(&mut ret);
+
+            match Self::parse(&ret) {
+                Ok(key) => return key,
+                Err(_) => (),
+            }
+        }
+    }",0,,
+"pub fn set_hostcall_stack_reservation(&mut self) {
+        let slot = self
+            .alloc
+            .slot
+            .as_ref()
+            .expect(""reachable instance has a slot"");
+
+        let reservation = slot.limits.hostcall_reservation;
+
+        
+        
+        
+        
+        self.get_instance_implicits_mut().stack_limit = slot.stack as u64 + reservation as u64;
+    }",0,,
+"pub fn parse_der_lax(p: &[u8]) -> Result<Signature, Error> {
+        let mut decoder = der::Decoder::new(p);
+
+        decoder.read_constructed_sequence()?;
+        decoder.read_seq_len_lax()?;
+
+        let r = decoder.read_integer_lax()?;
+        let s = decoder.read_integer_lax()?;
+
+        Ok(Signature { r, s })
+    }",0,,
+"pub fn parse_slice(p: &[u8]) -> Result<Message, Error> {
+        if p.len() != util::MESSAGE_SIZE {
+            return Err(Error::InvalidInputLength);
+        }
+
+        let mut a = [0; util::MESSAGE_SIZE];
+        a.copy_from_slice(p);
+        Ok(Self::parse(&a))
+    }",0,,
+"fn sqr_512(&self, l: &mut [u32; 16]) {
+        let (mut c0, mut c1, mut c2): (u32, u32, u32) = (0, 0, 0);
+        define_ops!(c0, c1, c2);
+
+        
+        muladd_fast!(self.0[0], self.0[0]);
+        l[0] = extract_fast!();
+        muladd2!(self.0[0], self.0[1]);
+        l[1] = extract!();
+        muladd2!(self.0[0], self.0[2]);
+        muladd!(self.0[1], self.0[1]);
+        l[2] = extract!();
+        muladd2!(self.0[0], self.0[3]);
+        muladd2!(self.0[1], self.0[2]);
+        l[3] = extract!();
+        muladd2!(self.0[0], self.0[4]);
+        muladd2!(self.0[1], self.0[3]);
+        muladd!(self.0[2], self.0[2]);
+        l[4] = extract!();
+        muladd2!(self.0[0], self.0[5]);
+        muladd2!(self.0[1], self.0[4]);
+        muladd2!(self.0[2], self.0[3]);
+        l[5] = extract!();
+        muladd2!(self.0[0], self.0[6]);
+        muladd2!(self.0[1], self.0[5]);
+        muladd2!(self.0[2], self.0[4]);
+        muladd!(self.0[3], self.0[3]);
+        l[6] = extract!();
+        muladd2!(self.0[0], self.0[7]);
+        muladd2!(self.0[1], self.0[6]);
+        muladd2!(self.0[2], self.0[5]);
+        muladd2!(self.0[3], self.0[4]);
+        l[7] = extract!();
+        muladd2!(self.0[1], self.0[7]);
+        muladd2!(self.0[2], self.0[6]);
+        muladd2!(self.0[3], self.0[5]);
+        muladd!(self.0[4], self.0[4]);
+        l[8] = extract!();
+        muladd2!(self.0[2], self.0[7]);
+        muladd2!(self.0[3], self.0[6]);
+        muladd2!(self.0[4], self.0[5]);
+        l[9] = extract!();
+        muladd2!(self.0[3], self.0[7]);
+        muladd2!(self.0[4], self.0[6]);
+        muladd!(self.0[5], self.0[5]);
+        l[10] = extract!();
+        muladd2!(self.0[4], self.0[7]);
+        muladd2!(self.0[5], self.0[6]);
+        l[11] = extract!();
+        muladd2!(self.0[5], self.0[7]);
+        muladd!(self.0[6], self.0[6]);
+        l[12] = extract!();
+        muladd2!(self.0[6], self.0[7]);
+        l[13] = extract!();
+        muladd_fast!(self.0[7], self.0[7]);
+        l[14] = extract_fast!();
+        debug_assert!(c1 == 0);
+        l[15] = c0;
+    }",0,,
+"    fn is_closed(&self) -> bool {
+        self.closed
+    }",0,,
+"pub fn ty(&self, store: impl AsContext) -> FuncType {
+        
+        
+        let store = store.as_context();
+        let sig_index = unsafe { store[self.0].export().anyfunc.as_ref().type_index };
+        FuncType::from_wasm_func_type(
+            store
+                .engine()
+                .signatures()
+                .lookup_type(sig_index)
+                .expect(""signature should be registered""),
+        )
+    }",0,,
+"fn from(validation_error: InvalidEvmTransactionError) -> Self {
+		match validation_error {
+			InvalidEvmTransactionError::GasLimitTooLow => InvalidTransactionWrapper(
+				InvalidTransaction::Custom(TransactionValidationError::InvalidGasLimit as u8),
+			),
+			InvalidEvmTransactionError::GasLimitTooHigh => InvalidTransactionWrapper(
+				InvalidTransaction::Custom(TransactionValidationError::InvalidGasLimit as u8),
+			),
+			InvalidEvmTransactionError::GasPriceTooLow => {
+				InvalidTransactionWrapper(InvalidTransaction::Payment)
+			}
+			InvalidEvmTransactionError::PriorityFeeTooHigh => InvalidTransactionWrapper(
+				InvalidTransaction::Custom(TransactionValidationError::MaxFeePerGasTooLow as u8),
+			),
+			InvalidEvmTransactionError::BalanceTooLow => {
+				InvalidTransactionWrapper(InvalidTransaction::Payment)
+			}
+			InvalidEvmTransactionError::TxNonceTooLow => {
+				InvalidTransactionWrapper(InvalidTransaction::Stale)
+			}
+			InvalidEvmTransactionError::TxNonceTooHigh => {
+				InvalidTransactionWrapper(InvalidTransaction::Future)
+			}
+			InvalidEvmTransactionError::InvalidPaymentInput => {
+				InvalidTransactionWrapper(InvalidTransaction::Payment)
+			}
+			InvalidEvmTransactionError::InvalidChainId => InvalidTransactionWrapper(
+				InvalidTransaction::Custom(TransactionValidationError::InvalidChainId as u8),
+			),
+		}
+	}",0,,
+"fn decode_chunk_precise_writes_only_6_bytes() {
+        let input = b""Zm9vYmFy""; 
+        let mut output = [0_u8, 1, 2, 3, 4, 5, 6, 7];
+        decode_chunk_precise(&input[..], 0, tables::STANDARD_DECODE, &mut output).unwrap();
+        assert_eq!(&vec![b'f', b'o', b'o', b'b', b'a', b'r', 6, 7], &output);
+    }",0,,
+"    fn from(ty: FuncType) -> ExternType {
+        ExternType::Func(ty)
+    }",0,,
+"    pub fn vreg_type(&self, vreg: VirtualReg) -> Type {
+        self.vreg_types[vreg.get_index()]
+    }",0,,
+"fn compile(mut self) -> Result {
+        let mut holes = vec![];
+        let mut initial_entry = None;
+        let mut last_split = Hole::None;
+        let mut utf8_seqs = self.c.utf8_seqs.take().unwrap();
+        self.c.suffix_cache.clear();
+
+        for (i, range) in self.ranges.iter().enumerate() {
+            let is_last_range = i + 1 == self.ranges.len();
+            utf8_seqs.reset(range.start(), range.end());
+            let mut it = (&mut utf8_seqs).peekable();
+            loop {
+                let utf8_seq = match it.next() {
+                    None => break,
+                    Some(utf8_seq) => utf8_seq,
+                };
+                if is_last_range && it.peek().is_none() {
+                    let Patch { hole, entry } = self.c_utf8_seq(&utf8_seq)?;
+                    holes.push(hole);
+                    self.c.fill(last_split, entry);
+                    last_split = Hole::None;
+                    if initial_entry.is_none() {
+                        initial_entry = Some(entry);
+                    }
+                } else {
+                    if initial_entry.is_none() {
+                        initial_entry = Some(self.c.insts.len());
+                    }
+                    self.c.fill_to_next(last_split);
+                    last_split = self.c.push_split_hole();
+                    let Patch { hole, entry } = self.c_utf8_seq(&utf8_seq)?;
+                    holes.push(hole);
+                    last_split =
+                        self.c.fill_split(last_split, Some(entry), None);
+                }
+            }
+        }
+        self.c.utf8_seqs = Some(utf8_seqs);
+        Ok(Patch { hole: Hole::Many(holes), entry: initial_entry.unwrap() })
+    }",0,,
+"pub fn mul_in_place(&mut self, a: &Scalar, b: &Scalar) {
+        let mut l = [0u32; 16];
+        a.mul_512(b, &mut l);
+        self.reduce_512(&l);
+    }",0,,
+"    pub fn can_resume(&self) -> bool {
+        self.is_yielded()
+    }",0,,
+"pub fn native_version() -> NativeVersion {
+	NativeVersion {
+		runtime_version: VERSION,
+		can_author_with: Default::default(),
+	}
+}",0,,
+"    fn num_filled_in_bump_chunk(&self) -> usize {
+        let next = unsafe { *self.alloc.next.get() };
+        let bytes_unused = (self.alloc.end.as_ptr() as usize) - (next.as_ptr() as usize);
+        let slots_unused = bytes_unused / mem::size_of::<TableElem>();
+        self.alloc.chunk.len().saturating_sub(slots_unused)
+    }",0,,
+"fn test_nested_vm_syscall() {
+    let config = Config::default();
+    let mut nested_vm_syscall = NestedVmSyscall {};
+    let memory_mapping = MemoryMapping::new::<UserError>(vec![], &config).unwrap();
+    let mut result = Ok(0);
+    nested_vm_syscall.call(1, 0, 0, 0, 0, &memory_mapping, &mut result);
+    assert!(result.unwrap() == 42);
+    let mut result = Ok(0);
+    nested_vm_syscall.call(1, 1, 0, 0, 0, &memory_mapping, &mut result);
+    assert!(matches!(result.unwrap_err(),
+        EbpfError::CallDepthExceeded(pc, depth)
+        if pc == 33 && depth == 0
+    ));
+}",0,,
+"	pub fn current_transaction_statuses() -> Option<Vec<TransactionStatus>> {
+		CurrentTransactionStatuses::<T>::get()
+	}",0,,
+"fn from(val: f64) -> Val {
+        Val::F64(val.to_bits())
+    }",0,,
+"pub fn tweak_add_assign(&mut self, tweak: &SecretKey) -> Result<(), Error> {
+        let v = &self.0 + &tweak.0;
+        if v.is_zero() {
+            return Err(Error::TweakOutOfRange);
+        }
+        self.0 = v;
+        Ok(())
+    }",0,,
+"pub fn is_even(&self) -> bool {
+        return self.0[0] & 1 == 0;
+    }",0,,
+"		fn on_request(
+			&self, _req: &hyper::server::Request<hyper::net::HttpStream>, _control: &hyper::Control
+		) -> RequestMiddlewareAction {
+			unreachable!()
+		}",0,,
+"fn c_empty_look(&mut self, look: EmptyLook) -> ResultOrEmpty {
+        let hole = self.push_hole(InstHole::EmptyLook { look: look });
+        Ok(Some(Patch { hole: hole, entry: self.insts.len() - 1 }))
+    }",0,,
+"fn inc_nonce(&mut self, address: H160) {
+		let account_id = T::AddressMapping::into_account_id(address);
+		frame_system::Pallet::<T>::inc_account_nonce(&account_id);
+	}",0,,
+"    pub fn flags(&self) -> &settings::Flags {
+        self.abi.flags()
+    }",0,,
+"    pub(super) fn is_empty(&self) -> bool {
+        self.tokens.is_empty()
+    }",0,,
+"pub fn frame_size(&self) -> u32 {
+        self.abi.frame_size()
+    }",0,,
+"pub(super) fn parse_group<'i, 'b>(input: Input<'i, 'b>) -> PResult<'i, 'b, Rule<'i>> {
+    fn parse_capture<'i, 'b>(input: Input<'i, 'b>) -> PResult<'i, 'b, (Capture<'i>, Span)> {
+        map(pair(Token::Colon, opt(Token::Identifier)), |((_, span1), name)| {
+            (Capture::new(name.map(|(s, _)| s)), span1)
+        })(input)
+    }",0,,
+"pub(crate) unsafe fn write_value_to(&self, store: &mut StoreOpaque, p: *mut u128) {
+        match self {
+            Val::I32(i) => ptr::write(p as *mut i32, *i),
+            Val::I64(i) => ptr::write(p as *mut i64, *i),
+            Val::F32(u) => ptr::write(p as *mut u32, *u),
+            Val::F64(u) => ptr::write(p as *mut u64, *u),
+            Val::V128(b) => ptr::write(p as *mut u128, *b),
+            Val::ExternRef(None) => ptr::write(p, 0),
+            Val::ExternRef(Some(x)) => {
+                let externref_ptr = x.inner.as_raw();
+                store.insert_vmexternref(x.inner.clone());
+                ptr::write(p as *mut *mut u8, externref_ptr)
+            }
+            Val::FuncRef(f) => ptr::write(
+                p as *mut *mut runtime::VMCallerCheckedAnyfunc,
+                if let Some(f) = f {
+                    f.caller_checked_anyfunc(store).as_ptr()
+                } else {
+                    ptr::null_mut()
+                },
+            ),
+        }
+    }",1,"0,1,2,3,4,5,6,8,10","pub(crate) unsafe fn write_value_to(&self, store: &mut StoreOpaque, p: *mut u128) {/~/        match self {/~/            Val::I32(i) => ptr::write(p as *mut i32, *i),/~/            Val::I64(i) => ptr::write(p as *mut i64, *i),/~/            Val::F32(u) => ptr::write(p as *mut u32, *u),/~/            Val::F64(u) => ptr::write(p as *mut u64, *u),/~/            Val::V128(b) => ptr::write(p as *mut u128, *b),/~/            Val::ExternRef(Some(x)) => {/~/                store.insert_vmexternref(x.inner.clone());"
+"    pub fn add_named_import(&mut self, module: &str, field: Option<&str>, ty: ExternType) {
+        self.imports
+            .push((module.to_string(), field.map(|f| f.to_string()), ty));
+    }",0,,
+"    fn register(&self, poll: &mut mio::Poll) {
+        poll.register(&self.socket,
+                      self.token,
+                      self.event_set(),
+                      mio::PollOpt::level() | mio::PollOpt::oneshot())
+            .unwrap();
+
+        if self.back.is_some() {
+            poll.register(self.back.as_ref().unwrap(),
+                          self.token,
+                          mio::Ready::readable(),
+                          mio::PollOpt::level() | mio::PollOpt::oneshot())
+                .unwrap();
+        }
+    }",0,,
+"    pub fn is_faulted(&self) -> bool {
+        self.state.is_faulted()
+    }",0,,
+"pub fn shr_int(&mut self, n: usize) -> u32 {
+        let ret: u32;
+        debug_assert!(n > 0);
+        debug_assert!(n < 16);
+        ret = self.0[0] & ((1 << n) - 1);
+        self.0[0] = (self.0[0] >> n) + (self.0[1] << (32 - n));
+        self.0[1] = (self.0[1] >> n) + (self.0[2] << (32 - n));
+        self.0[2] = (self.0[2] >> n) + (self.0[3] << (32 - n));
+        self.0[3] = (self.0[3] >> n) + (self.0[4] << (32 - n));
+        self.0[4] = (self.0[4] >> n) + (self.0[5] << (32 - n));
+        self.0[5] = (self.0[5] >> n) + (self.0[6] << (32 - n));
+        self.0[6] = (self.0[6] >> n) + (self.0[7] << (32 - n));
+        self.0[7] = self.0[7] >> n;
+        return ret;
+    }",0,,
+"    pub fn content(&self) -> &ValType {
+        &self.content
+    }",0,,
+"    fn stdout() -> Self {
+        OutputType::Stdout(io::stdout())
+    }",0,,
+"    pub async fn receive_signal(&mut self) {
+        
+        
+        if self.terminate {
+            return;
+        }
+        let _ = self.signal.recv().await;
+        self.terminate = true;
+    }",0,,
+"    pub fn reset(&mut self) -> Result<(), Error> {
+        self.alloc.reset_heap(self.module.as_ref())?;
+        let globals = unsafe { self.alloc.globals_mut() };
+        let mod_globals = self.module.globals();
+        for (i, v) in mod_globals.iter().enumerate() {
+            globals[i] = match v.global() {
+                Global::Import { .. } => {
+                    return Err(Error::Unsupported(format!(
+                        ""global imports are unsupported; found: {:?}"",
+                        v
+                    )));
+                }
+                Global::Def(def) => def.init_val(),
+            };
+        }
+
+        if self.module.get_start_func()?.is_some() {
+            self.state = State::NotStarted;
+        } else {
+            self.state = State::Ready;
+        }
+
+        #[cfg(feature = ""concurrent_testpoints"")]
+        {
+            self.kill_state = Arc::new(KillState::new(Arc::clone(&self.lock_testpoints)));
+        }
+        #[cfg(not(feature = ""concurrent_testpoints""))]
+        {
+            self.kill_state = Arc::new(KillState::new());
+        }
+
+        Ok(())
+    }",0,,
+"    pub fn run(&mut self, entrypoint: &str, args: &[Val]) -> Result<RunResult, Error> {
+        let func = self.module.get_export_func(entrypoint)?;
+        Ok(self.run_func(func, &args, false, None)?.unwrap())
+    }",0,,
+"pub fn serialize(&self) -> [u8; util::SIGNATURE_SIZE] {
+        let mut ret = [0u8; 64];
+        self.r.fill_b32(array_mut_ref!(ret, 0, 32));
+        self.s.fill_b32(array_mut_ref!(ret, 32, 32));
+        ret
+    }",0,,
+"    pub(crate) unsafe fn from_caller_checked_anyfunc(
+        store: &mut StoreOpaque,
+        anyfunc: *mut VMCallerCheckedAnyfunc,
+    ) -> Option<Self> {
+        let anyfunc = NonNull::new(anyfunc)?;
+        debug_assert!(anyfunc.as_ref().type_index != VMSharedSignatureIndex::default());
+        let export = ExportFunction { anyfunc };
+        Some(Func::from_wasmtime_function(export, store))
+    }",0,,
+"fn test_err_callx_oob_low() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov64 r0, 0x3
+        callx r0
+        exit"",
+        [],
+        (),
+        0,
+        {
+            |_vm, res: Result| {
+                matches!(res.unwrap_err(),
+                    EbpfError::CallOutsideTextSegment(pc, target_pc)
+                    if pc == 30 && target_pc == 0
+                )
+            }
+        },
+        2
+    );
+}",0,,
+"	pub fn boxed(embeddable_on: Embeddable, web_proxy_tokens: Arc<WebProxyTokens>, remote: Remote, fetch: F) -> Box<Endpoint> {
+		Box::new(Web {
+			embeddable_on: embeddable_on,
+			web_proxy_tokens: web_proxy_tokens,
+			remote: remote,
+			fetch: fetch,
+		})
+	}",0,,
+"    pub fn block_order(&self) -> &BlockLoweringOrder {
+        &self.vcode.block_order
+    }",0,,
+"pub fn cmp(a: &Self, b: &Self) -> cmp::Ordering {
+        let a = a.0.as_ptr() as usize;
+        let b = b.0.as_ptr() as usize;
+        a.cmp(&b)
+    }",0,,
+"fn hash(&self, suffix: &SuffixCacheKey) -> usize {
+        
+        
+        const FNV_PRIME: u64 = 1099511628211;
+        let mut h = 14695981039346656037;
+        h = (h ^ (suffix.from_inst as u64)).wrapping_mul(FNV_PRIME);
+        h = (h ^ (suffix.start as u64)).wrapping_mul(FNV_PRIME);
+        h = (h ^ (suffix.end as u64)).wrapping_mul(FNV_PRIME);
+        (h as usize) % self.sparse.len()
+    }",0,,
+"pub fn spectest(fuzz_config: crate::generators::Config, test: crate::generators::SpecTest) {
+    crate::init_fuzzing();
+    log::debug!(""running {:?} with {:?}"", test.file, fuzz_config);
+    let mut config = fuzz_config.to_wasmtime();
+    config.wasm_memory64(false);
+    config.wasm_reference_types(false);
+    config.wasm_bulk_memory(false);
+    config.wasm_module_linking(false);
+    config.wasm_multi_memory(false);
+    let mut store = create_store(&Engine::new(&config).unwrap());
+    if fuzz_config.consume_fuel {
+        store.add_fuel(u64::max_value()).unwrap();
+    }
+    let mut wast_context = WastContext::new(store);
+    wast_context.register_spectest().unwrap();
+    wast_context
+        .run_buffer(test.file, test.contents.as_bytes())
+        .unwrap();
+}",0,,
+"	pub fn current_receipts() -> Option<Vec<ethereum::Receipt>> {
+		CurrentReceipts::<T>::get()
+	}",0,,
+"fn test_call_reg() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov64 r0, 0x0
+        mov64 r8, 0x1
+        lsh64 r8, 0x20
+        or64 r8, 0x30
+        callx r8
+        exit
+        mov64 r0, 0x2A
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 42 } },
+        8
+    );
+}",0,,
+"fn _assert_send_sync() {
+    fn _assert<T: Send + Sync>() {}
+    _assert::<VMExternRefActivationsTable>();
+    _assert::<VMExternRef>();
+}",0,,
+"fn test_sth() {
+    test_interpreter_and_jit_asm!(
+        ""
+        sth [r1+2], 0x2211
+        ldxh r0, [r1+2]
+        exit"",
+        [
+            0xaa, 0xbb, 0xff, 0xff, 0xcc, 0xdd, 
+        ],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x2211 } },
+        3
+    );
+}",0,,
+"    fn slice_index(&self, count: usize) -> Result<usize, nom::Needed> {
+        if count <= self.tokens.len() {
+            Ok(count)
+        } else {
+            Err(nom::Needed::Size((count - self.tokens.len()).try_into().unwrap()))
+        }
+    }",0,,
+"fn test_mul32_reg_overflow() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov r0, 0x40000001
+        mov r1, 4
+        mul32 r0, r1
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x4 } },
+        4
+    );
+}",0,,
+"fn test_tight_infinite_loop_unconditional() {
+    test_interpreter_and_jit_asm!(
+        ""
+        ja -1
+        exit"",
+        [],
+        (),
+        0,
+        {
+            |_vm, res: Result| {
+                matches!(res.unwrap_err(),
+                    EbpfError::ExceededMaxInstructions(pc, initial_insn_count)
+                    if pc == 30 && initial_insn_count == 4
+                )
+            }
+        },
+        4
+    );
+}",0,,
+"fn test_div64_reg() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov r0, 0xc
+        lsh r0, 32
+        mov r1, 4
+        div r0, r1
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x300000000 } },
+        5
+    );
+}",0,,
+"fn is_empty(&self, address: H160) -> bool {
+		Pallet::<T>::is_account_empty(&address)
+	}",0,,
+"pub fn current_block_hash() -> Option<H256> {
+		Self::current_block().map(|block| block.header.hash())
+	}",0,,
+"fn decode_helper(
+    input: &[u8],
+    num_chunks: usize,
+    config: Config,
+    output: &mut [u8],
+) -> Result<usize, DecodeError> {
+    let char_set = config.char_set;
+    let decode_table = char_set.decode_table();
+
+    let remainder_len = input.len() % INPUT_CHUNK_LEN;
+
+    
+    
+    
+    
+    let trailing_bytes_to_skip = match remainder_len {
+        
+        
+        0 => INPUT_CHUNK_LEN,
+        
+        1 | 5 => {
+            
+            
+            if let Some(b) = input.last() {
+                if *b != PAD_BYTE && decode_table[*b as usize] == tables::INVALID_VALUE {
+                    return Err(DecodeError::InvalidByte(input.len() - 1, *b));
+                }
+            }
+
+            return Err(DecodeError::InvalidLength);
+        }
+        
+        
+        
+        2 => INPUT_CHUNK_LEN + 2,
+        
+        
+        
+        
+        3 => INPUT_CHUNK_LEN + 3,
+        
+        
+        4 => INPUT_CHUNK_LEN + 4,
+        
+        
+        _ => remainder_len,
+    };
+
+    
+    let mut remaining_chunks = num_chunks;
+
+    let mut input_index = 0;
+    let mut output_index = 0;
+
+    {
+        let length_of_fast_decode_chunks = input.len().saturating_sub(trailing_bytes_to_skip);
+
+        
+        
+        if let Some(max_start_index) = length_of_fast_decode_chunks.checked_sub(INPUT_BLOCK_LEN) {
+            while input_index <= max_start_index {
+                let input_slice = &input[input_index..(input_index + INPUT_BLOCK_LEN)];
+                let output_slice = &mut output[output_index..(output_index + DECODED_BLOCK_LEN)];
+
+                decode_chunk(
+                    &input_slice[0..],
+                    input_index,
+                    decode_table,
+                    &mut output_slice[0..],
+                )?;
+                decode_chunk(
+                    &input_slice[8..],
+                    input_index + 8,
+                    decode_table,
+                    &mut output_slice[6..],
+                )?;
+                decode_chunk(
+                    &input_slice[16..],
+                    input_index + 16,
+                    decode_table,
+                    &mut output_slice[12..],
+                )?;
+                decode_chunk(
+                    &input_slice[24..],
+                    input_index + 24,
+                    decode_table,
+                    &mut output_slice[18..],
+                )?;
+
+                input_index += INPUT_BLOCK_LEN;
+                output_index += DECODED_BLOCK_LEN - DECODED_CHUNK_SUFFIX;
+                remaining_chunks -= CHUNKS_PER_FAST_LOOP_BLOCK;
+            }
+        }
+
+        
+        
+        if let Some(max_start_index) = length_of_fast_decode_chunks.checked_sub(INPUT_CHUNK_LEN) {
+            while input_index < max_start_index {
+                decode_chunk(
+                    &input[input_index..(input_index + INPUT_CHUNK_LEN)],
+                    input_index,
+                    decode_table,
+                    &mut output
+                        [output_index..(output_index + DECODED_CHUNK_LEN + DECODED_CHUNK_SUFFIX)],
+                )?;
+
+                output_index += DECODED_CHUNK_LEN;
+                input_index += INPUT_CHUNK_LEN;
+                remaining_chunks -= 1;
+            }
+        }
+    }
+
+    
+    
+    
+    
+    
+    
+    
+    for _ in 1..remaining_chunks {
+        decode_chunk_precise(
+            &input[input_index..],
+            input_index,
+            decode_table,
+            &mut output[output_index..(output_index + DECODED_CHUNK_LEN)],
+        )?;
+
+        input_index += INPUT_CHUNK_LEN;
+        output_index += DECODED_CHUNK_LEN;
+    }
+
+    
+    debug_assert!(input.len() - input_index > 1 || input.is_empty());
+    debug_assert!(input.len() - input_index <= 8);
+
+    
+    
+    
+    let mut leftover_bits: u64 = 0;
+    let mut morsels_in_leftover = 0;
+    let mut padding_bytes = 0;
+    let mut first_padding_index: usize = 0;
+    let mut last_symbol = 0_u8;
+    let start_of_leftovers = input_index;
+    for (i, b) in input[start_of_leftovers..].iter().enumerate() {
+        
+        if *b == PAD_BYTE {
+            
+            
+            
+            
+            
+            
+            
+            
+
+            if i % 4 < 2 {
+                
+                let bad_padding_index = start_of_leftovers
+                    + if padding_bytes > 0 {
+                        
+                        
+                        
+                        
+                        first_padding_index
+                    } else {
+                        
+                        i
+                    };
+                return Err(DecodeError::InvalidByte(bad_padding_index, *b));
+            }
+
+            if padding_bytes == 0 {
+                first_padding_index = i;
+            }
+
+            padding_bytes += 1;
+            continue;
+        }
+
+        
+        
+        
+        
+        if padding_bytes > 0 {
+            return Err(DecodeError::InvalidByte(
+                start_of_leftovers + first_padding_index,
+                PAD_BYTE,
+            ));
+        }
+        last_symbol = *b;
+
+        
+        
+        let shift = 64 - (morsels_in_leftover + 1) * 6;
+        
+        let morsel = decode_table[*b as usize];
+        if morsel == tables::INVALID_VALUE {
+            return Err(DecodeError::InvalidByte(start_of_leftovers + i, *b));
+        }
+
+        leftover_bits |= (morsel as u64) << shift;
+        morsels_in_leftover += 1;
+    }
+
+    let leftover_bits_ready_to_append = match morsels_in_leftover {
+        0 => 0,
+        2 => 8,
+        3 => 16,
+        4 => 24,
+        6 => 32,
+        7 => 40,
+        8 => 48,
+        _ => unreachable!(
+            ""Impossible: must only have 0 to 8 input bytes in last chunk, with no invalid lengths""
+        ),
+    };
+
+    
+    
+    let mask = !0 >> leftover_bits_ready_to_append;
+    if !config.decode_allow_trailing_bits && (leftover_bits & mask) != 0 {
+        
+        return Err(DecodeError::InvalidLastSymbol(
+            start_of_leftovers + morsels_in_leftover - 1,
+            last_symbol,
+        ));
+    }
+
+    let mut leftover_bits_appended_to_buf = 0;
+    while leftover_bits_appended_to_buf < leftover_bits_ready_to_append {
+        
+        let selected_bits = (leftover_bits >> (56 - leftover_bits_appended_to_buf)) as u8;
+        output[output_index] = selected_bits;
+        output_index += 1;
+
+        leftover_bits_appended_to_buf += 8;
+    }
+
+    Ok(output_index)
+}",0,,
+"fn as_ref(&self) -> &[u8] {
+        &self.0
+    }",0,,
+	fn is_major_importing(&self) -> bool { self() },0,,
+"fn strip_first_last(s: &str) -> &str {
+    &s[1..s.len() - 1]
+}",0,,
+"fn build(&self) {
+			<Pallet<T>>::store_block(false, U256::zero());
+			frame_support::storage::unhashed::put::<EthereumStorageSchema>(
+				&PALLET_ETHEREUM_SCHEMA,
+				&EthereumStorageSchema::V1,
+			);
+		}",0,,
+"pub fn resize_end(&mut self, mut end: U256) -> Result<(), ExitError> {
+		while end % U256::from(32) != U256::zero() {
+			end = match end.checked_add(U256::one()) {
+				Some(end) => end,
+				None => return Err(ExitError::InvalidRange)
+			};
+		}
+
+		self.effective_len = max(self.effective_len, end);
+		Ok(())
+	}",0,,
+"pub fn retrieve_less_version(less_path: &dyn AsRef<OsStr>) -> Option<usize> {
+    let cmd = Command::new(less_path).arg(""--version"").output().ok()?;
+    parse_less_version(&cmd.stdout)
+}",1,1,"    let cmd = Command::new(less_path).arg(""--version"").output().ok()?;"
+"fn execute(
+		input: &[u8],
+		target_gas: Option<u64>,
+		_context: &Context,
+		_is_static: bool,
+	) -> PrecompileResult {
+		if input.len() < 96 {
+			return Err(PrecompileFailure::Error {
+				exit_status: ExitError::Other(""input must contain at least 96 bytes"".into()),
+			});
+		};
+
+		
+		let max_size_big = BigUint::from_u32(1024).expect(""can't create BigUint"");
+
+		let mut buf = [0; 32];
+		buf.copy_from_slice(&input[0..32]);
+		let base_len_big = BigUint::from_bytes_be(&buf);
+		if base_len_big > max_size_big {
+			return Err(PrecompileFailure::Error {
+				exit_status: ExitError::Other(""unreasonably large base length"".into()),
+			});
+		}
+
+		buf.copy_from_slice(&input[32..64]);
+		let exp_len_big = BigUint::from_bytes_be(&buf);
+		if exp_len_big > max_size_big {
+			return Err(PrecompileFailure::Error {
+				exit_status: ExitError::Other(""unreasonably large exponent length"".into()),
+			});
+		}
+
+		buf.copy_from_slice(&input[64..96]);
+		let mod_len_big = BigUint::from_bytes_be(&buf);
+		if mod_len_big > max_size_big {
+			return Err(PrecompileFailure::Error {
+				exit_status: ExitError::Other(""unreasonably large exponent length"".into()),
+			});
+		}
+
+		
+		let base_len = base_len_big.to_usize().expect(""base_len out of bounds"");
+		let exp_len = exp_len_big.to_usize().expect(""exp_len out of bounds"");
+		let mod_len = mod_len_big.to_usize().expect(""mod_len out of bounds"");
+
+		
+		let total_len = base_len + exp_len + mod_len + 96;
+		if input.len() < total_len {
+			return Err(PrecompileFailure::Error {
+				exit_status: ExitError::Other(""insufficient input size"".into()),
+			});
+		}
+
+		
+		let (r, gas_cost) = if base_len == 0 && mod_len == 0 {
+			(BigUint::zero(), MIN_GAS_COST)
+		} else {
+			
+			let base_start = 96; 
+			let base = BigUint::from_bytes_be(&input[base_start..base_start + base_len]);
+
+			let exp_start = base_start + base_len;
+			let exponent = BigUint::from_bytes_be(&input[exp_start..exp_start + exp_len]);
+
+			
+			
+			let gas_cost =
+				calculate_gas_cost(base_len as u64, exp_len as u64, mod_len as u64, &exponent);
+			if let Some(gas_left) = target_gas {
+				if gas_left < gas_cost {
+					return Err(PrecompileFailure::Error {
+						exit_status: ExitError::OutOfGas,
+					});
+				}
+			};
+
+			let mod_start = exp_start + exp_len;
+			let modulus = BigUint::from_bytes_be(&input[mod_start..mod_start + mod_len]);
+
+			if modulus.is_zero() || modulus.is_one() {
+				(BigUint::zero(), gas_cost)
+			} else {
+				(base.modpow(&exponent, &modulus), gas_cost)
+			}
+		};
+
+		
+		let bytes = r.to_bytes_be();
+
+		
+		
+		if bytes.len() == mod_len {
+			Ok(PrecompileOutput {
+				exit_status: ExitSucceed::Returned,
+				cost: gas_cost,
+				output: bytes.to_vec(),
+				logs: Default::default(),
+			})
+		} else if bytes.len() < mod_len {
+			let mut ret = Vec::with_capacity(mod_len);
+			ret.extend(core::iter::repeat(0).take(mod_len - bytes.len()));
+			ret.extend_from_slice(&bytes[..]);
+			Ok(PrecompileOutput {
+				exit_status: ExitSucceed::Returned,
+				cost: gas_cost,
+				output: ret.to_vec(),
+				logs: Default::default(),
+			})
+		} else {
+			Err(PrecompileFailure::Error {
+				exit_status: ExitError::Other(""failed"".into()),
+			})
+		}
+	}",1,"36,65","				exit_status: ExitError::Other(""unreasonably large exponent length"".into()),/~/			// TODO: we could technically avoid reading base first..."
+"    fn mul_assign(&mut self, other: Scalar) {
+        self.mul_assign(&other)
+    }",0,,
+"	fn is_major_importing(&self) -> bool;
+}
+
+impl<F> SyncStatus for F where F: Fn() -> bool + Send + Sync {
+	fn is_major_importing(&self) -> bool { self() }
+}",0,,
+"    fn input_len(&self) -> usize {
+        self.tokens.len()
+    }",0,,
+"fn detect_invalid_last_symbol_two_bytes() {
+        let decode =
+            |input, forgiving| decode_config(input, STANDARD.decode_allow_trailing_bits(forgiving));
+
+        
+        assert!(decode(""iYU="", false).is_ok());
+        
+        assert_eq!(
+            Err(DecodeError::InvalidLastSymbol(2, b'V')),
+            decode(""iYV="", false)
+        );
+        assert_eq!(Ok(vec![137, 133]), decode(""iYV="", true));
+        
+        assert_eq!(
+            Err(DecodeError::InvalidLastSymbol(2, b'W')),
+            decode(""iYW="", false)
+        );
+        assert_eq!(Ok(vec![137, 133]), decode(""iYV="", true));
+        
+        assert_eq!(
+            Err(DecodeError::InvalidLastSymbol(2, b'X')),
+            decode(""iYX="", false)
+        );
+        assert_eq!(Ok(vec![137, 133]), decode(""iYV="", true));
+
+        
+        assert_eq!(
+            Err(DecodeError::InvalidLastSymbol(6, b'X')),
+            decode(""AAAAiYX="", false)
+        );
+        assert_eq!(Ok(vec![0, 0, 0, 137, 133]), decode(""AAAAiYX="", true));
+    }",0,,
+"    pub fn from_mode(
+        paging_mode: PagingMode,
+        wrapping_mode: WrappingMode,
+        pager: Option<&str>,
+    ) -> Result<Self> {
+        use self::PagingMode::*;
+        Ok(match paging_mode {
+            Always => OutputType::try_pager(SingleScreenAction::Nothing, wrapping_mode, pager)?,
+            QuitIfOneScreen => {
+                OutputType::try_pager(SingleScreenAction::Quit, wrapping_mode, pager)?
+            }
+            _ => OutputType::stdout(),
+        })
+    }",0,,
+"pub fn seteuid(uid: u32) {
+    let uid = Uid::from_raw(uid);
+    match nix::unistd::seteuid(uid) {
+        Ok(_) => log::debug!(""Dropping privileges...""),
+        Err(e) => {
+            log::error!(""Failed to set EUID: {:#?}"", e);
+            exit(1);
+        }
+    }
+}",0,,
+"pub fn run_func_idx(
+        &mut self,
+        table_idx: u32,
+        func_idx: u32,
+        args: &[Val],
+    ) -> Result<RunResult, Error> {
+        let func = self.module.get_func_from_idx(table_idx, func_idx)?;
+        Ok(self.run_func(func, &args, false, None)?.unwrap())
+    }",0,,
+"fn recover_signer(transaction: &Transaction) -> Option<H160> {
+		let mut sig = [0u8; 65];
+		let mut msg = [0u8; 32];
+		sig[0..32].copy_from_slice(&transaction.signature.r()[..]);
+		sig[32..64].copy_from_slice(&transaction.signature.s()[..]);
+		sig[64] = transaction.signature.standard_v();
+		msg.copy_from_slice(&LegacyTransactionMessage::from(transaction.clone()).hash()[..]);
+
+		let pubkey = sp_io::crypto::secp256k1_ecdsa_recover(&sig, &msg).ok()?;
+		Some(H160::from(H256::from_slice(
+			Keccak256::digest(&pubkey).as_slice(),
+		)))
+	}",0,,
+"    fn sweep(&mut self) {
+        
+        let num_filled = self.num_filled_in_bump_chunk();
+        unsafe {
+            *self.alloc.next.get() = self.alloc.end;
+        }
+        for slot in self.alloc.chunk.iter().take(num_filled) {
+            unsafe {
+                *slot.get() = None;
+            }
+        }
+        debug_assert!(
+            self.alloc
+                .chunk
+                .iter()
+                .all(|slot| unsafe { (*slot.get()).as_ref().is_none() }),
+            ""after sweeping the bump chunk, all slots should be `None`""
+        );
+
+        
+        unsafe {
+            let next = self.alloc.chunk.as_ptr() as *mut TableElem;
+            debug_assert!(!next.is_null());
+            *self.alloc.next.get() = NonNull::new_unchecked(next);
+        }
+
+        
+        
+        mem::swap(
+            &mut self.precise_stack_roots,
+            &mut self.over_approximated_stack_roots,
+        );
+
+        
+        
+        
+        
+        
+        
+        self.precise_stack_roots.clear();
+    }",0,,
+"pub fn fetch_xdg_config_path() -> std::path::PathBuf {
+    let config_file_path: std::path::PathBuf = match env::var(""XDG_CONFIG_HOME"") {
+        Ok(val) => {
+            log::debug!(""XDG_CONFIG_HOME exists: {:#?}"", val);
+            Path::new(&val).join(""swhkd/swhkdrc"")
+        }
+        Err(_) => {
+            log::error!(""XDG_CONFIG_HOME has not been set."");
+            Path::new(""/etc/swhkd/swhkdrc"").to_path_buf()
+        }
+    };
+    config_file_path
+}",0,,
+"fn test_subnet() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov r2, 0xe
+        ldxh r3, [r1+12]
+        jne r3, 0x81, +2
+        mov r2, 0x12
+        ldxh r3, [r1+16]
+        and r3, 0xffff
+        jne r3, 0x8, +5
+        add r1, r2
+        mov r0, 0x1
+        ldxw r1, [r1+16]
+        and r1, 0xffffff
+        jeq r1, 0x1a8c0, +1
+        mov r0, 0x0
+        exit"",
+        [
+            0x00, 0x00, 0xc0, 0x9f, 0xa0, 0x97, 0x00, 0xa0, 
+            0xcc, 0x3b, 0xbf, 0xfa, 0x08, 0x00, 0x45, 0x10, 
+            0x00, 0x3c, 0x46, 0x3c, 0x40, 0x00, 0x40, 0x06, 
+            0x73, 0x1c, 0xc0, 0xa8, 0x01, 0x02, 0xc0, 0xa8, 
+            0x01, 0x01, 0x06, 0x0e, 0x00, 0x17, 0x99, 0xc5, 
+            0xa0, 0xec, 0x00, 0x00, 0x00, 0x00, 0xa0, 0x02, 
+            0x7d, 0x78, 0xe0, 0xa3, 0x00, 0x00, 0x02, 0x04, 
+            0x05, 0xb4, 0x04, 0x02, 0x08, 0x0a, 0x00, 0x9c, 
+            0x27, 0x24, 0x00, 0x00, 0x00, 0x00, 0x01, 0x03, 
+            0x03, 0x00, 
+        ],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x1 } },
+        11
+    );
+}",0,,
+"    fn deref(&self) -> &Self::Target {
+        unsafe { self.inst.as_ref() }
+    }",0,,
+"    pub fn inv_var(&self) -> Scalar {
+        self.inv()
+    }",0,,
+"fn test_be64() {
+    test_interpreter_and_jit_asm!(
+        ""
+        ldxdw r0, [r1]
+        be64 r0
+        exit"",
+        [0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x1122334455667788 } },
+        3
+    );
+}",0,,
+"fn num_chunks(input: &[u8]) -> usize {
+    input
+        .len()
+        .checked_add(INPUT_CHUNK_LEN - 1)
+        .expect(""Overflow when calculating number of chunks in input"")
+        / INPUT_CHUNK_LEN
+}",0,,
+"fn set_word_boundary(&mut self) {
+        
+        
+        let iswb = is_word_byte;
+        let mut b1: u16 = 0;
+        let mut b2: u16;
+        while b1 <= 255 {
+            b2 = b1 + 1;
+            while b2 <= 255 && iswb(b1 as u8) == iswb(b2 as u8) {
+                b2 += 1;
+            }
+            self.set_range(b1 as u8, (b2 - 1) as u8);
+            b1 = b2;
+        }
+    }",0,,
+"pub fn execute(
+		from: H160,
+		transaction: &Transaction,
+		config: Option<evm::Config>,
+	) -> Result<
+		(Option<H160>, Option<H160>, CallOrCreateInfo),
+		DispatchErrorWithPostInfo<PostDispatchInfo>,
+	> {
+		let (
+			input,
+			value,
+			gas_limit,
+			max_fee_per_gas,
+			max_priority_fee_per_gas,
+			nonce,
+			action,
+			access_list,
+		) = {
+			match transaction {
+				
+				
+				Transaction::Legacy(t) => (
+					t.input.clone(),
+					t.value,
+					t.gas_limit,
+					Some(t.gas_price),
+					Some(t.gas_price),
+					Some(t.nonce),
+					t.action,
+					Vec::new(),
+				),
+				Transaction::EIP2930(t) => {
+					let access_list: Vec<(H160, Vec<H256>)> = t
+						.access_list
+						.iter()
+						.map(|item| (item.address, item.storage_keys.clone()))
+						.collect();
+					(
+						t.input.clone(),
+						t.value,
+						t.gas_limit,
+						Some(t.gas_price),
+						Some(t.gas_price),
+						Some(t.nonce),
+						t.action,
+						access_list,
+					)
+				}
+				Transaction::EIP1559(t) => {
+					let access_list: Vec<(H160, Vec<H256>)> = t
+						.access_list
+						.iter()
+						.map(|item| (item.address, item.storage_keys.clone()))
+						.collect();
+					(
+						t.input.clone(),
+						t.value,
+						t.gas_limit,
+						Some(t.max_fee_per_gas),
+						Some(t.max_priority_fee_per_gas),
+						Some(t.nonce),
+						t.action,
+						access_list,
+					)
+				}
+			}
+		};
+
+		let is_transactional = true;
+		let validate = false;
+		match action {
+			ethereum::TransactionAction::Call(target) => {
+				let res = match T::Runner::call(
+					from,
+					target,
+					input,
+					value,
+					gas_limit.low_u64(),
+					max_fee_per_gas,
+					max_priority_fee_per_gas,
+					nonce,
+					access_list,
+					is_transactional,
+					validate,
+					config.as_ref().unwrap_or_else(|| T::config()),
+				) {
+					Ok(res) => res,
+					Err(e) => {
+						return Err(DispatchErrorWithPostInfo {
+							post_info: PostDispatchInfo {
+								actual_weight: Some(e.weight),
+								pays_fee: Pays::Yes,
+							},
+							error: e.error.into(),
+						})
+					}
+				};
+
+				Ok((Some(target), None, CallOrCreateInfo::Call(res)))
+			}
+			ethereum::TransactionAction::Create => {
+				let res = match T::Runner::create(
+					from,
+					input,
+					value,
+					gas_limit.low_u64(),
+					max_fee_per_gas,
+					max_priority_fee_per_gas,
+					nonce,
+					access_list,
+					is_transactional,
+					validate,
+					config.as_ref().unwrap_or_else(|| T::config()),
+				) {
+					Ok(res) => res,
+					Err(e) => {
+						return Err(DispatchErrorWithPostInfo {
+							post_info: PostDispatchInfo {
+								actual_weight: Some(e.weight),
+								pays_fee: Pays::Yes,
+							},
+							error: e.error.into(),
+						})
+					}
+				};
+
+				Ok((None, Some(res.value), CallOrCreateInfo::Create(res)))
+			}
+		}
+	}",1,"77,105","gas_limit.low_u64(),/~/					gas_limit.low_u64(),"
+"pub fn parse_cmd(cmd_str: &str, _sender_address: AccountAddress) -> Result<ast::Cmd> {
+    let stripped_string = &strip_comments(cmd_str);
+    let parser = syntax::CmdParser::new();
+    match parser.parse(stripped_string) {
+        Ok(cmd) => Ok(cmd),
+        Err(e) => handle_error(e, cmd_str),
+    }
+}",1,"1,5","    let stripped_string = &strip_comments(cmd_str);/~/        Err(e) => handle_error(e, cmd_str),"
+"    pub fn inv(&self) -> Scalar {
+        let mut ret = Scalar::default();
+        ret.inv_in_place(self);
+        ret
+    }",0,,
+"fn transfer(&mut self, transfer: Transfer) -> Result<(), ExitError> {
+		let source = T::AddressMapping::into_account_id(transfer.source);
+		let target = T::AddressMapping::into_account_id(transfer.target);
+
+		T::Currency::transfer(
+			&source,
+			&target,
+			transfer.value.low_u128().unique_saturated_into(),
+			ExistenceRequirement::AllowDeath,
+		)
+		.map_err(|_| ExitError::OutOfFund)
+	}",1,7,"transfer.value.low_u128().unique_saturated_into(),"
+"    pub fn stack_canary(&self) -> Option<usize> {
+        self.stack_canary
+    }",0,,
+"	pub fn ui<F: Fetch + Clone>(
+		remote: Remote,
+		registrar: Arc<ContractClient>,
+		sync_status: Arc<SyncStatus>,
+		fetch: F,
+		dapps_domain: String,
+	) -> Self {
+		let content_fetcher = Arc::new(apps::fetcher::ContentFetcher::new(
+			hash_fetch::urlhint::URLHintContract::new(registrar),
+			sync_status,
+			remote.clone(),
+			fetch.clone(),
+		).embeddable_on(None).allow_dapps(false));
+		let special = {
+			let mut special = special_endpoints(content_fetcher.clone());
+			special.insert(router::SpecialEndpoint::Home, Some(apps::ui()));
+			special
+		};
+		let router = router::Router::new(
+			content_fetcher,
+			None,
+			special,
+			None,
+			dapps_domain,
+		);
+
+		Middleware {
+			router: router,
+			endpoints: Default::default(),
+		}
+	}",0,,
+"    pub const fn new(char_set: CharacterSet, pad: bool) -> Config {
+        Config {
+            char_set,
+            pad,
+            decode_allow_trailing_bits: false,
+        }
+    }",0,,
+"fn _read_to_string(cursor: &mut Cursor<Vec<u8>>) -> String {
+        let mut s = String::new();
+        cursor.seek(SeekFrom::Start(0)).unwrap();
+        cursor.read_to_string(&mut s).unwrap();
+        s
+    }",0,,
+"    fn c_repeat_one_or_more(
+        &mut self,
+        expr: &Hir,
+        greedy: bool,
+    ) -> ResultOrEmpty {
+        let Patch { hole: hole_rep, entry: entry_rep } = match self.c(expr)? {
+            Some(p) => p,
+            None => return Ok(None),
+        };
+        self.fill_to_next(hole_rep);
+        let split = self.push_split_hole();
+
+        let split_hole = if greedy {
+            self.fill_split(split, Some(entry_rep), None)
+        } else {
+            self.fill_split(split, None, Some(entry_rep))
+        };
+        Ok(Some(Patch { hole: split_hole, entry: entry_rep }))
+    }",0,,
+"pub fn translate(
+        mut self,
+        data: &'data [u8],
+    ) -> WasmResult<(usize, Vec<ModuleTranslation<'data>>, TypeTables)> {
+        let mut validator = Validator::new();
+        validator.wasm_features(self.features);
+
+        for payload in Parser::new(0).parse_all(data) {
+            self.translate_payload(&mut validator, payload?)?;
+        }
+
+        assert!(self.results.len() > 0);
+        Ok((self.results.len() - 1, self.results, self.types))
+    }",0,,
+"pub fn new(
+        abi: Box<dyn ABICallee<I = I>>,
+        emit_info: I::Info,
+        block_order: BlockLoweringOrder,
+        constants: VCodeConstants,
+    ) -> VCodeBuilder<I> {
+        let reftype_class = I::ref_type_regclass(abi.flags());
+        let vcode = VCode::new(
+            abi,
+            emit_info,
+            block_order,
+            constants,
+             true,
+        );
+        let stack_map_info = StackmapRequestInfo {
+            reftype_class,
+            reftyped_vregs: vec![],
+            safepoint_insns: vec![],
+        };
+
+        VCodeBuilder {
+            vcode,
+            stack_map_info,
+            block_start: 0,
+            succ_start: 0,
+            cur_srcloc: SourceLoc::default(),
+        }
+    }",0,,
+"async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let args = set_command_line_args().get_matches();
+    env::set_var(""RUST_LOG"", ""swhkd=warn"");
+
+    if args.is_present(""debug"") {
+        env::set_var(""RUST_LOG"", ""swhkd=trace"");
+    }
+
+    env_logger::init();
+    log::trace!(""Logger initialized."");
+
+    let pidfile: String = String::from(""/tmp/swhkd.pid"");
+    if Path::new(&pidfile).exists() {
+        log::trace!(""Reading {} file and checking for running instances."", pidfile);
+        let swhkd_pid = match fs::read_to_string(&pidfile) {
+            Ok(swhkd_pid) => swhkd_pid,
+            Err(e) => {
+                log::error!(""Unable to read {} to check all running instances"", e);
+                exit(1);
+            }
+        };
+        log::debug!(""Previous PID: {}"", swhkd_pid);
+
+        let mut sys = System::new_all();
+        sys.refresh_all();
+        for (pid, process) in sys.processes() {
+            if pid.to_string() == swhkd_pid && process.exe() == env::current_exe().unwrap() {
+                log::error!(""Swhkd is already running!"");
+                log::error!(""pid of existing swhkd process: {}"", pid.to_string());
+                log::error!(""To close the existing swhkd process, run `sudo killall swhkd`"");
+                exit(1);
+            }
+        }
+    }
+
+    match fs::write(&pidfile, id().to_string()) {
+        Ok(_) => {}
+        Err(e) => {
+            log::error!(""Unable to write to {}: {}"", pidfile, e);
+            exit(1);
+        }
+    }
+
+    if check_user_permissions().is_err() {
+        exit(1);
+    }
+
+    let load_config = || {
+        seteuid(env::var(""PKEXEC_UID"").unwrap().parse::<u32>().unwrap()); 
+        let config_file_path: std::path::PathBuf = if args.is_present(""config"") {
+            Path::new(args.value_of(""config"").unwrap()).to_path_buf()
+        } else {
+            fetch_xdg_config_path()
+        };
+
+        log::debug!(""Using config file path: {:#?}"", config_file_path);
+
+        if !config_file_path.exists() {
+            log::error!(""{:#?} doesn't exist"", config_file_path);
+            exit(1);
+        }
+
+        let hotkeys = match config::load(&config_file_path) {
+            Err(e) => {
+                log::error!(""Config Error: {}"", e);
+                exit(1);
+            }
+            Ok(out) => out,
+        };
+
+        for hotkey in &hotkeys {
+            log::debug!(""hotkey: {:#?}"", hotkey);
+        }
+
+        hotkeys
+    };
+
+    let mut hotkeys = load_config();
+    seteuid(0); 
+    log::trace!(""Attempting to find all keyboard file descriptors."");
+    let keyboard_devices: Vec<Device> =
+        evdev::enumerate().filter(check_device_is_keyboard).collect();
+
+    let mut uinput_device = match uinput::create_uinput_device() {
+        Ok(dev) => dev,
+        Err(e) => {
+            log::error!(""Err: {:#?}"", e);
+            exit(1);
+        }
+    };
+
+    if keyboard_devices.is_empty() {
+        log::error!(""No valid keyboard device was detected!"");
+        exit(1);
+    }
+    log::debug!(""{} Keyboard device(s) detected."", keyboard_devices.len());
+
+    let modifiers_map: HashMap<Key, config::Modifier> = HashMap::from([
+        (Key::KEY_LEFTMETA, config::Modifier::Super),
+        (Key::KEY_RIGHTMETA, config::Modifier::Super),
+        (Key::KEY_LEFTMETA, config::Modifier::Super),
+        (Key::KEY_RIGHTMETA, config::Modifier::Super),
+        (Key::KEY_LEFTALT, config::Modifier::Alt),
+        (Key::KEY_RIGHTALT, config::Modifier::Alt),
+        (Key::KEY_LEFTCTRL, config::Modifier::Control),
+        (Key::KEY_RIGHTCTRL, config::Modifier::Control),
+        (Key::KEY_LEFTSHIFT, config::Modifier::Shift),
+        (Key::KEY_RIGHTSHIFT, config::Modifier::Shift),
+    ]);
+
+    let repeat_cooldown_duration: u64 = if args.is_present(""cooldown"") {
+        args.value_of(""cooldown"").unwrap().parse::<u64>().unwrap()
+    } else {
+        250
+    };
+
+    let mut signals = Signals::new(&[
+        SIGUSR1, SIGUSR2, SIGHUP, SIGABRT, SIGBUS, SIGCHLD, SIGCONT, SIGINT, SIGPIPE, SIGQUIT,
+        SIGSYS, SIGTERM, SIGTRAP, SIGTSTP, SIGVTALRM, SIGXCPU, SIGXFSZ,
+    ])?;
+
+    let mut execution_is_paused = false;
+    let mut last_hotkey: Option<config::Hotkey> = None;
+    let mut pending_release: bool = false;
+    let mut keyboard_states: Vec<KeyboardState> = Vec::new();
+    let mut keyboard_stream_map = StreamMap::new();
+
+    for (i, mut device) in keyboard_devices.into_iter().enumerate() {
+        let _ = device.grab();
+        keyboard_stream_map.insert(i, device.into_event_stream()?);
+        keyboard_states.push(KeyboardState::new());
+    }
+
+    
+    let hotkey_repeat_timer = sleep(Duration::from_millis(0));
+    tokio::pin!(hotkey_repeat_timer);
+
+    loop {
+        select! {
+            _ = &mut hotkey_repeat_timer, if &last_hotkey.is_some() => {
+                let hotkey = last_hotkey.clone().unwrap();
+                if hotkey.keybinding.on_release {
+                    continue;
+                }
+                send_command(hotkey.clone());
+                hotkey_repeat_timer.as_mut().reset(Instant::now() + Duration::from_millis(repeat_cooldown_duration));
+            }
+
+            Some(signal) = signals.next() => {
+                match signal {
+                    SIGUSR1 => {
+                        execution_is_paused = true;
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.ungrab();
+                        }
+                    }
+
+                    SIGUSR2 => {
+                        execution_is_paused = false;
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.grab();
+                        }
+                    }
+
+                    SIGHUP => {
+                        hotkeys = load_config();
+                    }
+
+                    SIGINT => {
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.ungrab();
+                        }
+                        log::warn!(""Received SIGINT signal, exiting..."");
+                        exit(1);
+                    }
+
+                    _ => {
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.ungrab();
+                        }
+
+                        log::warn!(""Received signal: {:#?}"", signal);
+                        log::warn!(""Exiting..."");
+                        exit(1);
+                    }
+                }
+            }
+
+            Some((i, Ok(event))) = keyboard_stream_map.next() => {
+                let keyboard_state = &mut keyboard_states[i];
+
+                let key = match event.kind() {
+                    InputEventKind::Key(keycode) => keycode,
+                    _ => continue
+                };
+
+                match event.value() {
+                    
+                    1 => {
+                        if let Some(modifier) = modifiers_map.get(&key) {
+                            keyboard_state.state_modifiers.insert(*modifier);
+                        } else {
+                            keyboard_state.state_keysyms.insert(key);
+                        }
+                    }
+
+                    
+                    0 => {
+                        if last_hotkey.is_some() && pending_release {
+                            pending_release = false;
+                            send_command(last_hotkey.clone().unwrap());
+                            last_hotkey = None;
+                        }
+                        if let Some(modifier) = modifiers_map.get(&key) {
+                            if let Some(hotkey) = &last_hotkey {
+                                if hotkey.modifiers().contains(modifier) {
+                                    last_hotkey = None;
+                                }
+                            }
+                            keyboard_state.state_modifiers.remove(modifier);
+                        } else if keyboard_state.state_keysyms.contains(key) {
+                            if let Some(hotkey) = &last_hotkey {
+                                if key == hotkey.keysym() {
+                                    last_hotkey = None;
+                                }
+                            }
+                            keyboard_state.state_keysyms.remove(key);
+                        }
+                    }
+
+                    _ => {}
+                }
+
+                let possible_hotkeys: Vec<&config::Hotkey> = hotkeys.iter()
+                    .filter(|hotkey| hotkey.modifiers().len() == keyboard_state.state_modifiers.len())
+                    .collect();
+
+                let event_in_hotkeys = hotkeys.iter().any(|hotkey| {
+                    hotkey.keysym().code() == event.code() &&
+                    keyboard_state.state_modifiers
+                        .iter()
+                        .all(|x| hotkey.modifiers().contains(x)) &&
+                    keyboard_state.state_modifiers.len() == hotkey.modifiers().len()
+                    && !hotkey.is_send()
+                        });
+
+                
+                if !event_in_hotkeys {
+                    uinput_device.emit(&[event]).unwrap();
+                }
+
+                if execution_is_paused || possible_hotkeys.is_empty() || last_hotkey.is_some() {
+                    continue;
+                }
+
+                log::debug!(""state_modifiers: {:#?}"", keyboard_state.state_modifiers);
+                log::debug!(""state_keysyms: {:#?}"", keyboard_state.state_keysyms);
+                log::debug!(""hotkey: {:#?}"", possible_hotkeys);
+
+                for hotkey in possible_hotkeys {
+                    
+                    if keyboard_state.state_modifiers.iter().all(|x| hotkey.modifiers().contains(x))
+                        && keyboard_state.state_modifiers.len() == hotkey.modifiers().len()
+                        && keyboard_state.state_keysyms.contains(hotkey.keysym())
+                    {
+                        last_hotkey = Some(hotkey.clone());
+                        if pending_release { break; }
+                        if hotkey.is_on_release() {
+                            pending_release = true;
+                            break;
+                        }
+                        send_command(hotkey.clone());
+                        hotkey_repeat_timer.as_mut().reset(Instant::now() + Duration::from_millis(repeat_cooldown_duration));
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}",1,"57,58,59,60,61","if !config_file_path.exists() {/~/            log::error!(""{:#?} doesn't exist"", config_file_path);/~/            exit(1);/~/        }/~/"
+"    pub(crate) fn is_pager(&self) -> bool {
+        matches!(self, OutputType::Pager(_))
+    }",0,,
+"fn set_code(&mut self, address: H160, code: Vec<u8>) {
+		log::debug!(
+			target: ""evm"",
+			""Inserting code ({} bytes) at {:?}"",
+			code.len(),
+			address
+		);
+		Pallet::<T>::create_account(address, code);
+	}",0,,
+"fn assert_same_export_func_result(
+        lhs: &Result<Box<[Val]>, Trap>,
+        rhs: &Result<Box<[Val]>, Trap>,
+        func_name: &str,
+    ) {
+        let fail = || {
+            panic!(
+                ""differential fuzzing failed: exported func {} returned two \
+                 different results: {:?} != {:?}"",
+                func_name, lhs, rhs
+            )
+        };
+
+        match (lhs, rhs) {
+            (Err(_), Err(_)) => {}
+            (Ok(lhs), Ok(rhs)) => {
+                if lhs.len() != rhs.len() {
+                    fail();
+                }
+                for (lhs, rhs) in lhs.iter().zip(rhs.iter()) {
+                    match (lhs, rhs) {
+                        (Val::I32(lhs), Val::I32(rhs)) if lhs == rhs => continue,
+                        (Val::I64(lhs), Val::I64(rhs)) if lhs == rhs => continue,
+                        (Val::V128(lhs), Val::V128(rhs)) if lhs == rhs => continue,
+                        (Val::F32(lhs), Val::F32(rhs)) if f32_equal(*lhs, *rhs) => continue,
+                        (Val::F64(lhs), Val::F64(rhs)) if f64_equal(*lhs, *rhs) => continue,
+                        (Val::ExternRef(_), Val::ExternRef(_))
+                        | (Val::FuncRef(_), Val::FuncRef(_)) => continue,
+                        _ => fail(),
+                    }
+                }
+            }
+            _ => fail(),
+        }
+    }",0,,
+"fn reduce(&mut self, overflow: bool) -> bool {
+        let o: u64 = if overflow { 1 } else { 0 };
+        let mut t: u64;
+        t = (self.0[0] as u64) + o * (SECP256K1_N_C_0 as u64);
+        self.0[0] = (t & 0xFFFFFFFF) as u32; t >>= 32;
+        t += (self.0[1] as u64) + o * (SECP256K1_N_C_1 as u64);
+        self.0[1] = (t & 0xFFFFFFFF) as u32; t >>= 32;
+        t += (self.0[2] as u64) + o * (SECP256K1_N_C_2 as u64);
+        self.0[2] = (t & 0xFFFFFFFF) as u32; t >>= 32;
+        t += (self.0[3] as u64) + o * (SECP256K1_N_C_3 as u64);
+        self.0[3] = (t & 0xFFFFFFFF) as u32; t >>= 32;
+        t += (self.0[4] as u64) + o * (SECP256K1_N_C_4 as u64);
+        self.0[4] = (t & 0xFFFFFFFF) as u32; t >>= 32;
+        t += self.0[5] as u64;
+        self.0[5] = (t & 0xFFFFFFFF) as u32; t >>= 32;
+        t += self.0[6] as u64;
+        self.0[6] = (t & 0xFFFFFFFF) as u32; t >>= 32;
+        t += self.0[7] as u64;
+        self.0[7] = (t & 0xFFFFFFFF) as u32;
+        overflow
+    }",0,,
+"fn c_class_bytes(
+        &mut self,
+        ranges: &[hir::ClassBytesRange],
+    ) -> ResultOrEmpty {
+        debug_assert!(!ranges.is_empty());
+
+        let first_split_entry = self.insts.len();
+        let mut holes = vec![];
+        let mut prev_hole = Hole::None;
+        for r in &ranges[0..ranges.len() - 1] {
+            self.fill_to_next(prev_hole);
+            let split = self.push_split_hole();
+            let next = self.insts.len();
+            self.byte_classes.set_range(r.start(), r.end());
+            holes.push(self.push_hole(InstHole::Bytes {
+                start: r.start(),
+                end: r.end(),
+            }));
+            prev_hole = self.fill_split(split, Some(next), None);
+        }
+        let next = self.insts.len();
+        let r = &ranges[ranges.len() - 1];
+        self.byte_classes.set_range(r.start(), r.end());
+        holes.push(
+            self.push_hole(InstHole::Bytes { start: r.start(), end: r.end() }),
+        );
+        self.fill(prev_hole, next);
+        Ok(Some(Patch { hole: Hole::Many(holes), entry: first_split_entry }))
+    }",0,,
+"    fn maybe_direct_reload(&self, insn: &I, reg: VirtualReg, slot: SpillSlot) -> Option<I> {
+        insn.maybe_direct_reload(reg, slot)
+    }",0,,
+"fn test_jle_imm() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov32 r0, 0
+        mov32 r1, 5
+        jle r1, 4, +1
+        jle r1, 6, +1
+        exit
+        jle r1, 5, +1
+        exit
+        mov32 r0, 1
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x1 } },
+        7
+    );
+}",0,,
+"    pub fn expect_yielded(self, msg: &str) -> YieldedVal {
+        self.yielded().expect(msg)
+    }",0,,
+"fn get() -> H256 {
+		let version = T::Version::get().state_version();
+		H256::decode(&mut &sp_io::storage::root(version)[..])
+			.expect(""Node is configured to use the same hash; qed"")
+	}",0,,
+"fn from(val: i32) -> Val {
+        Val::I32(val)
+    }",0,,
+"pub fn generate_web_proxy_access_token(&self) -> String {
+		let token = random_string(16);
+		let mut tokens = self.web_proxy_tokens.lock();
+		tokens.prune();
+		tokens.insert(token.clone(), ());
+		token
+	}",1,"0,4","	pub fn generate_web_proxy_access_token(&self) -> String {/~/		tokens.insert(token.clone(), ());"
+"pub fn serialize_der(&self) -> der::SignatureArray {
+        fn fill_scalar_with_leading_zero(scalar: &Scalar) -> [u8; 33] {
+            let mut ret = [0u8; 33];
+            scalar.fill_b32(array_mut_ref!(ret, 1, 32));
+            ret
+        }
+
+        let r_full = fill_scalar_with_leading_zero(&self.r);
+        let s_full = fill_scalar_with_leading_zero(&self.s);
+
+        fn integer_slice(full: &[u8; 33]) -> &[u8] {
+            let mut len = 33;
+            while len > 1 &&
+                full[full.len() - len] == 0 &&
+                full[full.len() - len + 1] < 0x80
+            {
+                len -= 1;
+            }
+            &full[(full.len() - len)..]
+        }
+
+        let r = integer_slice(&r_full);
+        let s = integer_slice(&s_full);
+
+        let mut ret = der::SignatureArray::new(6 + r.len() + s.len());
+        {
+            let l = ret.as_mut();
+            l[0] = 0x30;
+            l[1] = 4 + r.len() as u8 + s.len() as u8;
+            l[2] = 0x02;
+            l[3] = r.len() as u8;
+            l[4..(4 + r.len())].copy_from_slice(r);
+            l[4 + r.len()] = 0x02;
+            l[5 + r.len()] = s.len() as u8;
+            l[(6 + r.len())..(6 + r.len() + s.len())].copy_from_slice(s);
+        }
+
+        ret
+    }",0,,
+"pub(crate) fn skip_pooling_allocator_tests() -> bool {
+    
+    
+    
+    std::env::var(""WASMTIME_TEST_NO_HOG_MEMORY"").is_ok()
+}",0,,
+"pub fn new(minimum: u32, maximum: Option<u32>) -> MemoryType {
+        MemoryType {
+            ty: Memory {
+                memory64: false,
+                shared: false,
+                minimum: minimum.into(),
+                maximum: maximum.map(|i| i.into()),
+            },
+        }
+    }",0,,
+"fn test_ldxw() {
+    test_interpreter_and_jit_asm!(
+        ""
+        ldxw r0, [r1+2]
+        exit"",
+        [
+            0xaa, 0xbb, 0x11, 0x22, 0x33, 0x44, 0xcc, 0xdd, 
+        ],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x44332211 } },
+        2
+    );
+}",0,,
+"fn find_unescaped_quote(input: &str) -> Option<usize> {
+    let mut s = input;
+
+    loop {
+        match s.find(|c| c == '\\' || c == '""') {
+            Some(n) => {
+                if s.as_bytes()[n] == b'""' {
+                    return Some(n + (input.len() - s.len()));
+                } else if n + 2 <= s.len() {
+                    s = &s[n + 2..];
+                } else {
+                    return None;
+                }
+            }
+            None => return None,
+        }
+    }
+}",0,,
+"    fn into(self) -> InternalRunResult {
+        InternalRunResult::Normal(self)
+    }",0,,
+"fn call(
+        &mut self,
+        depth: u64,
+        throw: u64,
+        _arg3: u64,
+        _arg4: u64,
+        _arg5: u64,
+        _memory_mapping: &MemoryMapping,
+        result: &mut Result,
+    ) {
+        #[allow(unused_mut)]
+        if depth > 0 {
+            let mut syscall_registry = SyscallRegistry::default();
+            syscall_registry
+                .register_syscall_by_name(
+                    b""NestedVmSyscall"",
+                    NestedVmSyscall::init::<UserContext, UserError>,
+                    NestedVmSyscall::call,
+                )
+                .unwrap();
+            let mem = [depth as u8 - 1, throw as u8];
+            let mut executable = assemble::<UserError, TestInstructionMeter>(
+                ""
+                ldabsb 0
+                mov64 r1, r0
+                ldabsb 1
+                mov64 r2, r0
+                syscall NestedVmSyscall
+                exit"",
+                None,
+                Config::default(),
+                syscall_registry,
+            )
+            .unwrap();
+            test_interpreter_and_jit!(
+                executable,
+                mem,
+                0,
+                {
+                    |_vm, res: Result| {
+                        *result = res;
+                        true
+                    }
+                },
+                if throw == 0 { 6 } else { 5 }
+            );
+        } else {
+            *result = if throw == 0 {
+                Ok(42)
+            } else {
+                Err(EbpfError::CallDepthExceeded(33, 0))
+            };
+        }
+    }",0,,
+"    fn gen_move(&self, to_reg: Writable<RealReg>, from_reg: RealReg, vreg: VirtualReg) -> I {
+        let ty = self.vreg_type(vreg);
+        I::gen_move(to_reg.map(|r| r.to_reg()), from_reg.to_reg(), ty)
+    }",0,,
+"pub(crate) fn comes_from_same_store(&self, store: &StoreOpaque) -> bool {
+        match self {
+            Val::FuncRef(Some(f)) => f.comes_from_same_store(store),
+            Val::FuncRef(None) => true,
+
+            
+            
+            
+            Val::I32(_)
+            | Val::I64(_)
+            | Val::F32(_)
+            | Val::F64(_)
+            | Val::V128(_)
+            | Val::ExternRef(_) => true,
+        }
+    }",0,,
+"fn build(&self) {
+			<Pallet<T>>::store_block(false, U256::zero());
+			frame_support::storage::unhashed::put::<EthereumStorageSchema>(
+				PALLET_ETHEREUM_SCHEMA,
+				&EthereumStorageSchema::V3,
+			);
+		}",0,,
+"fn test_alu64_logic() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov r0, 0
+        mov r1, 1
+        mov r2, 2
+        mov r3, 3
+        mov r4, 4
+        mov r5, 5
+        mov r6, 6
+        mov r7, 7
+        mov r8, 8
+        or r0, r5
+        or r0, 0xa0
+        and r0, 0xa3
+        mov r9, 0x91
+        and r0, r9
+        lsh r0, 32
+        lsh r0, 22
+        lsh r0, r8
+        rsh r0, 32
+        rsh r0, 19
+        rsh r0, r7
+        xor r0, 0x03
+        xor r0, r2
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x11 } },
+        23
+    );
+}",0,,
+"fn test_exit_without_value() {
+    test_interpreter_and_jit_asm!(
+        ""
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x0 } },
+        1
+    );
+}",0,,
+"fn parse_test_module(args: TokenStream, item: TokenStream) -> TokenStream {
+    let input = syn::parse_macro_input!(item as syn::ItemMod);
+    let content = match input.content {
+        Some((_, c)) => c,
+        None => {
+            return syn::Error::new_spanned(&input, ""Couldn't get the module content"")
+                .to_compile_error()
+                .into()
+        }
+    };
+    let args = syn::parse_macro_input!(args as syn::AttributeArgs);
+    let mut skips = Vec::new();
+    for arg in args {
+        match arg {
+            syn::NestedMeta::Meta(syn::Meta::NameValue(namevalue)) => {
+                let ident = namevalue.path.get_ident();
+                if ident.is_none() {
+                    let msg = ""Must have specified ident"";
+                    return syn::Error::new_spanned(namevalue, msg)
+                        .to_compile_error()
+                        .into();
+                }
+                match ident.unwrap().to_string().to_lowercase().as_str() {
+                    ""skip"" => {
+                        let skip_lit = namevalue.lit.clone();
+                        let span = skip_lit.span();
+                        skips = match parse_string(skip_lit, span, ""skip"") {
+                            Ok(s) => s,
+                            Err(_) => {
+                                return syn::Error::new_spanned(
+                                    namevalue,
+                                    ""Expected a value for argument `skip`"",
+                                )
+                                .to_compile_error()
+                                .into();
+                            }
+                        }
+                        .split_whitespace()
+                        .map(|val| val.to_string())
+                        .collect();
+                    }
+                    x => {
+                        let msg = format!(""Unknown attribute {} is specified; expected `skip`"", x);
+                        return syn::Error::new_spanned(namevalue, msg)
+                            .to_compile_error()
+                            .into();
+                    }
+                }
+            }
+            _ => (),
+        }
+    }
+    let modname = &input.ident;
+    if modname.to_string() != ""__private"" {
+        return syn::Error::new_spanned(
+            modname,
+            ""By convention, all the modules using the `dbtest` macro have to be called `__private`"",
+        )
+        .to_compile_error()
+        .into();
+    }
+    let mut rng = thread_rng();
+    let mut in_set = HashSet::<u16>::new();
+
+    let mut result = quote! {};
+    for item in content {
+        
+
+
+
+
+
+
+        let mut rand: u16 = rng.gen_range(1025, 65535);
+        #[cfg(not(target_os = ""windows""))]
+        {
+            while in_set.contains(&rand) {
+                rand = rng.gen_range(1025, 65535);
+            }
+        }
+        #[cfg(target_os = ""windows"")]
+        {
+            in_set.insert(5357);
+            in_set.insert(7680);
+            while in_set.contains(&rand) || (rand >= 49670 && rand <= 50293) {
+                rand = rng.gen_range(1025, 65535);
+            }
+        }
+        in_set.insert(rand);
+        match item {
+            
+            
+            syn::Item::Fn(function) => {
+                if skips.contains(&function.sig.ident.to_string()) {
+                    result = quote! {
+                        #result
+                        #function
+                    };
+                    continue;
+                }
+                let inp = parse_test_sig(function, rand);
+                let __tok: syn::ItemFn = syn::parse_macro_input!(inp as syn::ItemFn);
+                let tok = quote! {
+                    #__tok
+                };
+                result = quote! {
+                    #result
+                    #tok
+                };
+            }
+            token => {
+                result = quote! {
+                    #result
+                    #token
+                };
+            }
+        }
+    }
+    result.into()
+}",1,"73,77,85","let mut rand: u16 = rng.gen_range(1025, 65535);/~/                rand = rng.gen_range(1025, 65535);/~/                rand = rng.gen_range(1025, 65535);"
+"    fn next_inst(&self) -> Patch {
+        Patch { hole: Hole::None, entry: self.insts.len() }
+    }",0,,
+"	fn on_request(&self, req: &hyper::server::Request<hyper::net::HttpStream>, control: &hyper::Control) -> http::RequestMiddlewareAction {
+		self.router.on_request(req, control)
+	}",0,,
+"    pub(crate) fn stdout() -> Self {
+        OutputType::Stdout(io::stdout())
+    }",0,,
+"fn register(&mut self, start: usize, end: usize, module: &Module) {
+        let info = self.0.entry(end).or_insert_with(|| GlobalRegisteredModule {
+            start,
+            module: module.compiled_module().clone(),
+            wasm_backtrace_details_env_used: module
+                .engine()
+                .config()
+                .wasm_backtrace_details_env_used,
+            references: 0,
+        });
+
+        
+        
+        
+        assert_eq!(info.start, start);
+        info.references += 1;
+    }",0,,
+"    pub fn abi(&mut self) -> &mut dyn ABICallee<I = I> {
+        &mut *self.vcode.abi
+    }",0,,

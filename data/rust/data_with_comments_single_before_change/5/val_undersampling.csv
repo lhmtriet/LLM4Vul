@@ -1,0 +1,846 @@
+processed_func,target,flaw_line_index,flaw_line
+"pub fn tweak_add_assign(&mut self, tweak: &SecretKey) -> Result<(), Error> {
+        let mut r = Jacobian::default();
+        let a = Jacobian::from_ge(&self.0);
+        let one = Scalar::from_int(1);
+        ECMULT_CONTEXT.ecmult(&mut r, &a, &one, &tweak.0);
+
+        if r.is_infinity() {
+            return Err(Error::TweakOutOfRange);
+        }
+
+        self.0.set_gej(&r);
+        Ok(())
+    }",0,,
+"fn diff(
+    minus_file: Option<&PathBuf>,
+    plus_file: Option<&PathBuf>,
+    config: &config::Config,
+    writer: &mut dyn Write,
+) -> i32 {
+    use std::io::BufReader;
+    let die = || {
+        eprintln!(
+            ""\
+The main way to use delta is to configure it as the pager for git: \
+see https://github.com/dandavison/delta#configuration. \
+You can also use delta to diff two files: `delta file_A file_B`.""
+        );
+        process::exit(config.error_exit_code);
+    };
+    let diff_command = ""git"";
+    let minus_file = minus_file.unwrap_or_else(die);
+    let plus_file = plus_file.unwrap_or_else(die);
+    let mut diff_process = process::Command::new(PathBuf::from(diff_command))
+        .args(&[""diff"", ""--no-index""])
+        .args(&[minus_file, plus_file])
+        .stdout(process::Stdio::piped())
+        .spawn()
+        .unwrap_or_else(|err| {
+            eprintln!(""Failed to execute the command '{}': {}"", diff_command, err);
+            process::exit(config.error_exit_code);
+        });
+
+    let exit_code = diff_process
+        .wait()
+        .unwrap_or_else(|_| {
+            delta_unreachable(&format!(""'{}' process not running."", diff_command));
+        })
+        .code()
+        .unwrap_or_else(|| {
+            eprintln!(""'{}' process terminated without exit status."", diff_command);
+            process::exit(config.error_exit_code);
+        });
+
+    if let Err(error) = delta(
+        BufReader::new(diff_process.stdout.unwrap()).byte_lines(),
+        writer,
+        &config,
+    ) {
+        match error.kind() {
+            ErrorKind::BrokenPipe => process::exit(0),
+            _ => {
+                eprintln!(""{}"", error);
+                process::exit(config.error_exit_code);
+            }
+        }
+    };
+    exit_code
+}",1,19,    let mut diff_process = process::Command::new(PathBuf::from(diff_command))
+"fn test_nested_vm_syscall() {
+    let config = Config::default();
+    let mut nested_vm_syscall = NestedVmSyscall {};
+    let memory_mapping = MemoryMapping::new::<UserError>(vec![], &config).unwrap();
+    let mut result = Ok(0);
+    nested_vm_syscall.call(1, 0, 0, 0, 0, &memory_mapping, &mut result);
+    assert!(result.unwrap() == 42);
+    let mut result = Ok(0);
+    nested_vm_syscall.call(1, 1, 0, 0, 0, &memory_mapping, &mut result);
+    assert!(matches!(result.unwrap_err(),
+        EbpfError::CallDepthExceeded(pc, depth)
+        if pc == 33 && depth == 0
+    ));
+}",0,,
+"pub fn execute(
+		from: H160,
+		transaction: &Transaction,
+		config: Option<evm::Config>,
+	) -> Result<
+		(Option<H160>, Option<H160>, CallOrCreateInfo),
+		DispatchErrorWithPostInfo<PostDispatchInfo>,
+	> {
+		let (
+			input,
+			value,
+			gas_limit,
+			max_fee_per_gas,
+			max_priority_fee_per_gas,
+			nonce,
+			action,
+			access_list,
+		) = {
+			match transaction {
+				// max_fee_per_gas and max_priority_fee_per_gas in legacy and 2930 transactions is
+				// the provided gas_price.
+				Transaction::Legacy(t) => (
+					t.input.clone(),
+					t.value,
+					t.gas_limit,
+					Some(t.gas_price),
+					Some(t.gas_price),
+					Some(t.nonce),
+					t.action,
+					Vec::new(),
+				),
+				Transaction::EIP2930(t) => {
+					let access_list: Vec<(H160, Vec<H256>)> = t
+						.access_list
+						.iter()
+						.map(|item| (item.address, item.storage_keys.clone()))
+						.collect();
+					(
+						t.input.clone(),
+						t.value,
+						t.gas_limit,
+						Some(t.gas_price),
+						Some(t.gas_price),
+						Some(t.nonce),
+						t.action,
+						access_list,
+					)
+				}
+				Transaction::EIP1559(t) => {
+					let access_list: Vec<(H160, Vec<H256>)> = t
+						.access_list
+						.iter()
+						.map(|item| (item.address, item.storage_keys.clone()))
+						.collect();
+					(
+						t.input.clone(),
+						t.value,
+						t.gas_limit,
+						Some(t.max_fee_per_gas),
+						Some(t.max_priority_fee_per_gas),
+						Some(t.nonce),
+						t.action,
+						access_list,
+					)
+				}
+			}
+		};
+
+		let is_transactional = true;
+		let validate = false;
+		match action {
+			ethereum::TransactionAction::Call(target) => {
+				let res = match T::Runner::call(
+					from,
+					target,
+					input,
+					value,
+					gas_limit.low_u64(),
+					max_fee_per_gas,
+					max_priority_fee_per_gas,
+					nonce,
+					access_list,
+					is_transactional,
+					validate,
+					config.as_ref().unwrap_or_else(|| T::config()),
+				) {
+					Ok(res) => res,
+					Err(e) => {
+						return Err(DispatchErrorWithPostInfo {
+							post_info: PostDispatchInfo {
+								actual_weight: Some(e.weight),
+								pays_fee: Pays::Yes,
+							},
+							error: e.error.into(),
+						})
+					}
+				};
+
+				Ok((Some(target), None, CallOrCreateInfo::Call(res)))
+			}
+			ethereum::TransactionAction::Create => {
+				let res = match T::Runner::create(
+					from,
+					input,
+					value,
+					gas_limit.low_u64(),
+					max_fee_per_gas,
+					max_priority_fee_per_gas,
+					nonce,
+					access_list,
+					is_transactional,
+					validate,
+					config.as_ref().unwrap_or_else(|| T::config()),
+				) {
+					Ok(res) => res,
+					Err(e) => {
+						return Err(DispatchErrorWithPostInfo {
+							post_info: PostDispatchInfo {
+								actual_weight: Some(e.weight),
+								pays_fee: Pays::Yes,
+							},
+							error: e.error.into(),
+						})
+					}
+				};
+
+				Ok((None, Some(res.value), CallOrCreateInfo::Create(res)))
+			}
+		}
+	}",1,"77,105","gas_limit.low_u64(),/~/					gas_limit.low_u64(),"
+"fn test_be16() {
+    test_interpreter_and_jit_asm!(
+        ""
+        ldxh r0, [r1]
+        be16 r0
+        exit"",
+        [0x11, 0x22],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x1122 } },
+        3
+    );
+}",0,,
+"pub fn native_version() -> NativeVersion {
+	NativeVersion {
+		runtime_version: VERSION,
+		can_author_with: Default::default(),
+	}
+}",0,,
+"fn pass_funcref_in_and_out_of_wasm() -> anyhow::Result<()> {
+    let (mut store, module) = ref_types_module(
+        r#""
+            (module
+                (func (export ""func"") (param funcref) (result funcref)
+                    local.get 0
+                )
+            )
+        ""#,
+    )?;
+
+    let instance = Instance::new(&mut store, &module, &[])?;
+    let func = instance.get_func(&mut store, ""func"").unwrap();
+
+    // Pass in a non-null funcref.
+    {
+        let mut results = [Val::I32(0)];
+        func.call(
+            &mut store,
+            &[Val::FuncRef(Some(func.clone()))],
+            &mut results,
+        )?;
+
+        // Can't compare `Func` for equality, so this is the best we can do here.
+        let result_func = results[0].unwrap_funcref().unwrap();
+        assert_eq!(func.ty(&store), result_func.ty(&store));
+    }
+
+    // Pass in a null funcref.
+    {
+        let mut results = [Val::I32(0)];
+        func.call(&mut store, &[Val::FuncRef(None)], &mut results)?;
+        let result_func = results[0].unwrap_funcref();
+        assert!(result_func.is_none());
+    }
+
+    // Pass in a `funcref` from another instance.
+    {
+        let other_instance = Instance::new(&mut store, &module, &[])?;
+        let other_instance_func = other_instance.get_func(&mut store, ""func"").unwrap();
+
+        let mut results = [Val::I32(0)];
+        func.call(
+            &mut store,
+            &[Val::FuncRef(Some(other_instance_func.clone()))],
+            &mut results,
+        )?;
+        assert_eq!(results.len(), 1);
+
+        // Can't compare `Func` for equality, so this is the best we can do here.
+        let result_func = results[0].unwrap_funcref().unwrap();
+        assert_eq!(other_instance_func.ty(&store), result_func.ty(&store));
+    }
+
+    // Passing in a `funcref` from another store fails.
+    {
+        let (mut other_store, other_module) = ref_types_module(r#""(module (func (export ""f"")))""#)?;
+        let other_store_instance = Instance::new(&mut other_store, &other_module, &[])?;
+        let f = other_store_instance
+            .get_func(&mut other_store, ""f"")
+            .unwrap();
+
+        assert!(func
+            .call(&mut store, &[Val::FuncRef(Some(f))], &mut [Val::I32(0)])
+            .is_err());
+    }
+
+    Ok(())
+}",1,56,"        let (mut other_store, other_module) = ref_types_module(r#""(module (func (export ""f"")))""#)?;"
+"pub(crate) unsafe fn from_checked_anyfunc(
+    anyfunc: *mut wasmtime_runtime::VMCallerCheckedAnyfunc,
+    store: &mut StoreOpaque,
+) -> Val {
+    Val::FuncRef(Func::from_caller_checked_anyfunc(store, anyfunc))
+}",0,,
+"fn main() -> std::io::Result<()> {
+    env::set_var(""RUST_LOG"", ""swhks=trace"");
+    env_logger::init();
+
+    let pid_file_path = String::from(""/tmp/swhks.pid"");
+    let sock_file_path = String::from(format!(""/run/user/{}/swhkd.sock"", unistd::Uid::current()));
+
+    if Path::new(&pid_file_path).exists() {
+        log::trace!(""Reading {} file and checking for running instances."", pid_file_path);
+        let swhkd_pid = match fs::read_to_string(&pid_file_path) {
+            Ok(swhkd_pid) => swhkd_pid,
+            Err(e) => {
+                log::error!(""Unable to read {} to check all running instances"", e);
+                exit(1);
+            }
+        };
+        log::debug!(""Previous PID: {}"", swhkd_pid);
+
+        let mut sys = System::new_all();
+        sys.refresh_all();
+        for (pid, process) in sys.processes() {
+            if pid.to_string() == swhkd_pid && process.exe() == env::current_exe().unwrap() {
+                log::error!(""Server is already running!"");
+                exit(1);
+            }
+        }
+    }
+
+    if Path::new(&sock_file_path).exists() {
+        log::trace!(""Sockfile exists, attempting to remove it."");
+        match fs::remove_file(&sock_file_path) {
+            Ok(_) => {
+                log::debug!(""Removed old socket file"");
+            }
+            Err(e) => {
+                log::error!(""Error removing the socket file!: {}"", e);
+                log::error!(""You can manually remove the socket file: {}"", sock_file_path);
+                exit(1);
+            }
+        };
+    }
+
+    match fs::write(&pid_file_path, id().to_string()) {
+        Ok(_) => {}
+        Err(e) => {
+            log::error!(""Unable to write to {}: {}"", pid_file_path, e);
+            exit(1);
+        }
+    }
+
+    let listener = UnixListener::bind(sock_file_path)?;
+    loop {
+        match listener.accept() {
+            Ok((mut socket, address)) => {
+                let mut response = String::new();
+                socket.read_to_string(&mut response)?;
+                run_system_command(&response);
+                log::debug!(""Socket: {:?} Address: {:?} Response: {}"", socket, address, response);
+            }
+            Err(e) => log::error!(""accept function failed: {:?}"", e),
+        }
+    }
+}",1,4,"    let pid_file_path = String::from(""/tmp/swhks.pid"");"
+"	pub fn current_receipts() -> Option<Vec<ethereum::Receipt>> {
+		CurrentReceipts::<T>::get()
+	}",0,,
+"fn test_lddw() {
+    test_interpreter_and_jit_asm!(
+        ""
+        lddw r0, 0x1122334455667788
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x1122334455667788 } },
+        2
+    );
+    test_interpreter_and_jit_asm!(
+        ""
+        lddw r0, 0x0000000080000000
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x80000000 } },
+        2
+    );
+}",0,,
+"    fn deref_mut(&mut self) -> &mut Self::Target {
+        unsafe { self.inst.as_mut() }
+    }",0,,
+"pub fn retrieve_less_version(less_path: &dyn AsRef<OsStr>) -> Option<usize> {
+    let cmd = Command::new(less_path).arg(""--version"").output().ok()?;
+    parse_less_version(&cmd.stdout)
+}",1,1,"    let cmd = Command::new(less_path).arg(""--version"").output().ok()?;"
+"    fn c_repeat(&mut self, rep: &hir::Repetition) -> ResultOrEmpty {
+        use regex_syntax::hir::RepetitionKind::*;
+        match rep.kind {
+            ZeroOrOne => self.c_repeat_zero_or_one(&rep.hir, rep.greedy),
+            ZeroOrMore => self.c_repeat_zero_or_more(&rep.hir, rep.greedy),
+            OneOrMore => self.c_repeat_one_or_more(&rep.hir, rep.greedy),
+            Range(hir::RepetitionRange::Exactly(min_max)) => {
+                self.c_repeat_range(&rep.hir, rep.greedy, min_max, min_max)
+            }
+            Range(hir::RepetitionRange::AtLeast(min)) => {
+                self.c_repeat_range_min_or_more(&rep.hir, rep.greedy, min)
+            }
+            Range(hir::RepetitionRange::Bounded(min, max)) => {
+                self.c_repeat_range(&rep.hir, rep.greedy, min, max)
+            }
+        }
+    }",0,,
+"fn reject_request(&self, id: U256) -> Result<bool, Error> {
+		let res = self.signer.request_rejected(id.into());
+		Ok(res.is_some())
+	}",0,,
+"pub(crate) fn tokenize(mut input: &str) -> Vec<(Token, Span)> {
+    let mut result = vec![];
+    let mut offset = 0;
+
+    loop {
+        let input_len = input.len();
+        input = input.trim_start();
+        while input.starts_with('#') {
+            input = input.trim_start_matches(|c| c != '\n').trim_start();
+        }
+        offset += input_len - input.len();
+
+        match input.chars().next() {
+            None => break,
+            Some(c) => {
+                let (len, token) = consume_chain! {
+                    input, c;
+
+                    if input.starts_with(""<%"") => (2, Token::BStart);
+                    if input.starts_with(""%>"") => (2, Token::BEnd);
+                    if input.starts_with("">>"") => (2, Token::LookAhead);
+                    if input.starts_with(""<<"") => (2, Token::LookBehind);
+                    if input.starts_with(""::"") => (2, Token::Backref);
+
+                    if c == '%' => (1, Token::BWord);
+                    if c == '*' => (1, Token::Star);
+                    if c == '+' => (1, Token::Plus);
+                    if c == '?' => (1, Token::QuestionMark);
+                    if c == '|' => (1, Token::Pipe);
+                    if c == ':' => (1, Token::Colon);
+                    if c == ')' => (1, Token::CloseParen);
+                    if c == '{' => (1, Token::OpenBrace);
+                    if c == '}' => (1, Token::CloseBrace);
+                    if c == ',' => (1, Token::Comma);
+                    if c == '!' => (1, Token::Not);
+                    if c == '[' => (1, Token::OpenBracket);
+                    if c == '-' => (1, Token::Dash);
+                    if c == ']' => (1, Token::CloseBracket);
+                    if c == '.' => (1, Token::Dot);
+                    if c == ';' => (1, Token::Semicolon);
+                    if c == '=' => (1, Token::Equals);
+
+                    if c == '\'' => match input[1..].find('\'') {
+                        Some(len_inner) => (len_inner + 2, Token::String),
+                        None => (input.len(), Token::ErrorMsg(ParseErrorMsg::UnclosedString)),
+                    };
+
+                    if c == '""' => match find_unescaped_quote(&input[1..]) {
+                        Some(len_inner) => (len_inner + 2, Token::String),
+                        None => (input.len(), Token::ErrorMsg(ParseErrorMsg::UnclosedString)),
+                    };
+
+                    if let Some(rest) = input.strip_prefix(""U+"") => {
+                        match rest.find(|c: char| !c.is_ascii_hexdigit()) {
+                            Some(0) => (1, Token::Error),
+                            Some(len_inner) => (len_inner + 2, Token::CodePoint),
+                            None => (input.len(), Token::CodePoint),
+                        }
+                    };
+
+                    if matches!(c, '0'..='9') => (
+                        input.find(|c: char| !matches!(c, '0'..='9')).unwrap_or(input.len()),
+                        Token::Number,
+                    );
+
+                    if c.is_alphabetic() || c == '_' => (
+                        input.find(|c: char| !c.is_alphanumeric() && c != '_').unwrap_or(input.len()),
+                        Token::Identifier,
+                    );
+
+                    if c == '^' => (1, Token::ErrorMsg(ParseErrorMsg::Caret));
+                    if c == '$' => (1, Token::ErrorMsg(ParseErrorMsg::Dollar));
+
+                    if let Some(rest) = input.strip_prefix(""(?"") => (
+                        match rest.chars().next() {
+                            Some('<') => {
+                                let name_len = rest.chars()
+                                    .skip(1)
+                                    .take_while(char::is_ascii_alphanumeric)
+                                    .count();
+
+                                if name_len > 0 && matches!(rest.chars().nth(1 + name_len), Some('>')) {
+                                    4 + name_len
+                                } else if let Some('=' | '!') = rest.chars().nth(1) {
+                                    4
+                                } else {
+                                    3
+                                }
+                            }
+                            Some('P') if matches!(rest.chars().nth(1), Some('<')) => {
+                                let name_len = rest.chars()
+                                    .skip(2)
+                                    .take_while(char::is_ascii_alphanumeric)
+                                    .count();
+
+                                if name_len > 0 && matches!(rest.chars().nth(2 + name_len), Some('>')) {
+                                    5 + name_len
+                                } else {
+                                    4
+                                }
+                            },
+                            Some('>' | '!' | ':' | '=' | '(' | '|') => 3,
+                            _ => 2,
+                        },
+                        Token::ErrorMsg(ParseErrorMsg::SpecialGroup),
+                    );
+                    if c == '(' => (1, Token::OpenParen);
+
+                    if c == '\\' => {
+                        if input.starts_with(""\\u{"") || input.starts_with(""\\x{"") {
+                            match input[3..].find('}') {
+                                Some(len) => (len + 4, Token::ErrorMsg(ParseErrorMsg::BackslashUnicode)),
+                                None => (2, Token::ErrorMsg(ParseErrorMsg::Backslash)),
+                            }
+                        } else if let Some(rest) = input.strip_prefix(""\\u"") {
+                            match rest.find(|c: char| !c.is_ascii_hexdigit()).unwrap_or(rest.len()) {
+                                4.. => (6, Token::ErrorMsg(ParseErrorMsg::BackslashU4)),
+                                _ => (2, Token::ErrorMsg(ParseErrorMsg::Backslash)),
+                            }
+                        } else if let Some(rest) = input.strip_prefix(""\\x"") {
+                            match rest.find(|c: char| !c.is_ascii_hexdigit()).unwrap_or(rest.len()) {
+                                2.. => (4, Token::ErrorMsg(ParseErrorMsg::BackslashX2)),
+                                _ => (2, Token::ErrorMsg(ParseErrorMsg::Backslash)),
+                            }
+                        } else if let Some(rest) = input.strip_prefix(""\\k<"") {
+                            match rest.find('>') {
+                                Some(len) => (len + 4, Token::ErrorMsg(ParseErrorMsg::BackslashK)),
+                                _ => (2, Token::ErrorMsg(ParseErrorMsg::Backslash)),
+                            }
+                        } else if input.len() >= 2 {
+                            (2, Token::ErrorMsg(ParseErrorMsg::Backslash))
+                        } else {
+                            (1, Token::Error)
+                        }
+                    };
+                };
+
+                let start = offset;
+                offset += len;
+                input = &input[len..];
+                result.push((token, Span::new(start, offset)));
+            }
+        }
+    }
+
+    result
+}",1,"129,130","} else if input.len() >= 2 {/~/                            (2, Token::ErrorMsg(ParseErrorMsg::Backslash))"
+"pub fn emit(
+        &self,
+    ) -> (
+        MachBuffer<I>,
+        Vec<CodeOffset>,
+        Vec<(CodeOffset, CodeOffset)>,
+    )
+    where
+        I: MachInstEmit,
+    {
+        let _tt = timing::vcode_emit();
+        let mut buffer = MachBuffer::new();
+        let mut state = I::State::new(&*self.abi);
+        let cfg_metadata = self.flags().machine_code_cfg_info();
+        let mut bb_starts: Vec<Option<CodeOffset>> = vec![];
+
+        // The first M MachLabels are reserved for block indices, the next N MachLabels for
+        // constants.
+        buffer.reserve_labels_for_blocks(self.num_blocks() as BlockIndex);
+        buffer.reserve_labels_for_constants(&self.constants);
+
+        let mut inst_end_offsets = vec![0; self.insts.len()];
+        let mut label_inst_indices = vec![0; self.num_blocks()];
+
+        // Construct the final order we emit code in: cold blocks at the end.
+        let mut final_order: SmallVec<[BlockIndex; 16]> = smallvec![];
+        let mut cold_blocks: SmallVec<[BlockIndex; 16]> = smallvec![];
+        for block in 0..self.num_blocks() {
+            let block = block as BlockIndex;
+            if self.block_order.is_cold(block) {
+                cold_blocks.push(block);
+            } else {
+                final_order.push(block);
+            }
+        }
+        let first_cold_block = cold_blocks.first().cloned();
+        final_order.extend(cold_blocks.clone());
+
+        // Emit blocks.
+        let mut safepoint_idx = 0;
+        let mut cur_srcloc = None;
+        let mut last_offset = None;
+        let mut start_of_cold_code = None;
+        for block in final_order {
+            let new_offset = I::align_basic_block(buffer.cur_offset());
+            while new_offset > buffer.cur_offset() {
+                // Pad with NOPs up to the aligned block offset.
+                let nop = I::gen_nop((new_offset - buffer.cur_offset()) as usize);
+                nop.emit(&mut buffer, &self.emit_info, &mut Default::default());
+            }
+            assert_eq!(buffer.cur_offset(), new_offset);
+
+            if Some(block) == first_cold_block {
+                start_of_cold_code = Some(buffer.cur_offset());
+            }
+
+            let (start, end) = self.block_ranges[block as usize];
+            buffer.bind_label(MachLabel::from_block(block));
+            label_inst_indices[block as usize] = start;
+
+            if cfg_metadata {
+                // Track BB starts. If we have backed up due to MachBuffer
+                // branch opts, note that the removed blocks were removed.
+                let cur_offset = buffer.cur_offset();
+                if last_offset.is_some() && cur_offset <= last_offset.unwrap() {
+                    for i in (0..bb_starts.len()).rev() {
+                        if bb_starts[i].is_some() && cur_offset > bb_starts[i].unwrap() {
+                            break;
+                        }
+                        bb_starts[i] = None;
+                    }
+                }
+                bb_starts.push(Some(cur_offset));
+                last_offset = Some(cur_offset);
+            }
+
+            for iix in start..end {
+                let srcloc = self.srclocs[iix as usize];
+                if cur_srcloc != Some(srcloc) {
+                    if cur_srcloc.is_some() {
+                        buffer.end_srcloc();
+                    }
+                    buffer.start_srcloc(srcloc);
+                    cur_srcloc = Some(srcloc);
+                }
+                state.pre_sourceloc(cur_srcloc.unwrap_or(SourceLoc::default()));
+
+                if safepoint_idx < self.safepoint_insns.len()
+                    && self.safepoint_insns[safepoint_idx] == iix
+                {
+                    if self.safepoint_slots[safepoint_idx].len() > 0 {
+                        let stack_map = self.abi.spillslots_to_stack_map(
+                            &self.safepoint_slots[safepoint_idx][..],
+                            &state,
+                        );
+                        state.pre_safepoint(stack_map);
+                    }
+                    safepoint_idx += 1;
+                }
+
+                self.insts[iix as usize].emit(&mut buffer, &self.emit_info, &mut state);
+
+                if self.generate_debug_info {
+                    // Buffer truncation may have happened since last inst append; trim inst-end
+                    // layout info as appropriate.
+                    let l = &mut inst_end_offsets[0..iix as usize];
+                    for end in l.iter_mut().rev() {
+                        if *end > buffer.cur_offset() {
+                            *end = buffer.cur_offset();
+                        } else {
+                            break;
+                        }
+                    }
+                    inst_end_offsets[iix as usize] = buffer.cur_offset();
+                }
+            }
+
+            if cur_srcloc.is_some() {
+                buffer.end_srcloc();
+                cur_srcloc = None;
+            }
+
+            // Do we need an island? Get the worst-case size of the next BB and see if, having
+            // emitted that many bytes, we will be beyond the deadline.
+            if block < (self.num_blocks() - 1) as BlockIndex {
+                let next_block = block + 1;
+                let next_block_range = self.block_ranges[next_block as usize];
+                let next_block_size = next_block_range.1 - next_block_range.0;
+                let worst_case_next_bb = I::worst_case_size() * next_block_size;
+                if buffer.island_needed(worst_case_next_bb) {
+                    buffer.emit_island(worst_case_next_bb);
+                }
+            }
+        }
+
+        // Emit the constants used by the function.
+        for (constant, data) in self.constants.iter() {
+            let label = buffer.get_label_for_constant(constant);
+            buffer.defer_constant(label, data.alignment(), data.as_slice(), u32::max_value());
+        }
+
+        if self.generate_debug_info {
+            for end in inst_end_offsets.iter_mut().rev() {
+                if *end > buffer.cur_offset() {
+                    *end = buffer.cur_offset();
+                } else {
+                    break;
+                }
+            }
+            *self.insts_layout.borrow_mut() = InstsLayoutInfo {
+                inst_end_offsets,
+                label_inst_indices,
+                start_of_cold_code,
+            };
+        }
+
+        // Create `bb_edges` and final (filtered) `bb_starts`.
+        let mut final_bb_starts = vec![];
+        let mut bb_edges = vec![];
+        if cfg_metadata {
+            for block in 0..self.num_blocks() {
+                if bb_starts[block].is_none() {
+                    // Block was deleted by MachBuffer; skip.
+                    continue;
+                }
+                let from = bb_starts[block].unwrap();
+
+                final_bb_starts.push(from);
+                // Resolve each `succ` label and add edges.
+                let succs = self.block_succs(BlockIx::new(block as u32));
+                for succ in succs.iter() {
+                    let to = buffer.resolve_label_offset(MachLabel::from_block(succ.get()));
+                    bb_edges.push((from, to));
+                }
+            }
+        }
+
+        (buffer, final_bb_starts, bb_edges)
+    }",1,"39,87,88,89,90,91,92,93,94,95,96,97","let mut safepoint_idx = 0;/~/                if safepoint_idx < self.safepoint_insns.len()/~/                    && self.safepoint_insns[safepoint_idx] == iix/~/                {/~/                    if self.safepoint_slots[safepoint_idx].len() > 0 {/~/                        let stack_map = self.abi.spillslots_to_stack_map(/~/                            &self.safepoint_slots[safepoint_idx][..],/~/                            &state,/~/                        );/~/                        state.pre_safepoint(stack_map);/~/                    }/~/                    safepoint_idx += 1;"
+"pub fn generate_web_proxy_access_token(&self) -> String {
+		let token = random_string(16);
+		let mut tokens = self.web_proxy_tokens.lock();
+		tokens.prune();
+		tokens.insert(token.clone(), ());
+		token
+	}",1,"0,4","	pub fn generate_web_proxy_access_token(&self) -> String {/~/		tokens.insert(token.clone(), ());"
+"    fn iter_elements(&self) -> Self::IterElem {
+        Input { source: self.source, tokens: self.tokens }
+    }",1,1,"        Input { source: self.source, tokens: self.tokens }"
+"    fn drop(&mut self) {
+        if self.needs_inst_drop {
+            unsafe {
+                let inst = self.inst.as_mut();
+
+                // Grab a handle to the region to ensure it outlives `inst`.
+                //
+                // This ensures that the region won't be dropped by `inst` being
+                // dropped, which could result in `inst` being unmapped by the
+                // Region *during* drop of the Instance's fields.
+                let region: Arc<dyn RegionInternal> = inst.alloc().region.clone();
+
+                // drop the actual instance
+                std::ptr::drop_in_place(inst);
+
+                // and now we can drop what may be the last Arc<Region>. If it is
+                // it can safely do what it needs with memory; we're not running
+                // destructors on it anymore.
+                mem::drop(region);
+            }
+        }
+    }",1,"5,7,8,9,10,15,16,17,18","                // Grab a handle to the region to ensure it outlives `inst`./~/                // This ensures that the region won't be dropped by `inst` being/~/                // dropped, which could result in `inst` being unmapped by the/~/                // Region *during* drop of the Instance's fields./~/                let region: Arc<dyn RegionInternal> = inst.alloc().region.clone();/~/                // and now we can drop what may be the last Arc<Region>. If it is/~/                // it can safely do what it needs with memory; we're not running/~/                // destructors on it anymore./~/                mem::drop(region);"
+"    pub(super) fn from(source: &'i str, tokens: &'b [(Token, Span)]) -> Result<Self, ParseError> {
+        let error = tokens.iter().find_map(|&(t, span)| match t {
+            Token::Error => Some((span, None)),
+            Token::ErrorMsg(m) => Some((span, Some(m))),
+            _ => None,
+        });
+        if let Some((span, msg)) = error {
+            return match msg {
+                Some(msg) => Err(ParseErrorKind::LexErrorWithMessage(msg).at(span)),
+                None => Err(ParseErrorKind::UnknownToken.at(span)),
+            };
+        }
+
+        Ok(Input { source, tokens })
+    }",1,"0,13","    pub(super) fn from(source: &'i str, tokens: &'b [(Token, Span)]) -> Result<Self, ParseError> {/~/        Ok(Input { source, tokens })"
+"    fn drop(&mut self) {
+        if let Some(thread) = self.thread.take() {
+            let (lock, cvar) = &*self.state;
+            // Signal our thread that we've been dropped and wake it up if it's
+            // blocked.
+            let mut g = lock.lock().unwrap();
+            *g = true;
+            cvar.notify_one();
+            drop(g);
+
+            // ... and then wait for the thread to exit to ensure we clean up
+            // after ourselves.
+            thread.join().unwrap();
+        }
+    }",0,,
+"    fn push_split_hole(&mut self) -> Hole {
+        let hole = self.insts.len();
+        self.insts.push(MaybeInst::Split);
+        Hole::One(hole)
+    }",0,,
+"	fn generate_web_proxy_token(&self) -> Result<String, Error> {
+		Ok(self.signer.generate_web_proxy_access_token())
+	}",1,"0,1","	fn generate_web_proxy_token(&self) -> Result<String, Error> {/~/		Ok(self.signer.generate_web_proxy_access_token())"
+"fn check_overflow(&self) -> bool {
+        let mut yes: bool = false;
+        let mut no: bool = false;
+        no = no || (self.0[7] < SECP256K1_N_7); /* No need for a > check. */
+        no = no || (self.0[6] < SECP256K1_N_6); /* No need for a > check. */
+        no = no || (self.0[5] < SECP256K1_N_5); /* No need for a > check. */
+        no = no || (self.0[4] < SECP256K1_N_4);
+        yes = yes || ((self.0[4] > SECP256K1_N_4) && !no);
+        no = no || ((self.0[3] < SECP256K1_N_3) && !yes);
+        yes = yes || ((self.0[3] > SECP256K1_N_3) && !no);
+        no = no || ((self.0[2] < SECP256K1_N_2) && !yes);
+        yes = yes || ((self.0[2] > SECP256K1_N_2) && !no);
+        no = no || ((self.0[1] < SECP256K1_N_1) && !yes);
+        yes = yes || ((self.0[1] > SECP256K1_N_1) && !no);
+        yes = yes || ((self.0[0] >= SECP256K1_N_0) && !no);
+        return yes;
+    }",1,"1,2,3,4,5,6,7,8,9,10,11,12,13,14,15",let mut yes: bool = false;/~/        let mut no: bool = false;/~/        no = no || (self.0[7] < SECP256K1_N_7); /* No need for a > check. *//~/        no = no || (self.0[6] < SECP256K1_N_6); /* No need for a > check. *//~/        no = no || (self.0[5] < SECP256K1_N_5); /* No need for a > check. *//~/        no = no || (self.0[4] < SECP256K1_N_4);/~/        yes = yes || ((self.0[4] > SECP256K1_N_4) && !no);/~/        no = no || ((self.0[3] < SECP256K1_N_3) && !yes);/~/        yes = yes || ((self.0[3] > SECP256K1_N_3) && !no);/~/        no = no || ((self.0[2] < SECP256K1_N_2) && !yes);/~/        yes = yes || ((self.0[2] > SECP256K1_N_2) && !no);/~/        no = no || ((self.0[1] < SECP256K1_N_1) && !yes);/~/        yes = yes || ((self.0[1] > SECP256K1_N_1) && !no);/~/        yes = yes || ((self.0[0] >= SECP256K1_N_0) && !no);/~/        return yes;
+"pub fn new(size: usize, host: &String) -> Netpool {
+            assert!(size > 0);
+            let (sender, receiver) = mpsc::channel();
+            let receiver = Arc::new(Mutex::new(receiver));
+            let mut workers = Vec::with_capacity(size);
+            for _ in 0..size {
+                workers.push(Worker::new(Arc::clone(&receiver), host.to_owned()));
+            }
+            Netpool { workers, sender }
+        }",0,,

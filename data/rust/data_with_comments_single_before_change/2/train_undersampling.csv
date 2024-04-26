@@ -1,0 +1,2360 @@
+processed_func,target,flaw_line_index,flaw_line
+"fn test_entrypoint_exit() {
+    // With fixed frames we used to exit the entrypoint when we reached an exit
+    // instruction and the stack size was 1 * config.stack_frame_size, which
+    // meant that we were in the entrypoint's frame.  With dynamic frames we
+    // can't infer anything from the stack size so we track call depth
+    // explicitly. Make sure exit still works with both fixed and dynamic
+    // frames.
+    for dynamic_stack_frames in [false, true] {
+        let config = Config {
+            dynamic_stack_frames,
+            ..Config::default()
+        };
+
+        // This checks that when foo exits we don't stop execution even if the
+        // stack is empty (stack size and call depth are decoupled)
+        test_interpreter_and_jit_asm!(
+            ""
+            entrypoint:
+            call foo
+            mov r0, 42
+            exit
+            foo:
+            mov r0, 12
+            exit"",
+            config,
+            [],
+            (),
+            0,
+            { |_vm, res: Result| { res.unwrap() == 42 } },
+            5
+        );
+    }
+}",0,,
+"fn test_tight_infinite_recursion() {
+    test_interpreter_and_jit_asm!(
+        ""
+        entrypoint:
+        mov64 r3, 0x41414141
+        call entrypoint
+        exit"",
+        [],
+        (),
+        0,
+        {
+            |_vm, res: Result| {
+                matches!(res.unwrap_err(),
+                    EbpfError::ExceededMaxInstructions(pc, initial_insn_count)
+                    if pc == 31 && initial_insn_count == 4
+                )
+            }
+        },
+        4
+    );
+}",0,,
+"pub fn add_in_place(&mut self, a: &Scalar, b: &Scalar) -> bool {
+        let mut overflow: u64;
+        let mut t: u64 = (a.0[0] as u64) + (b.0[0] as u64);
+        self.0[0] = (t & 0xFFFFFFFF) as u32; t >>= 32;
+        t += (a.0[1] as u64) + (b.0[1] as u64);
+        self.0[1] = (t & 0xFFFFFFFF) as u32; t >>= 32;
+        t += (a.0[2] as u64) + (b.0[2] as u64);
+        self.0[2] = (t & 0xFFFFFFFF) as u32; t >>= 32;
+        t += (a.0[3] as u64) + (b.0[3] as u64);
+        self.0[3] = (t & 0xFFFFFFFF) as u32; t >>= 32;
+        t += (a.0[4] as u64) + (b.0[4] as u64);
+        self.0[4] = (t & 0xFFFFFFFF) as u32; t >>= 32;
+        t += (a.0[5] as u64) + (b.0[5] as u64);
+        self.0[5] = (t & 0xFFFFFFFF) as u32; t >>= 32;
+        t += (a.0[6] as u64) + (b.0[6] as u64);
+        self.0[6] = (t & 0xFFFFFFFF) as u32; t >>= 32;
+        t += (a.0[7] as u64) + (b.0[7] as u64);
+        self.0[7] = (t & 0xFFFFFFFF) as u32; t >>= 32;
+        overflow = t + if self.check_overflow() { 1 } else { 0 };
+        debug_assert!(overflow == 0 || overflow == 1);
+        overflow = overflow | if self.reduce(overflow == 1) { 1 } else { 0 };
+        return overflow == 1;
+    }",0,,
+"    pub fn new_pem_based_ssl_connection(
+        key_file: String,
+        chain_file: String,
+        base: BaseListener,
+        tls_passfile: Option<String>,
+    ) -> TResult<Self> {
+        let mut acceptor_builder = SslAcceptor::mozilla_intermediate(SslMethod::tls())?;
+        // cert is the same for both
+        acceptor_builder.set_certificate_chain_file(chain_file)?;
+        if let Some(tls_passfile) = tls_passfile {
+            // first read in the private key
+            let tls_private_key = fs::read(key_file).map_err(|e: IoError| {
+                format!(""Failed to read TLS private key file with error: {}"", e)
+            })?;
+            // read the passphrase because the passphrase file stream was provided
+            let tls_keyfile_stream = fs::read(tls_passfile).map_err(|e: IoError| {
+                format!(
+                    ""Failed to read TLS private key passphrase file with error: {}"",
+                    e
+                )
+            })?;
+            // decrypt the private key
+            let pkey = Rsa::private_key_from_pem_passphrase(&tls_private_key, &tls_keyfile_stream)?;
+            let pkey = PKey::from_rsa(pkey)?;
+            // set the private key for the acceptor
+            acceptor_builder.set_private_key(&pkey)?;
+        } else {
+            // no passphrase, needs interactive
+            acceptor_builder.set_private_key_file(key_file, SslFiletype::PEM)?;
+        }
+        Ok(SslListener {
+            base,
+            acceptor: acceptor_builder.build(),
+        })
+    }",0,,
+"pub fn parse_module(modules_str: &str) -> Result<ast::ModuleDefinition> {
+    let stripped_string = &strip_comments(modules_str);
+    let parser = syntax::ModuleParser::new();
+    match parser.parse(stripped_string) {
+        Ok(module) => Ok(module),
+        Err(e) => handle_error(e, modules_str),
+    }
+}",1,"1,5","    let stripped_string = &strip_comments(modules_str);/~/        Err(e) => handle_error(e, modules_str),"
+"pub(crate) fn ref_types_module(
+    source: &str,
+) -> anyhow::Result<(wasmtime::Store<()>, wasmtime::Module)> {
+    use wasmtime::*;
+
+    let _ = env_logger::try_init();
+
+    let mut config = Config::new();
+    config.wasm_reference_types(true);
+
+    let engine = Engine::new(&config)?;
+    let store = Store::new(&engine, ());
+
+    let module = Module::new(&engine, source)?;
+
+    Ok((store, module))
+}",1,11,"    let store = Store::new(&engine, ());"
+"pub fn parse_program(program_str: &str) -> Result<ast::Program> {
+    let stripped_string = &strip_comments(program_str);
+    let parser = syntax::ProgramParser::new();
+    match parser.parse(stripped_string) {
+        Ok(program) => Ok(program),
+        Err(e) => handle_error(e, program_str),
+    }
+}",1,"1,5","    let stripped_string = &strip_comments(program_str);/~/        Err(e) => handle_error(e, program_str),"
+"fn many_live_refs() -> anyhow::Result<()> {
+    let mut wat = r#""
+        (module
+            ;; Make new `externref`s.
+            (import """" ""make_ref"" (func $make_ref (result externref)))
+
+            ;; Observe an `externref` so it is kept live.
+            (import """" ""observe_ref"" (func $observe_ref (param externref)))
+
+            (func (export ""many_live_refs"")
+    ""#
+    .to_string();
+
+    // This is more than the initial `VMExternRefActivationsTable` capacity, so
+    // it will need to allocate additional bump chunks.
+    const NUM_LIVE_REFS: usize = 1024;
+
+    // Push `externref`s onto the stack.
+    for _ in 0..NUM_LIVE_REFS {
+        wat.push_str(""(call $make_ref)\n"");
+    }
+
+    // Pop `externref`s from the stack. Because we pass each of them to a
+    // function call here, they are all live references for the duration of
+    // their lifetimes.
+    for _ in 0..NUM_LIVE_REFS {
+        wat.push_str(""(call $observe_ref)\n"");
+    }
+
+    wat.push_str(
+        ""
+            ) ;; func
+        ) ;; module
+        "",
+    );
+
+    let (mut store, module) = ref_types_module(&wat)?;
+
+    let live_refs = Arc::new(AtomicUsize::new(0));
+
+    let make_ref = Func::wrap(&mut store, {
+        let live_refs = live_refs.clone();
+        move || Some(ExternRef::new(CountLiveRefs::new(live_refs.clone())))
+    });
+
+    let observe_ref = Func::wrap(&mut store, |r: Option<ExternRef>| {
+        let r = r.unwrap();
+        let r = r.data().downcast_ref::<CountLiveRefs>().unwrap();
+        assert!(r.live_refs.load(SeqCst) > 0);
+    });
+
+    let instance = Instance::new(&mut store, &module, &[make_ref.into(), observe_ref.into()])?;
+    let many_live_refs = instance.get_func(&mut store, ""many_live_refs"").unwrap();
+
+    many_live_refs.call(&mut store, &[], &mut [])?;
+
+    store.gc();
+    assert_eq!(live_refs.load(SeqCst), 0);
+
+    return Ok(());
+
+    struct CountLiveRefs {
+        live_refs: Arc<AtomicUsize>,
+    }
+
+    impl CountLiveRefs {
+        fn new(live_refs: Arc<AtomicUsize>) -> Self {
+            live_refs.fetch_add(1, SeqCst);
+            Self { live_refs }
+        }
+    }
+
+    impl Drop for CountLiveRefs {
+        fn drop(&mut self) {
+            self.live_refs.fetch_sub(1, SeqCst);
+        }
+    }
+}",1,36,"    let (mut store, module) = ref_types_module(&wat)?;"
+"    fn iter_elements(&self) -> Self::IterElem {
+        Input { source: self.source, tokens: self.tokens }
+    }",1,1,"        Input { source: self.source, tokens: self.tokens }"
+"pub fn inv(&self) -> Self {
+        SecretKey(self.0.inv())
+    }",0,,
+"pub fn parse_script(script_str: &str) -> Result<ast::Script> {
+    let stripped_string = &strip_comments(script_str);
+    let parser = syntax::ScriptParser::new();
+    match parser.parse(stripped_string) {
+        Ok(script) => Ok(script),
+        Err(e) => handle_error(e, script_str),
+    }
+}",1,"1,5","    let stripped_string = &strip_comments(script_str);/~/        Err(e) => handle_error(e, script_str),"
+"pub fn retrieve_less_version(less_path: &dyn AsRef<OsStr>) -> Option<usize> {
+    let cmd = Command::new(less_path).arg(""--version"").output().ok()?;
+    parse_less_version(&cmd.stdout)
+}",1,1,"    let cmd = Command::new(less_path).arg(""--version"").output().ok()?;"
+"    fn fill(&mut self, hole: Hole, goto: InstPtr) {
+        match hole {
+            Hole::None => {}
+            Hole::One(pc) => {
+                self.insts[pc].fill(goto);
+            }
+            Hole::Many(holes) => {
+                for hole in holes {
+                    self.fill(hole, goto);
+                }
+            }
+        }
+    }",0,,
+"fn block_hash(number: u32) -> H256 {
+		BlockHash::<T>::get(U256::from(number))
+	}",0,,
+"fn c(&mut self, expr: &Hir) -> ResultOrEmpty {
+        use crate::prog;
+        use regex_syntax::hir::HirKind::*;
+
+        self.check_size()?;
+        match *expr.kind() {
+            Empty => Ok(None),
+            Literal(hir::Literal::Unicode(c)) => self.c_char(c),
+            Literal(hir::Literal::Byte(b)) => {
+                assert!(self.compiled.uses_bytes());
+                self.c_byte(b)
+            }
+            Class(hir::Class::Unicode(ref cls)) => self.c_class(cls.ranges()),
+            Class(hir::Class::Bytes(ref cls)) => {
+                if self.compiled.uses_bytes() {
+                    self.c_class_bytes(cls.ranges())
+                } else {
+                    assert!(cls.is_all_ascii());
+                    let mut char_ranges = vec![];
+                    for r in cls.iter() {
+                        let (s, e) = (r.start() as char, r.end() as char);
+                        char_ranges.push(hir::ClassUnicodeRange::new(s, e));
+                    }
+                    self.c_class(&char_ranges)
+                }
+            }
+            Anchor(hir::Anchor::StartLine) if self.compiled.is_reverse => {
+                self.byte_classes.set_range(b'\n', b'\n');
+                self.c_empty_look(prog::EmptyLook::EndLine)
+            }
+            Anchor(hir::Anchor::StartLine) => {
+                self.byte_classes.set_range(b'\n', b'\n');
+                self.c_empty_look(prog::EmptyLook::StartLine)
+            }
+            Anchor(hir::Anchor::EndLine) if self.compiled.is_reverse => {
+                self.byte_classes.set_range(b'\n', b'\n');
+                self.c_empty_look(prog::EmptyLook::StartLine)
+            }
+            Anchor(hir::Anchor::EndLine) => {
+                self.byte_classes.set_range(b'\n', b'\n');
+                self.c_empty_look(prog::EmptyLook::EndLine)
+            }
+            Anchor(hir::Anchor::StartText) if self.compiled.is_reverse => {
+                self.c_empty_look(prog::EmptyLook::EndText)
+            }
+            Anchor(hir::Anchor::StartText) => {
+                self.c_empty_look(prog::EmptyLook::StartText)
+            }
+            Anchor(hir::Anchor::EndText) if self.compiled.is_reverse => {
+                self.c_empty_look(prog::EmptyLook::StartText)
+            }
+            Anchor(hir::Anchor::EndText) => {
+                self.c_empty_look(prog::EmptyLook::EndText)
+            }
+            WordBoundary(hir::WordBoundary::Unicode) => {
+                if !cfg!(feature = ""unicode-perl"") {
+                    return Err(Error::Syntax(
+                        ""Unicode word boundaries are unavailable when \
+                         the unicode-perl feature is disabled""
+                            .to_string(),
+                    ));
+                }
+                self.compiled.has_unicode_word_boundary = true;
+                self.byte_classes.set_word_boundary();
+                // We also make sure that all ASCII bytes are in a different
+                // class from non-ASCII bytes. Otherwise, it's possible for
+                // ASCII bytes to get lumped into the same class as non-ASCII
+                // bytes. This in turn may cause the lazy DFA to falsely start
+                // when it sees an ASCII byte that maps to a byte class with
+                // non-ASCII bytes. This ensures that never happens.
+                self.byte_classes.set_range(0, 0x7F);
+                self.c_empty_look(prog::EmptyLook::WordBoundary)
+            }
+            WordBoundary(hir::WordBoundary::UnicodeNegate) => {
+                if !cfg!(feature = ""unicode-perl"") {
+                    return Err(Error::Syntax(
+                        ""Unicode word boundaries are unavailable when \
+                         the unicode-perl feature is disabled""
+                            .to_string(),
+                    ));
+                }
+                self.compiled.has_unicode_word_boundary = true;
+                self.byte_classes.set_word_boundary();
+                // See comments above for why we set the ASCII range here.
+                self.byte_classes.set_range(0, 0x7F);
+                self.c_empty_look(prog::EmptyLook::NotWordBoundary)
+            }
+            WordBoundary(hir::WordBoundary::Ascii) => {
+                self.byte_classes.set_word_boundary();
+                self.c_empty_look(prog::EmptyLook::WordBoundaryAscii)
+            }
+            WordBoundary(hir::WordBoundary::AsciiNegate) => {
+                self.byte_classes.set_word_boundary();
+                self.c_empty_look(prog::EmptyLook::NotWordBoundaryAscii)
+            }
+            Group(ref g) => match g.kind {
+                hir::GroupKind::NonCapturing => self.c(&g.hir),
+                hir::GroupKind::CaptureIndex(index) => {
+                    if index as usize >= self.compiled.captures.len() {
+                        self.compiled.captures.push(None);
+                    }
+                    self.c_capture(2 * index as usize, &g.hir)
+                }
+                hir::GroupKind::CaptureName { index, ref name } => {
+                    if index as usize >= self.compiled.captures.len() {
+                        let n = name.to_string();
+                        self.compiled.captures.push(Some(n.clone()));
+                        self.capture_name_idx.insert(n, index as usize);
+                    }
+                    self.c_capture(2 * index as usize, &g.hir)
+                }
+            },
+            Concat(ref es) => {
+                if self.compiled.is_reverse {
+                    self.c_concat(es.iter().rev())
+                } else {
+                    self.c_concat(es)
+                }
+            }
+            Alternation(ref es) => self.c_alternate(&**es),
+            Repetition(ref rep) => self.c_repeat(rep),
+        }
+    }",1,6,"            Empty => Ok(None),"
+"fn test_engine(engine: &Engine) -> anyhow::Result<()> {
+        let mut store = Store::new(&engine, ());
+        let flag = Arc::new(AtomicBool::new(false));
+        let externref = ExternRef::new(SetFlagOnDrop(flag.clone()));
+        Global::new(
+            &mut store,
+            GlobalType::new(ValType::ExternRef, Mutability::Const),
+            externref.into(),
+        )?;
+        drop(store);
+        assert!(flag.load(SeqCst));
+
+        let mut store = Store::new(&engine, ());
+        let module = Module::new(
+            &engine,
+            r#""
+                (module
+                    (global (mut externref) (ref.null extern))
+
+                    (func (export ""run"") (param externref)
+                        local.get 0
+                        global.set 0
+                    )
+                )
+            ""#,
+        )?;
+        let instance = Instance::new(&mut store, &module, &[])?;
+        let run = instance.get_typed_func::<Option<ExternRef>, (), _>(&mut store, ""run"")?;
+        let flag = Arc::new(AtomicBool::new(false));
+        let externref = ExternRef::new(SetFlagOnDrop(flag.clone()));
+        run.call(&mut store, Some(externref))?;
+        drop(store);
+        assert!(flag.load(SeqCst));
+        Ok(())
+    }",0,,
+"    pub fn new() -> ModuleType {
+        ModuleType {
+            imports: Vec::new(),
+            exports: Vec::new(),
+        }
+    }",0,,
+"	fn exit_discard(&mut self) -> Result<(), ExitError> {
+		self.substate.exit_discard()
+	}",0,,
+"    pub(crate) fn from_wasmtime_global(global: &Global) -> GlobalType {
+        let ty = ValType::from_wasm_type(&global.wasm_ty);
+        let mutability = if global.mutability {
+            Mutability::Var
+        } else {
+            Mutability::Const
+        };
+        GlobalType::new(ty, mutability)
+    }",0,,
+"fn drop_externref_via_table_set() -> anyhow::Result<()> {
+    let (mut store, module) = ref_types_module(
+        r#""
+            (module
+                (table $t 1 externref)
+
+                (func (export ""table-set"") (param externref)
+                  (table.set $t (i32.const 0) (local.get 0))
+                )
+            )
+        ""#,
+    )?;
+
+    let instance = Instance::new(&mut store, &module, &[])?;
+    let table_set = instance.get_func(&mut store, ""table-set"").unwrap();
+
+    let foo_is_dropped = Arc::new(AtomicBool::new(false));
+    let bar_is_dropped = Arc::new(AtomicBool::new(false));
+
+    let foo = ExternRef::new(SetFlagOnDrop(foo_is_dropped.clone()));
+    let bar = ExternRef::new(SetFlagOnDrop(bar_is_dropped.clone()));
+
+    {
+        let args = vec![Val::ExternRef(Some(foo))];
+        table_set.call(&mut store, &args)?;
+    }
+    store.gc();
+    assert!(!foo_is_dropped.load(SeqCst));
+    assert!(!bar_is_dropped.load(SeqCst));
+
+    {
+        let args = vec![Val::ExternRef(Some(bar))];
+        table_set.call(&mut store, &args)?;
+    }
+    store.gc();
+    assert!(foo_is_dropped.load(SeqCst));
+    assert!(!bar_is_dropped.load(SeqCst));
+
+    table_set.call(&mut store, &[Val::ExternRef(None)])?;
+    assert!(foo_is_dropped.load(SeqCst));
+    assert!(bar_is_dropped.load(SeqCst));
+
+    Ok(())
+}",0,,
+"fn from(val: i64) -> Val {
+        Val::I64(val)
+    }",0,,
+"pub fn seteuid(uid: u32) {
+    let uid = nix::unistd::Uid::from_raw(uid);
+    match nix::unistd::seteuid(uid) {
+        Ok(_) => log::debug!(""Dropping privileges...""),
+        Err(e) => {
+            log::error!(""Failed to set UID: {:#?}"", e);
+            exit(1);
+        }
+    }
+}",1,"1,5","    let uid = nix::unistd::Uid::from_raw(uid);/~/            log::error!(""Failed to set UID: {:#?}"", e);"
+"	fn generate_web_proxy_token(&self) -> Result<String, Error> {
+		Ok(self.signer.generate_web_proxy_access_token())
+	}",1,"0,1","	fn generate_web_proxy_token(&self) -> Result<String, Error> {/~/		Ok(self.signer.generate_web_proxy_access_token())"
+"fn inc_nonce(&mut self, address: H160) {
+		let account_id = T::AddressMapping::into_account_id(address);
+		frame_system::Pallet::<T>::inc_account_nonce(&account_id);
+	}",0,,
+"fn transfer(&mut self, transfer: Transfer) -> Result<(), ExitError> {
+		let source = T::AddressMapping::into_account_id(transfer.source);
+		let target = T::AddressMapping::into_account_id(transfer.target);
+
+		T::Currency::transfer(
+			&source,
+			&target,
+			transfer.value.low_u128().unique_saturated_into(),
+			ExistenceRequirement::AllowDeath,
+		)
+		.map_err(|_| ExitError::OutOfFund)
+	}",1,7,"transfer.value.low_u128().unique_saturated_into(),"
+"async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let args = set_command_line_args().get_matches();
+    env::set_var(""RUST_LOG"", ""swhkd=warn"");
+
+    if args.is_present(""debug"") {
+        env::set_var(""RUST_LOG"", ""swhkd=trace"");
+    }
+
+    env_logger::init();
+    log::trace!(""Logger initialized."");
+
+    let pidfile: String = String::from(""/tmp/swhkd.pid"");
+    if Path::new(&pidfile).exists() {
+        log::trace!(""Reading {} file and checking for running instances."", pidfile);
+        let swhkd_pid = match fs::read_to_string(&pidfile) {
+            Ok(swhkd_pid) => swhkd_pid,
+            Err(e) => {
+                log::error!(""Unable to read {} to check all running instances"", e);
+                exit(1);
+            }
+        };
+        log::debug!(""Previous PID: {}"", swhkd_pid);
+
+        let mut sys = System::new_all();
+        sys.refresh_all();
+        for (pid, process) in sys.processes() {
+            if pid.to_string() == swhkd_pid && process.exe() == env::current_exe().unwrap() {
+                log::error!(""Swhkd is already running!"");
+                log::error!(""pid of existing swhkd process: {}"", pid.to_string());
+                log::error!(""To close the existing swhkd process, run `sudo killall swhkd`"");
+                exit(1);
+            }
+        }
+    }
+
+    match fs::write(&pidfile, id().to_string()) {
+        Ok(_) => {}
+        Err(e) => {
+            log::error!(""Unable to write to {}: {}"", pidfile, e);
+            exit(1);
+        }
+    }
+
+    if check_user_permissions().is_err() {
+        exit(1);
+    }
+
+    let load_config = || {
+        let config_file_path: std::path::PathBuf = if args.is_present(""config"") {
+            Path::new(args.value_of(""config"").unwrap()).to_path_buf()
+        } else {
+            fetch_xdg_config_path()
+        };
+
+        log::debug!(""Using config file path: {:#?}"", config_file_path);
+
+        if !config_file_path.exists() {
+            log::error!(""{:#?} doesn't exist"", config_file_path);
+            exit(1);
+        }
+
+        let hotkeys = match config::load(&config_file_path) {
+            Err(e) => {
+                log::error!(""Config Error: {}"", e);
+                exit(1);
+            }
+            Ok(out) => out,
+        };
+
+        for hotkey in &hotkeys {
+            log::debug!(""hotkey: {:#?}"", hotkey);
+        }
+
+        hotkeys
+    };
+
+    let mut hotkeys = load_config();
+
+    log::trace!(""Attempting to find all keyboard file descriptors."");
+    let keyboard_devices: Vec<Device> =
+        evdev::enumerate().filter(check_device_is_keyboard).collect();
+
+    let mut uinput_device = match uinput::create_uinput_device() {
+        Ok(dev) => dev,
+        Err(e) => {
+            log::error!(""Err: {:#?}"", e);
+            exit(1);
+        }
+    };
+
+    if keyboard_devices.is_empty() {
+        log::error!(""No valid keyboard device was detected!"");
+        exit(1);
+    }
+    log::debug!(""{} Keyboard device(s) detected."", keyboard_devices.len());
+
+    let modifiers_map: HashMap<Key, config::Modifier> = HashMap::from([
+        (Key::KEY_LEFTMETA, config::Modifier::Super),
+        (Key::KEY_RIGHTMETA, config::Modifier::Super),
+        (Key::KEY_LEFTMETA, config::Modifier::Super),
+        (Key::KEY_RIGHTMETA, config::Modifier::Super),
+        (Key::KEY_LEFTALT, config::Modifier::Alt),
+        (Key::KEY_RIGHTALT, config::Modifier::Alt),
+        (Key::KEY_LEFTCTRL, config::Modifier::Control),
+        (Key::KEY_RIGHTCTRL, config::Modifier::Control),
+        (Key::KEY_LEFTSHIFT, config::Modifier::Shift),
+        (Key::KEY_RIGHTSHIFT, config::Modifier::Shift),
+    ]);
+
+    let repeat_cooldown_duration: u64 = if args.is_present(""cooldown"") {
+        args.value_of(""cooldown"").unwrap().parse::<u64>().unwrap()
+    } else {
+        250
+    };
+
+    let mut signals = Signals::new(&[
+        SIGUSR1, SIGUSR2, SIGHUP, SIGABRT, SIGBUS, SIGCHLD, SIGCONT, SIGINT, SIGPIPE, SIGQUIT,
+        SIGSYS, SIGTERM, SIGTRAP, SIGTSTP, SIGVTALRM, SIGXCPU, SIGXFSZ,
+    ])?;
+
+    let mut execution_is_paused = false;
+    let mut last_hotkey: Option<config::Hotkey> = None;
+    let mut pending_release: bool = false;
+    let mut keyboard_states: Vec<KeyboardState> = Vec::new();
+    let mut keyboard_stream_map = StreamMap::new();
+
+    for (i, mut device) in keyboard_devices.into_iter().enumerate() {
+        let _ = device.grab();
+        keyboard_stream_map.insert(i, device.into_event_stream()?);
+        keyboard_states.push(KeyboardState::new());
+    }
+
+    // The initial sleep duration is never read because last_hotkey is initialized to None
+    let hotkey_repeat_timer = sleep(Duration::from_millis(0));
+    tokio::pin!(hotkey_repeat_timer);
+
+    loop {
+        select! {
+            _ = &mut hotkey_repeat_timer, if &last_hotkey.is_some() => {
+                let hotkey = last_hotkey.clone().unwrap();
+                if hotkey.keybinding.on_release {
+                    continue;
+                }
+                send_command(hotkey.clone());
+                hotkey_repeat_timer.as_mut().reset(Instant::now() + Duration::from_millis(repeat_cooldown_duration));
+            }
+
+            Some(signal) = signals.next() => {
+                match signal {
+                    SIGUSR1 => {
+                        execution_is_paused = true;
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.ungrab();
+                        }
+                    }
+
+                    SIGUSR2 => {
+                        execution_is_paused = false;
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.grab();
+                        }
+                    }
+
+                    SIGHUP => {
+                        hotkeys = load_config();
+                    }
+
+                    SIGINT => {
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.ungrab();
+                        }
+                        log::warn!(""Received SIGINT signal, exiting..."");
+                        exit(1);
+                    }
+
+                    _ => {
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.ungrab();
+                        }
+
+                        log::warn!(""Received signal: {:#?}"", signal);
+                        log::warn!(""Exiting..."");
+                        exit(1);
+                    }
+                }
+            }
+
+            Some((i, Ok(event))) = keyboard_stream_map.next() => {
+                let keyboard_state = &mut keyboard_states[i];
+
+                let key = match event.kind() {
+                    InputEventKind::Key(keycode) => keycode,
+                    _ => continue
+                };
+
+                match event.value() {
+                    // Key press
+                    1 => {
+                        if let Some(modifier) = modifiers_map.get(&key) {
+                            keyboard_state.state_modifiers.insert(*modifier);
+                        } else {
+                            keyboard_state.state_keysyms.insert(key);
+                        }
+                    }
+
+                    // Key release
+                    0 => {
+                        if last_hotkey.is_some() && pending_release {
+                            pending_release = false;
+                            send_command(last_hotkey.clone().unwrap());
+                            last_hotkey = None;
+                        }
+                        if let Some(modifier) = modifiers_map.get(&key) {
+                            if let Some(hotkey) = &last_hotkey {
+                                if hotkey.modifiers().contains(modifier) {
+                                    last_hotkey = None;
+                                }
+                            }
+                            keyboard_state.state_modifiers.remove(modifier);
+                        } else if keyboard_state.state_keysyms.contains(key) {
+                            if let Some(hotkey) = &last_hotkey {
+                                if key == hotkey.keysym() {
+                                    last_hotkey = None;
+                                }
+                            }
+                            keyboard_state.state_keysyms.remove(key);
+                        }
+                    }
+
+                    _ => {}
+                }
+
+                let possible_hotkeys: Vec<&config::Hotkey> = hotkeys.iter()
+                    .filter(|hotkey| hotkey.modifiers().len() == keyboard_state.state_modifiers.len())
+                    .collect();
+
+                let event_in_hotkeys = hotkeys.iter().any(|hotkey| {
+                    hotkey.keysym().code() == event.code() &&
+                    keyboard_state.state_modifiers
+                        .iter()
+                        .all(|x| hotkey.modifiers().contains(x)) &&
+                    keyboard_state.state_modifiers.len() == hotkey.modifiers().len()
+                    && !hotkey.is_send()
+                        });
+
+                // Don't emit event to virtual device if it's from a valid hotkey
+                if !event_in_hotkeys {
+                    uinput_device.emit(&[event]).unwrap();
+                }
+
+                if execution_is_paused || possible_hotkeys.is_empty() || last_hotkey.is_some() {
+                    continue;
+                }
+
+                log::debug!(""state_modifiers: {:#?}"", keyboard_state.state_modifiers);
+                log::debug!(""state_keysyms: {:#?}"", keyboard_state.state_keysyms);
+                log::debug!(""hotkey: {:#?}"", possible_hotkeys);
+
+                for hotkey in possible_hotkeys {
+                    // this should check if state_modifiers and hotkey.modifiers have the same elements
+                    if keyboard_state.state_modifiers.iter().all(|x| hotkey.modifiers().contains(x))
+                        && keyboard_state.state_modifiers.len() == hotkey.modifiers().len()
+                        && keyboard_state.state_keysyms.contains(hotkey.keysym())
+                    {
+                        last_hotkey = Some(hotkey.clone());
+                        if pending_release { break; }
+                        if hotkey.is_on_release() {
+                            pending_release = true;
+                            break;
+                        }
+                        send_command(hotkey.clone());
+                        hotkey_repeat_timer.as_mut().reset(Instant::now() + Duration::from_millis(repeat_cooldown_duration));
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}",1,77,
+"fn recover_signer(transaction: &Transaction) -> Option<H160> {
+		let mut sig = [0u8; 65];
+		let mut msg = [0u8; 32];
+		sig[0..32].copy_from_slice(&transaction.signature.r()[..]);
+		sig[32..64].copy_from_slice(&transaction.signature.s()[..]);
+		sig[64] = transaction.signature.standard_v();
+		msg.copy_from_slice(&LegacyTransactionMessage::from(transaction.clone()).hash()[..]);
+
+		let pubkey = sp_io::crypto::secp256k1_ecdsa_recover(&sig, &msg).ok()?;
+		Some(H160::from(H256::from_slice(
+			Keccak256::digest(&pubkey).as_slice(),
+		)))
+	}",0,,
+"    pub fn data_mut(&mut self) -> &mut T {
+        self.inner.data_mut()
+    }",0,,
+"fn parse_dbtest(mut input: syn::ItemFn, rand: u16) -> Result<TokenStream, syn::Error> {
+    let sig = &mut input.sig;
+    let fname = sig.ident.to_string();
+    let body = &input.block;
+    let attrs = &input.attrs;
+    let vis = &input.vis;
+    let header = quote! {
+        #[::core::prelude::v1::test]
+    };
+    if sig.asyncness.is_none() {
+        let msg = ""`dbtest` functions need to be async"";
+        return Err(syn::Error::new_spanned(sig.fn_token, msg));
+    }
+    sig.asyncness = None;
+    let body = quote! {
+        let asyncdb = crate::coredb::CoreDB::new(
+            crate::config::BGSave::Disabled,
+            crate::config::SnapshotConfig::default(),
+            None
+        ).unwrap();
+        let addr = crate::tests::start_test_server(#rand, Some(asyncdb.clone())).await;
+        let mut stream = tokio::net::TcpStream::connect(&addr).await.unwrap();
+        #body
+        stream.shutdown(::std::net::Shutdown::Write).unwrap();
+        asyncdb.finish_db();
+        drop(asyncdb);
+    };
+    let result = quote! {
+        #header
+        #(#attrs)*
+        #vis #sig {
+            tokio::runtime::Builder::new_multi_thread()
+            .worker_threads(4)
+            .thread_name(#fname)
+            .thread_stack_size(3 * 1024 * 1024)
+            .enable_all()
+            .build()
+            .unwrap()
+            .block_on(async { #body });
+        }
+    };
+    Ok(result.into())
+}",1,23,        stream.shutdown(::std::net::Shutdown::Write).unwrap();
+"fn lookup_stack_map(&self, pc: usize) -> Option<&StackMap> {
+        let text_offset = pc - self.start;
+        let (index, func_offset) = self.module.func_by_text_offset(text_offset)?;
+        let info = self.module.func_info(index);
+
+        // Do a binary search to find the stack map for the given offset.
+        //
+        // Because GC safepoints are technically only associated with a single
+        // PC, we should ideally only care about `Ok(index)` values returned
+        // from the binary search. However, safepoints are inserted right before
+        // calls, and there are two things that can disturb the PC/offset
+        // associated with the safepoint versus the PC we actually use to query
+        // for the stack map:
+        //
+        // 1. The `backtrace` crate gives us the PC in a frame that will be
+        //    *returned to*, and where execution will continue from, rather than
+        //    the PC of the call we are currently at. So we would need to
+        //    disassemble one instruction backwards to query the actual PC for
+        //    the stack map.
+        //
+        //    TODO: One thing we *could* do to make this a little less error
+        //    prone, would be to assert/check that the nearest GC safepoint
+        //    found is within `max_encoded_size(any kind of call instruction)`
+        //    our queried PC for the target architecture.
+        //
+        // 2. Cranelift's stack maps only handle the stack, not
+        //    registers. However, some references that are arguments to a call
+        //    may need to be in registers. In these cases, what Cranelift will
+        //    do is:
+        //
+        //      a. spill all the live references,
+        //      b. insert a GC safepoint for those references,
+        //      c. reload the references into registers, and finally
+        //      d. make the call.
+        //
+        //    Step (c) adds drift between the GC safepoint and the location of
+        //    the call, which is where we actually walk the stack frame and
+        //    collect its live references.
+        //
+        //    Luckily, the spill stack slots for the live references are still
+        //    up to date, so we can still find all the on-stack roots.
+        //    Furthermore, we do not have a moving GC, so we don't need to worry
+        //    whether the following code will reuse the references in registers
+        //    (which would not have been updated to point to the moved objects)
+        //    or reload from the stack slots (which would have been updated to
+        //    point to the moved objects).
+
+        let index = match info
+            .stack_maps
+            .binary_search_by_key(&func_offset, |i| i.code_offset)
+        {
+            // Exact hit.
+            Ok(i) => i,
+
+            // `Err(0)` means that the associated stack map would have been the
+            // first element in the array if this pc had an associated stack
+            // map, but this pc does not have an associated stack map. This can
+            // only happen inside a Wasm frame if there are no live refs at this
+            // pc.
+            Err(0) => return None,
+
+            Err(i) => i - 1,
+        };
+
+        Some(&info.stack_maps[index].stack_map)
+    }",1,"6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,51,54,55,56,57,58,60","///~/        // Because GC safepoints are technically only associated with a single/~/        // PC, we should ideally only care about `Ok(index)` values returned/~/        // from the binary search. However, safepoints are inserted right before/~/        // calls, and there are two things that can disturb the PC/offset/~/        // associated with the safepoint versus the PC we actually use to query/~/        // for the stack map:/~/        ///~/        // 1. The `backtrace` crate gives us the PC in a frame that will be/~/        //    *returned to*, and where execution will continue from, rather than/~/        //    the PC of the call we are currently at. So we would need to/~/        //    disassemble one instruction backwards to query the actual PC for/~/        //    the stack map./~/        ///~/        //    TODO: One thing we *could* do to make this a little less error/~/        //    prone, would be to assert/check that the nearest GC safepoint/~/        //    found is within `max_encoded_size(any kind of call instruction)`/~/        //    our queried PC for the target architecture./~/        ///~/        // 2. Cranelift's stack maps only handle the stack, not/~/        //    registers. However, some references that are arguments to a call/~/        //    may need to be in registers. In these cases, what Cranelift will/~/        //    do is:/~/        ///~/        //      a. spill all the live references,/~/        //      b. insert a GC safepoint for those references,/~/        //      c. reload the references into registers, and finally/~/        //      d. make the call./~/        ///~/        //    Step (c) adds drift between the GC safepoint and the location of/~/        //    the call, which is where we actually walk the stack frame and/~/        //    collect its live references./~/        ///~/        //    Luckily, the spill stack slots for the live references are still/~/        //    up to date, so we can still find all the on-stack roots./~/        //    Furthermore, we do not have a moving GC, so we don't need to worry/~/        //    whether the following code will reuse the references in registers/~/        //    (which would not have been updated to point to the moved objects)/~/        //    or reload from the stack slots (which would have been updated to/~/        //    point to the moved objects)./~//~/            // Exact hit./~/            // `Err(0)` means that the associated stack map would have been the/~/            // first element in the array if this pc had an associated stack/~/            // map, but this pc does not have an associated stack map. This can/~/            // only happen inside a Wasm frame if there are no live refs at this/~/            // pc./~/"
+"fn push_types(isa: &dyn TargetIsa, sig: &mut ir::Signature, wasm: &WasmFuncType) {
+    let cvt = |ty: &WasmType| ir::AbiParam::new(value_type(isa, *ty));
+    sig.params.extend(wasm.params.iter().map(&cvt));
+    sig.returns.extend(wasm.returns.iter().map(&cvt));
+}",1,"2,3",    sig.params.extend(wasm.params.iter().map(&cvt));/~/    sig.returns.extend(wasm.returns.iter().map(&cvt));
+"    fn take_split(&self, count: usize) -> (Self, Self) {
+        let (left, right) = self.tokens.split_at(count);
+
+        (Input { source: self.source, tokens: left }, Input { source: self.source, tokens: right })
+    }",1,3,"        (Input { source: self.source, tokens: left }, Input { source: self.source, tokens: right })"
+"async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let args = set_command_line_args().get_matches();
+    env::set_var(""RUST_LOG"", ""swhkd=warn"");
+
+    if args.is_present(""debug"") {
+        env::set_var(""RUST_LOG"", ""swhkd=trace"");
+    }
+
+    env_logger::init();
+    log::trace!(""Logger initialized."");
+
+    let pidfile: String = String::from(""/tmp/swhkd.pid"");
+    if Path::new(&pidfile).exists() {
+        log::trace!(""Reading {} file and checking for running instances."", pidfile);
+        let swhkd_pid = match fs::read_to_string(&pidfile) {
+            Ok(swhkd_pid) => swhkd_pid,
+            Err(e) => {
+                log::error!(""Unable to read {} to check all running instances"", e);
+                exit(1);
+            }
+        };
+        log::debug!(""Previous PID: {}"", swhkd_pid);
+
+        let mut sys = System::new_all();
+        sys.refresh_all();
+        for (pid, process) in sys.processes() {
+            if pid.to_string() == swhkd_pid && process.exe() == env::current_exe().unwrap() {
+                log::error!(""Swhkd is already running!"");
+                log::error!(""pid of existing swhkd process: {}"", pid.to_string());
+                log::error!(""To close the existing swhkd process, run `sudo killall swhkd`"");
+                exit(1);
+            }
+        }
+    }
+
+    match fs::write(&pidfile, id().to_string()) {
+        Ok(_) => {}
+        Err(e) => {
+            log::error!(""Unable to write to {}: {}"", pidfile, e);
+            exit(1);
+        }
+    }
+
+    if check_user_permissions().is_err() {
+        exit(1);
+    }
+
+    let load_config = || {
+        seteuid(env::var(""PKEXEC_UID"").unwrap().parse::<u32>().unwrap()); // Dropping privileges to invoking user.
+        let config_file_path: std::path::PathBuf = if args.is_present(""config"") {
+            Path::new(args.value_of(""config"").unwrap()).to_path_buf()
+        } else {
+            fetch_xdg_config_path()
+        };
+
+        log::debug!(""Using config file path: {:#?}"", config_file_path);
+
+        if !config_file_path.exists() {
+            log::error!(""{:#?} doesn't exist"", config_file_path);
+            exit(1);
+        }
+
+        let hotkeys = match config::load(&config_file_path) {
+            Err(e) => {
+                log::error!(""Config Error: {}"", e);
+                exit(1);
+            }
+            Ok(out) => out,
+        };
+
+        for hotkey in &hotkeys {
+            log::debug!(""hotkey: {:#?}"", hotkey);
+        }
+
+        hotkeys
+    };
+
+    let mut hotkeys = load_config();
+    seteuid(0); // Escalating back to root after reading config file.
+    log::trace!(""Attempting to find all keyboard file descriptors."");
+    let keyboard_devices: Vec<Device> =
+        evdev::enumerate().filter(check_device_is_keyboard).collect();
+
+    let mut uinput_device = match uinput::create_uinput_device() {
+        Ok(dev) => dev,
+        Err(e) => {
+            log::error!(""Err: {:#?}"", e);
+            exit(1);
+        }
+    };
+
+    if keyboard_devices.is_empty() {
+        log::error!(""No valid keyboard device was detected!"");
+        exit(1);
+    }
+    log::debug!(""{} Keyboard device(s) detected."", keyboard_devices.len());
+
+    let modifiers_map: HashMap<Key, config::Modifier> = HashMap::from([
+        (Key::KEY_LEFTMETA, config::Modifier::Super),
+        (Key::KEY_RIGHTMETA, config::Modifier::Super),
+        (Key::KEY_LEFTMETA, config::Modifier::Super),
+        (Key::KEY_RIGHTMETA, config::Modifier::Super),
+        (Key::KEY_LEFTALT, config::Modifier::Alt),
+        (Key::KEY_RIGHTALT, config::Modifier::Alt),
+        (Key::KEY_LEFTCTRL, config::Modifier::Control),
+        (Key::KEY_RIGHTCTRL, config::Modifier::Control),
+        (Key::KEY_LEFTSHIFT, config::Modifier::Shift),
+        (Key::KEY_RIGHTSHIFT, config::Modifier::Shift),
+    ]);
+
+    let repeat_cooldown_duration: u64 = if args.is_present(""cooldown"") {
+        args.value_of(""cooldown"").unwrap().parse::<u64>().unwrap()
+    } else {
+        250
+    };
+
+    let mut signals = Signals::new(&[
+        SIGUSR1, SIGUSR2, SIGHUP, SIGABRT, SIGBUS, SIGCHLD, SIGCONT, SIGINT, SIGPIPE, SIGQUIT,
+        SIGSYS, SIGTERM, SIGTRAP, SIGTSTP, SIGVTALRM, SIGXCPU, SIGXFSZ,
+    ])?;
+
+    let mut execution_is_paused = false;
+    let mut last_hotkey: Option<config::Hotkey> = None;
+    let mut pending_release: bool = false;
+    let mut keyboard_states: Vec<KeyboardState> = Vec::new();
+    let mut keyboard_stream_map = StreamMap::new();
+
+    for (i, mut device) in keyboard_devices.into_iter().enumerate() {
+        let _ = device.grab();
+        keyboard_stream_map.insert(i, device.into_event_stream()?);
+        keyboard_states.push(KeyboardState::new());
+    }
+
+    // The initial sleep duration is never read because last_hotkey is initialized to None
+    let hotkey_repeat_timer = sleep(Duration::from_millis(0));
+    tokio::pin!(hotkey_repeat_timer);
+
+    loop {
+        select! {
+            _ = &mut hotkey_repeat_timer, if &last_hotkey.is_some() => {
+                let hotkey = last_hotkey.clone().unwrap();
+                if hotkey.keybinding.on_release {
+                    continue;
+                }
+                send_command(hotkey.clone());
+                hotkey_repeat_timer.as_mut().reset(Instant::now() + Duration::from_millis(repeat_cooldown_duration));
+            }
+
+            Some(signal) = signals.next() => {
+                match signal {
+                    SIGUSR1 => {
+                        execution_is_paused = true;
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.ungrab();
+                        }
+                    }
+
+                    SIGUSR2 => {
+                        execution_is_paused = false;
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.grab();
+                        }
+                    }
+
+                    SIGHUP => {
+                        hotkeys = load_config();
+                    }
+
+                    SIGINT => {
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.ungrab();
+                        }
+                        log::warn!(""Received SIGINT signal, exiting..."");
+                        exit(1);
+                    }
+
+                    _ => {
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.ungrab();
+                        }
+
+                        log::warn!(""Received signal: {:#?}"", signal);
+                        log::warn!(""Exiting..."");
+                        exit(1);
+                    }
+                }
+            }
+
+            Some((i, Ok(event))) = keyboard_stream_map.next() => {
+                let keyboard_state = &mut keyboard_states[i];
+
+                let key = match event.kind() {
+                    InputEventKind::Key(keycode) => keycode,
+                    _ => continue
+                };
+
+                match event.value() {
+                    // Key press
+                    1 => {
+                        if let Some(modifier) = modifiers_map.get(&key) {
+                            keyboard_state.state_modifiers.insert(*modifier);
+                        } else {
+                            keyboard_state.state_keysyms.insert(key);
+                        }
+                    }
+
+                    // Key release
+                    0 => {
+                        if last_hotkey.is_some() && pending_release {
+                            pending_release = false;
+                            send_command(last_hotkey.clone().unwrap());
+                            last_hotkey = None;
+                        }
+                        if let Some(modifier) = modifiers_map.get(&key) {
+                            if let Some(hotkey) = &last_hotkey {
+                                if hotkey.modifiers().contains(modifier) {
+                                    last_hotkey = None;
+                                }
+                            }
+                            keyboard_state.state_modifiers.remove(modifier);
+                        } else if keyboard_state.state_keysyms.contains(key) {
+                            if let Some(hotkey) = &last_hotkey {
+                                if key == hotkey.keysym() {
+                                    last_hotkey = None;
+                                }
+                            }
+                            keyboard_state.state_keysyms.remove(key);
+                        }
+                    }
+
+                    _ => {}
+                }
+
+                let possible_hotkeys: Vec<&config::Hotkey> = hotkeys.iter()
+                    .filter(|hotkey| hotkey.modifiers().len() == keyboard_state.state_modifiers.len())
+                    .collect();
+
+                let event_in_hotkeys = hotkeys.iter().any(|hotkey| {
+                    hotkey.keysym().code() == event.code() &&
+                    keyboard_state.state_modifiers
+                        .iter()
+                        .all(|x| hotkey.modifiers().contains(x)) &&
+                    keyboard_state.state_modifiers.len() == hotkey.modifiers().len()
+                    && !hotkey.is_send()
+                        });
+
+                // Don't emit event to virtual device if it's from a valid hotkey
+                if !event_in_hotkeys {
+                    uinput_device.emit(&[event]).unwrap();
+                }
+
+                if execution_is_paused || possible_hotkeys.is_empty() || last_hotkey.is_some() {
+                    continue;
+                }
+
+                log::debug!(""state_modifiers: {:#?}"", keyboard_state.state_modifiers);
+                log::debug!(""state_keysyms: {:#?}"", keyboard_state.state_keysyms);
+                log::debug!(""hotkey: {:#?}"", possible_hotkeys);
+
+                for hotkey in possible_hotkeys {
+                    // this should check if state_modifiers and hotkey.modifiers have the same elements
+                    if keyboard_state.state_modifiers.iter().all(|x| hotkey.modifiers().contains(x))
+                        && keyboard_state.state_modifiers.len() == hotkey.modifiers().len()
+                        && keyboard_state.state_keysyms.contains(hotkey.keysym())
+                    {
+                        last_hotkey = Some(hotkey.clone());
+                        if pending_release { break; }
+                        if hotkey.is_on_release() {
+                            pending_release = true;
+                            break;
+                        }
+                        send_command(hotkey.clone());
+                        hotkey_repeat_timer.as_mut().reset(Instant::now() + Duration::from_millis(repeat_cooldown_duration));
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}",1,"57,58,59,60,61","if !config_file_path.exists() {/~/            log::error!(""{:#?} doesn't exist"", config_file_path);/~/            exit(1);/~/        }/~/"
+"pub fn func_index(&self) -> u32 {
+        self.func_index
+    }",0,,
+"fn strip_comments(string: &str) -> String {
+    // Remove line comments
+    let line_comments = Regex::new(r""(?m)//.*$"").unwrap();
+    line_comments.replace_all(string, ""$1"").into_owned()
+}",1,"0,1,2,3","fn strip_comments(string: &str) -> String {/~/    // Remove line comments/~/    let line_comments = Regex::new(r""(?m)//.*$"").unwrap();/~/    line_comments.replace_all(string, ""$1"").into_owned()"
+"fn new<E: UserDefinedError>(pc: usize, code_size: usize) -> Result<Self, EbpfError<E>> {
+        #[cfg(target_os = ""windows"")]
+        {
+            Ok(Self {
+                page_size: 0,
+                pc_section: &mut [],
+                text_section: &mut [],
+            })
+        }
+        #[cfg(not(target_os = ""windows""))]
+        unsafe {
+            let page_size = libc::sysconf(libc::_SC_PAGESIZE) as usize;
+            let pc_loc_table_size = round_to_page_size(pc * 8, page_size);
+            let over_allocated_code_size = round_to_page_size(code_size, page_size);
+            let mut raw: *mut libc::c_void = std::ptr::null_mut();
+            libc_error_guard!(mmap, &mut raw, pc_loc_table_size + over_allocated_code_size, libc::PROT_READ | libc::PROT_WRITE, libc::MAP_ANONYMOUS | libc::MAP_PRIVATE, 0, 0);
+            Ok(Self {
+                page_size,
+                pc_section: std::slice::from_raw_parts_mut(raw as *mut u64, pc),
+                text_section: std::slice::from_raw_parts_mut(raw.add(pc_loc_table_size) as *mut u8, over_allocated_code_size),
+            })
+        }
+    }",0,,
+"fn execute(
+		input: &[u8],
+		target_gas: Option<u64>,
+		_context: &Context,
+		_is_static: bool,
+	) -> PrecompileResult {
+		if input.len() < 96 {
+			return Err(PrecompileFailure::Error {
+				exit_status: ExitError::Other(""input must contain at least 96 bytes"".into()),
+			});
+		};
+
+		// reasonable assumption: this must fit within the Ethereum EVM's max stack size
+		let max_size_big = BigUint::from_u32(1024).expect(""can't create BigUint"");
+
+		let mut buf = [0; 32];
+		buf.copy_from_slice(&input[0..32]);
+		let base_len_big = BigUint::from_bytes_be(&buf);
+		if base_len_big > max_size_big {
+			return Err(PrecompileFailure::Error {
+				exit_status: ExitError::Other(""unreasonably large base length"".into()),
+			});
+		}
+
+		buf.copy_from_slice(&input[32..64]);
+		let exp_len_big = BigUint::from_bytes_be(&buf);
+		if exp_len_big > max_size_big {
+			return Err(PrecompileFailure::Error {
+				exit_status: ExitError::Other(""unreasonably large exponent length"".into()),
+			});
+		}
+
+		buf.copy_from_slice(&input[64..96]);
+		let mod_len_big = BigUint::from_bytes_be(&buf);
+		if mod_len_big > max_size_big {
+			return Err(PrecompileFailure::Error {
+				exit_status: ExitError::Other(""unreasonably large exponent length"".into()),
+			});
+		}
+
+		// bounds check handled above
+		let base_len = base_len_big.to_usize().expect(""base_len out of bounds"");
+		let exp_len = exp_len_big.to_usize().expect(""exp_len out of bounds"");
+		let mod_len = mod_len_big.to_usize().expect(""mod_len out of bounds"");
+
+		// input length should be at least 96 + user-specified length of base + exp + mod
+		let total_len = base_len + exp_len + mod_len + 96;
+		if input.len() < total_len {
+			return Err(PrecompileFailure::Error {
+				exit_status: ExitError::Other(""insufficient input size"".into()),
+			});
+		}
+
+		// Gas formula allows arbitrary large exp_len when base and modulus are empty, so we need to handle empty base first.
+		let (r, gas_cost) = if base_len == 0 && mod_len == 0 {
+			(BigUint::zero(), MIN_GAS_COST)
+		} else {
+			// read the numbers themselves.
+			let base_start = 96; // previous 3 32-byte fields
+			let base = BigUint::from_bytes_be(&input[base_start..base_start + base_len]);
+
+			let exp_start = base_start + base_len;
+			let exponent = BigUint::from_bytes_be(&input[exp_start..exp_start + exp_len]);
+
+			// do our gas accounting
+			// TODO: we could technically avoid reading base first...
+			let gas_cost =
+				calculate_gas_cost(base_len as u64, exp_len as u64, mod_len as u64, &exponent);
+			if let Some(gas_left) = target_gas {
+				if gas_left < gas_cost {
+					return Err(PrecompileFailure::Error {
+						exit_status: ExitError::OutOfGas,
+					});
+				}
+			};
+
+			let mod_start = exp_start + exp_len;
+			let modulus = BigUint::from_bytes_be(&input[mod_start..mod_start + mod_len]);
+
+			if modulus.is_zero() || modulus.is_one() {
+				(BigUint::zero(), gas_cost)
+			} else {
+				(base.modpow(&exponent, &modulus), gas_cost)
+			}
+		};
+
+		// write output to given memory, left padded and same length as the modulus.
+		let bytes = r.to_bytes_be();
+
+		// always true except in the case of zero-length modulus, which leads to
+		// output of length and value 1.
+		if bytes.len() == mod_len {
+			Ok(PrecompileOutput {
+				exit_status: ExitSucceed::Returned,
+				cost: gas_cost,
+				output: bytes.to_vec(),
+				logs: Default::default(),
+			})
+		} else if bytes.len() < mod_len {
+			let mut ret = Vec::with_capacity(mod_len);
+			ret.extend(core::iter::repeat(0).take(mod_len - bytes.len()));
+			ret.extend_from_slice(&bytes[..]);
+			Ok(PrecompileOutput {
+				exit_status: ExitSucceed::Returned,
+				cost: gas_cost,
+				output: ret.to_vec(),
+				logs: Default::default(),
+			})
+		} else {
+			Err(PrecompileFailure::Error {
+				exit_status: ExitError::Other(""failed"".into()),
+			})
+		}
+	}",1,"36,65","				exit_status: ExitError::Other(""unreasonably large exponent length"".into()),/~/			// TODO: we could technically avoid reading base first..."
+"pub fn parse(p: &[u8; util::SIGNATURE_SIZE]) -> Signature {
+        let mut r = Scalar::default();
+        let mut s = Scalar::default();
+
+        // Okay for signature to overflow
+        let _ = r.set_b32(array_ref!(p, 0, 32));
+        let _ = s.set_b32(array_ref!(p, 32, 32));
+
+        Signature { r, s }
+    }",0,,
+"	fn is_web_proxy_token_valid(&self, token: &str) -> bool;
+}
+
+impl<F> WebProxyTokens for F where F: Fn(String) -> bool + Send + Sync {
+	fn is_web_proxy_token_valid(&self, token: &str) -> bool { self(token.to_owned()) }
+}",1,"0,3,4","	fn is_web_proxy_token_valid(&self, token: &str) -> bool;/~/impl<F> WebProxyTokens for F where F: Fn(String) -> bool + Send + Sync {/~/	fn is_web_proxy_token_valid(&self, token: &str) -> bool { self(token.to_owned()) }"
+"fn test_be16_high() {
+    test_interpreter_and_jit_asm!(
+        ""
+        ldxdw r0, [r1]
+        be16 r0
+        exit"",
+        [0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x1122 } },
+        3
+    );
+}",0,,
+"pub fn fetch_xdg_config_path() -> std::path::PathBuf {
+    let config_file_path: std::path::PathBuf = match env::var(""XDG_CONFIG_HOME"") {
+        Ok(val) => {
+            log::debug!(""XDG_CONFIG_HOME exists: {:#?}"", val);
+            Path::new(&val).join(""swhkd/swhkdrc"")
+        }
+        Err(_) => {
+            log::error!(""XDG_CONFIG_HOME has not been set."");
+            Path::new(""/etc/swhkd/swhkdrc"").to_path_buf()
+        }
+    };
+    config_file_path
+}",0,,
+"	pub fn dapps_middleware(
+		deps: Dependencies,
+		dapps_path: PathBuf,
+		extra_dapps: Vec<PathBuf>,
+		dapps_domain: String,
+	) -> Result<Middleware, String> {
+		let signer = deps.signer;
+		let parity_remote = parity_reactor::Remote::new(deps.remote.clone());
+		let web_proxy_tokens = Arc::new(move |token| signer.is_valid_web_proxy_access_token(&token));
+
+		Ok(parity_dapps::Middleware::dapps(
+			parity_remote,
+			deps.ui_address,
+			dapps_path,
+			extra_dapps,
+			dapps_domain,
+			deps.contract_client,
+			deps.sync_status,
+			web_proxy_tokens,
+			deps.fetch,
+		))
+	}",1,8,		let web_proxy_tokens = Arc::new(move |token| signer.is_valid_web_proxy_access_token(&token));
+"    fn map_regs<RUM: RegUsageMapper>(insn: &mut I, mapper: &RUM) {
+        insn.map_regs(mapper);
+    }",0,,
+"fn calculate_multiplication_complexity(base_length: u64, mod_length: u64) -> u64 {
+		let max_length = max(base_length, mod_length);
+		let mut words = max_length / 8;
+		if max_length % 8 > 0 {
+			words += 1;
+		}
+
+		// TODO: prevent/handle overflow
+		words * words
+	}",1,7,		// TODO: prevent/handle overflow
+"    fn drop(&mut self) {
+        if let Some(thread) = self.thread.take() {
+            let (lock, cvar) = &*self.state;
+            // Signal our thread that we've been dropped and wake it up if it's
+            // blocked.
+            let mut g = lock.lock().unwrap();
+            *g = true;
+            cvar.notify_one();
+            drop(g);
+
+            // ... and then wait for the thread to exit to ensure we clean up
+            // after ourselves.
+            thread.join().unwrap();
+        }
+    }",0,,
+"	fn on_response(&mut self, res: &mut server::Response) -> Next {
+		match self.state {
+			State::Initial => Next::end(),
+			State::Error(ref mut handler) => handler.on_response(res),
+			State::Fetching(ref mut handler) => handler.on_response(res),
+		}
+	}",0,,
+"    pub fn params(&self) -> impl ExactSizeIterator<Item = ValType> + '_ {
+        self.sig.params.iter().map(ValType::from_wasm_type)
+    }
+
+    /// Returns the list of result types for this function.
+    pub fn results(&self) -> impl ExactSizeIterator<Item = ValType> + '_ {
+        self.sig.returns.iter().map(ValType::from_wasm_type)
+    }",1,"1,6",        self.sig.params.iter().map(ValType::from_wasm_type)/~/        self.sig.returns.iter().map(ValType::from_wasm_type)
+"pub fn clone_cstring_safely(out_ptr: *const c_char) -> Result<CString> {
+        if out_ptr.is_null() {
+            return_errno!(EINVAL, ""NULL address is invalid"");
+        }
+
+        let cstr = unsafe { CStr::from_ptr(out_ptr) };
+        let cstring = CString::from(cstr);
+        if !is_inside_user_space(out_ptr as *const u8, cstring.as_bytes().len()) {
+            return_errno!(EFAULT, ""the whole buffer is not in the user space"");
+        }
+        Ok(cstring)
+    }",1,7,"if !is_inside_user_space(out_ptr as *const u8, cstring.as_bytes().len()) {"
+"fn calculate_gas_cost(
+	base_length: u64,
+	exp_length: u64,
+	mod_length: u64,
+	exponent: &BigUint,
+) -> u64 {
+	fn calculate_multiplication_complexity(base_length: u64, mod_length: u64) -> u64 {
+		let max_length = max(base_length, mod_length);
+		let mut words = max_length / 8;
+		if max_length % 8 > 0 {
+			words += 1;
+		}
+
+		// TODO: prevent/handle overflow
+		words * words
+	}
+
+	fn calculate_iteration_count(exp_length: u64, exponent: &BigUint) -> u64 {
+		let mut iteration_count: u64 = 0;
+
+		if exp_length <= 32 && exponent.is_zero() {
+			iteration_count = 0;
+		} else if exp_length <= 32 {
+			iteration_count = exponent.bits() - 1;
+		} else if exp_length > 32 {
+			// construct BigUint to represent (2^256) - 1
+			let bytes: [u8; 32] = [0xFF; 32];
+			let max_256_bit_uint = BigUint::from_bytes_be(&bytes);
+
+			iteration_count =
+				(8 * (exp_length - 32)) + ((exponent.bitand(max_256_bit_uint)).bits() - 1);
+		}
+
+		max(iteration_count, 1)
+	}
+
+	let multiplication_complexity = calculate_multiplication_complexity(base_length, mod_length);
+	let iteration_count = calculate_iteration_count(exp_length, exponent);
+	let gas = max(
+		MIN_GAS_COST,
+		multiplication_complexity * iteration_count / 3,
+	);
+
+	gas
+}",1,"13,30",// TODO: prevent/handle overflow/~/				(8 * (exp_length - 32)) + ((exponent.bitand(max_256_bit_uint)).bits() - 1);
+"    fn drop(&mut self) {
+        if self.needs_inst_drop {
+            unsafe {
+                let inst = self.inst.as_mut();
+
+                // Grab a handle to the region to ensure it outlives `inst`.
+                //
+                // This ensures that the region won't be dropped by `inst` being
+                // dropped, which could result in `inst` being unmapped by the
+                // Region *during* drop of the Instance's fields.
+                let region: Arc<dyn RegionInternal> = inst.alloc().region.clone();
+
+                // drop the actual instance
+                std::ptr::drop_in_place(inst);
+
+                // and now we can drop what may be the last Arc<Region>. If it is
+                // it can safely do what it needs with memory; we're not running
+                // destructors on it anymore.
+                mem::drop(region);
+            }
+        }
+    }",1,"5,7,8,9,10,15,16,17,18","                // Grab a handle to the region to ensure it outlives `inst`./~/                // This ensures that the region won't be dropped by `inst` being/~/                // dropped, which could result in `inst` being unmapped by the/~/                // Region *during* drop of the Instance's fields./~/                let region: Arc<dyn RegionInternal> = inst.alloc().region.clone();/~/                // and now we can drop what may be the last Arc<Region>. If it is/~/                // it can safely do what it needs with memory; we're not running/~/                // destructors on it anymore./~/                mem::drop(region);"
+"    pub fn entering_host(&self) -> bool {
+        match self {
+            CallHook::ReturningFromWasm | CallHook::CallingHost => true,
+            _ => false,
+        }
+    }",0,,
+"    pub fn is_faulted(&self) -> bool {
+        self.state.is_faulted()
+    }",0,,
+"pub fn parse_cmd(cmd_str: &str, _sender_address: AccountAddress) -> Result<ast::Cmd> {
+    let stripped_string = &strip_comments(cmd_str);
+    let parser = syntax::CmdParser::new();
+    match parser.parse(stripped_string) {
+        Ok(cmd) => Ok(cmd),
+        Err(e) => handle_error(e, cmd_str),
+    }
+}",1,"1,5","    let stripped_string = &strip_comments(cmd_str);/~/        Err(e) => handle_error(e, cmd_str),"
+"    pub(crate) fn with<R>(f: impl FnOnce(&GlobalModuleRegistry) -> R) -> R {
+        f(&GLOBAL_MODULES.read().unwrap())
+    }",0,,
+"pub fn execute(
+		from: H160,
+		transaction: &Transaction,
+		config: Option<evm::Config>,
+	) -> Result<
+		(Option<H160>, Option<H160>, CallOrCreateInfo),
+		DispatchErrorWithPostInfo<PostDispatchInfo>,
+	> {
+		let (
+			input,
+			value,
+			gas_limit,
+			max_fee_per_gas,
+			max_priority_fee_per_gas,
+			nonce,
+			action,
+			access_list,
+		) = {
+			match transaction {
+				// max_fee_per_gas and max_priority_fee_per_gas in legacy and 2930 transactions is
+				// the provided gas_price.
+				Transaction::Legacy(t) => (
+					t.input.clone(),
+					t.value,
+					t.gas_limit,
+					Some(t.gas_price),
+					Some(t.gas_price),
+					Some(t.nonce),
+					t.action,
+					Vec::new(),
+				),
+				Transaction::EIP2930(t) => {
+					let access_list: Vec<(H160, Vec<H256>)> = t
+						.access_list
+						.iter()
+						.map(|item| (item.address, item.storage_keys.clone()))
+						.collect();
+					(
+						t.input.clone(),
+						t.value,
+						t.gas_limit,
+						Some(t.gas_price),
+						Some(t.gas_price),
+						Some(t.nonce),
+						t.action,
+						access_list,
+					)
+				}
+				Transaction::EIP1559(t) => {
+					let access_list: Vec<(H160, Vec<H256>)> = t
+						.access_list
+						.iter()
+						.map(|item| (item.address, item.storage_keys.clone()))
+						.collect();
+					(
+						t.input.clone(),
+						t.value,
+						t.gas_limit,
+						Some(t.max_fee_per_gas),
+						Some(t.max_priority_fee_per_gas),
+						Some(t.nonce),
+						t.action,
+						access_list,
+					)
+				}
+			}
+		};
+
+		let is_transactional = true;
+		let validate = false;
+		match action {
+			ethereum::TransactionAction::Call(target) => {
+				let res = match T::Runner::call(
+					from,
+					target,
+					input,
+					value,
+					gas_limit.low_u64(),
+					max_fee_per_gas,
+					max_priority_fee_per_gas,
+					nonce,
+					access_list,
+					is_transactional,
+					validate,
+					config.as_ref().unwrap_or_else(|| T::config()),
+				) {
+					Ok(res) => res,
+					Err(e) => {
+						return Err(DispatchErrorWithPostInfo {
+							post_info: PostDispatchInfo {
+								actual_weight: Some(e.weight),
+								pays_fee: Pays::Yes,
+							},
+							error: e.error.into(),
+						})
+					}
+				};
+
+				Ok((Some(target), None, CallOrCreateInfo::Call(res)))
+			}
+			ethereum::TransactionAction::Create => {
+				let res = match T::Runner::create(
+					from,
+					input,
+					value,
+					gas_limit.low_u64(),
+					max_fee_per_gas,
+					max_priority_fee_per_gas,
+					nonce,
+					access_list,
+					is_transactional,
+					validate,
+					config.as_ref().unwrap_or_else(|| T::config()),
+				) {
+					Ok(res) => res,
+					Err(e) => {
+						return Err(DispatchErrorWithPostInfo {
+							post_info: PostDispatchInfo {
+								actual_weight: Some(e.weight),
+								pays_fee: Pays::Yes,
+							},
+							error: e.error.into(),
+						})
+					}
+				};
+
+				Ok((None, Some(res.value), CallOrCreateInfo::Create(res)))
+			}
+		}
+	}",1,"77,105","gas_limit.low_u64(),/~/					gas_limit.low_u64(),"
+"fn test_err_sdiv64_overflow_imm() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov r0, 0x80
+        lsh r0, 56
+        sdiv r0, -1
+        exit"",
+        [],
+        (),
+        0,
+        {
+            |_vm, res: Result| matches!(res.unwrap_err(), EbpfError::DivideOverflow(pc) if pc == 31)
+        },
+        3
+    );
+}",0,,
+"    fn take(&self, count: usize) -> Self {
+        let tokens = &self.tokens[..count];
+
+        Input { source: self.source, tokens }
+    }",1,3,"        Input { source: self.source, tokens }"
+"async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let args = set_command_line_args().get_matches();
+    env::set_var(""RUST_LOG"", ""swhkd=warn"");
+
+    if args.is_present(""debug"") {
+        env::set_var(""RUST_LOG"", ""swhkd=trace"");
+    }
+
+    env_logger::init();
+    log::trace!(""Logger initialized."");
+
+    let pidfile: String = String::from(""/tmp/swhkd.pid"");
+    if Path::new(&pidfile).exists() {
+        log::trace!(""Reading {} file and checking for running instances."", pidfile);
+        let swhkd_pid = match fs::read_to_string(&pidfile) {
+            Ok(swhkd_pid) => swhkd_pid,
+            Err(e) => {
+                log::error!(""Unable to read {} to check all running instances"", e);
+                exit(1);
+            }
+        };
+        log::debug!(""Previous PID: {}"", swhkd_pid);
+
+        let mut sys = System::new_all();
+        sys.refresh_all();
+        for (pid, process) in sys.processes() {
+            if pid.to_string() == swhkd_pid && process.exe() == env::current_exe().unwrap() {
+                log::error!(""Swhkd is already running!"");
+                log::error!(""pid of existing swhkd process: {}"", pid.to_string());
+                log::error!(""To close the existing swhkd process, run `sudo killall swhkd`"");
+                exit(1);
+            }
+        }
+    }
+
+    match fs::write(&pidfile, id().to_string()) {
+        Ok(_) => {}
+        Err(e) => {
+            log::error!(""Unable to write to {}: {}"", pidfile, e);
+            exit(1);
+        }
+    }
+
+    if check_user_permissions().is_err() {
+        exit(1);
+    }
+
+    let load_config = || {
+        seteuid(env::var(""PKEXEC_UID"").unwrap().parse::<u32>().unwrap()); // Dropping privileges to invoking user.
+        let config_file_path: std::path::PathBuf = if args.is_present(""config"") {
+            Path::new(args.value_of(""config"").unwrap()).to_path_buf()
+        } else {
+            fetch_xdg_config_path()
+        };
+
+        log::debug!(""Using config file path: {:#?}"", config_file_path);
+
+        let hotkeys = match config::load(&config_file_path) {
+            Err(e) => {
+                log::error!(""Config Error: {}"", e);
+                exit(1);
+            }
+            Ok(out) => out,
+        };
+
+        for hotkey in &hotkeys {
+            log::debug!(""hotkey: {:#?}"", hotkey);
+        }
+
+        hotkeys
+    };
+
+    let mut hotkeys = load_config();
+    seteuid(0); // Escalating back to root after reading config file.
+    log::trace!(""Attempting to find all keyboard file descriptors."");
+    let keyboard_devices: Vec<Device> =
+        evdev::enumerate().filter(check_device_is_keyboard).collect();
+
+    let mut uinput_device = match uinput::create_uinput_device() {
+        Ok(dev) => dev,
+        Err(e) => {
+            log::error!(""Err: {:#?}"", e);
+            exit(1);
+        }
+    };
+
+    if keyboard_devices.is_empty() {
+        log::error!(""No valid keyboard device was detected!"");
+        exit(1);
+    }
+    log::debug!(""{} Keyboard device(s) detected."", keyboard_devices.len());
+
+    let modifiers_map: HashMap<Key, config::Modifier> = HashMap::from([
+        (Key::KEY_LEFTMETA, config::Modifier::Super),
+        (Key::KEY_RIGHTMETA, config::Modifier::Super),
+        (Key::KEY_LEFTMETA, config::Modifier::Super),
+        (Key::KEY_RIGHTMETA, config::Modifier::Super),
+        (Key::KEY_LEFTALT, config::Modifier::Alt),
+        (Key::KEY_RIGHTALT, config::Modifier::Alt),
+        (Key::KEY_LEFTCTRL, config::Modifier::Control),
+        (Key::KEY_RIGHTCTRL, config::Modifier::Control),
+        (Key::KEY_LEFTSHIFT, config::Modifier::Shift),
+        (Key::KEY_RIGHTSHIFT, config::Modifier::Shift),
+    ]);
+
+    let repeat_cooldown_duration: u64 = if args.is_present(""cooldown"") {
+        args.value_of(""cooldown"").unwrap().parse::<u64>().unwrap()
+    } else {
+        250
+    };
+
+    let mut signals = Signals::new(&[
+        SIGUSR1, SIGUSR2, SIGHUP, SIGABRT, SIGBUS, SIGCHLD, SIGCONT, SIGINT, SIGPIPE, SIGQUIT,
+        SIGSYS, SIGTERM, SIGTRAP, SIGTSTP, SIGVTALRM, SIGXCPU, SIGXFSZ,
+    ])?;
+
+    let mut execution_is_paused = false;
+    let mut last_hotkey: Option<config::Hotkey> = None;
+    let mut pending_release: bool = false;
+    let mut keyboard_states: Vec<KeyboardState> = Vec::new();
+    let mut keyboard_stream_map = StreamMap::new();
+
+    for (i, mut device) in keyboard_devices.into_iter().enumerate() {
+        let _ = device.grab();
+        keyboard_stream_map.insert(i, device.into_event_stream()?);
+        keyboard_states.push(KeyboardState::new());
+    }
+
+    // The initial sleep duration is never read because last_hotkey is initialized to None
+    let hotkey_repeat_timer = sleep(Duration::from_millis(0));
+    tokio::pin!(hotkey_repeat_timer);
+
+    loop {
+        select! {
+            _ = &mut hotkey_repeat_timer, if &last_hotkey.is_some() => {
+                let hotkey = last_hotkey.clone().unwrap();
+                if hotkey.keybinding.on_release {
+                    continue;
+                }
+                send_command(hotkey.clone());
+                hotkey_repeat_timer.as_mut().reset(Instant::now() + Duration::from_millis(repeat_cooldown_duration));
+            }
+
+            Some(signal) = signals.next() => {
+                match signal {
+                    SIGUSR1 => {
+                        execution_is_paused = true;
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.ungrab();
+                        }
+                    }
+
+                    SIGUSR2 => {
+                        execution_is_paused = false;
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.grab();
+                        }
+                    }
+
+                    SIGHUP => {
+                        hotkeys = load_config();
+                    }
+
+                    SIGINT => {
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.ungrab();
+                        }
+                        log::warn!(""Received SIGINT signal, exiting..."");
+                        exit(1);
+                    }
+
+                    _ => {
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.ungrab();
+                        }
+
+                        log::warn!(""Received signal: {:#?}"", signal);
+                        log::warn!(""Exiting..."");
+                        exit(1);
+                    }
+                }
+            }
+
+            Some((i, Ok(event))) = keyboard_stream_map.next() => {
+                let keyboard_state = &mut keyboard_states[i];
+
+                let key = match event.kind() {
+                    InputEventKind::Key(keycode) => keycode,
+                    _ => continue
+                };
+
+                match event.value() {
+                    // Key press
+                    1 => {
+                        if let Some(modifier) = modifiers_map.get(&key) {
+                            keyboard_state.state_modifiers.insert(*modifier);
+                        } else {
+                            keyboard_state.state_keysyms.insert(key);
+                        }
+                    }
+
+                    // Key release
+                    0 => {
+                        if last_hotkey.is_some() && pending_release {
+                            pending_release = false;
+                            send_command(last_hotkey.clone().unwrap());
+                            last_hotkey = None;
+                        }
+                        if let Some(modifier) = modifiers_map.get(&key) {
+                            if let Some(hotkey) = &last_hotkey {
+                                if hotkey.modifiers().contains(modifier) {
+                                    last_hotkey = None;
+                                }
+                            }
+                            keyboard_state.state_modifiers.remove(modifier);
+                        } else if keyboard_state.state_keysyms.contains(key) {
+                            if let Some(hotkey) = &last_hotkey {
+                                if key == hotkey.keysym() {
+                                    last_hotkey = None;
+                                }
+                            }
+                            keyboard_state.state_keysyms.remove(key);
+                        }
+                    }
+
+                    _ => {}
+                }
+
+                let possible_hotkeys: Vec<&config::Hotkey> = hotkeys.iter()
+                    .filter(|hotkey| hotkey.modifiers().len() == keyboard_state.state_modifiers.len())
+                    .collect();
+
+                let event_in_hotkeys = hotkeys.iter().any(|hotkey| {
+                    hotkey.keysym().code() == event.code() &&
+                    keyboard_state.state_modifiers
+                        .iter()
+                        .all(|x| hotkey.modifiers().contains(x)) &&
+                    keyboard_state.state_modifiers.len() == hotkey.modifiers().len()
+                    && !hotkey.is_send()
+                        });
+
+                // Don't emit event to virtual device if it's from a valid hotkey
+                if !event_in_hotkeys {
+                    uinput_device.emit(&[event]).unwrap();
+                }
+
+                if execution_is_paused || possible_hotkeys.is_empty() || last_hotkey.is_some() {
+                    continue;
+                }
+
+                log::debug!(""state_modifiers: {:#?}"", keyboard_state.state_modifiers);
+                log::debug!(""state_keysyms: {:#?}"", keyboard_state.state_keysyms);
+                log::debug!(""hotkey: {:#?}"", possible_hotkeys);
+
+                for hotkey in possible_hotkeys {
+                    // this should check if state_modifiers and hotkey.modifiers have the same elements
+                    if keyboard_state.state_modifiers.iter().all(|x| hotkey.modifiers().contains(x))
+                        && keyboard_state.state_modifiers.len() == hotkey.modifiers().len()
+                        && keyboard_state.state_keysyms.contains(hotkey.keysym())
+                    {
+                        last_hotkey = Some(hotkey.clone());
+                        if pending_release { break; }
+                        if hotkey.is_on_release() {
+                            pending_release = true;
+                            break;
+                        }
+                        send_command(hotkey.clone());
+                        hotkey_repeat_timer.as_mut().reset(Instant::now() + Duration::from_millis(repeat_cooldown_duration));
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}",1,"11,48","let pidfile: String = String::from(""/tmp/swhkd.pid"");/~/        seteuid(env::var(""PKEXEC_UID"").unwrap().parse::<u32>().unwrap()); // Dropping privileges to invoking user."
+"    fn try_from(ty: wasmparser::FuncType) -> Result<Self, Self::Error> {
+        Ok(Self {
+            params: ty
+                .params
+                .into_vec()
+                .into_iter()
+                .map(WasmType::try_from)
+                .collect::<Result<_, Self::Error>>()?,
+            returns: ty
+                .returns
+                .into_vec()
+                .into_iter()
+                .map(WasmType::try_from)
+                .collect::<Result<_, Self::Error>>()?,
+        })
+    }",1,"1,2,3,4,5,6,7,8,9,10,11,12,13,14","        Ok(Self {/~/            params: ty/~/                .params/~/                .into_vec()/~/                .into_iter()/~/                .map(WasmType::try_from)/~/                .collect::<Result<_, Self::Error>>()?,/~/            returns: ty/~/                .returns/~/                .into_vec()/~/                .into_iter()/~/                .map(WasmType::try_from)/~/                .collect::<Result<_, Self::Error>>()?,/~/        })"
+"fn test_jeq_imm() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov32 r0, 0
+        mov32 r1, 0xa
+        jeq r1, 0xb, +4
+        mov32 r0, 1
+        mov32 r1, 0xb
+        jeq r1, 0xb, +1
+        mov32 r0, 2
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x1 } },
+        7
+    );
+}",0,,
+"    pub fn new(entity: T) -> Self {
+        Self {
+            entity,
+            export_names: Vec::new(),
+        }
+    }",0,,
+"fn sock_send(command: &str) -> std::io::Result<()> {
+    let mut stream = UnixStream::connect(""/tmp/swhkd.sock"")?;
+    stream.write_all(command.as_bytes())?;
+    Ok(())
+}",1,1,"    let mut stream = UnixStream::connect(""/tmp/swhkd.sock"")?;"
+"pub fn generate_web_proxy_access_token(&self) -> String {
+		let token = random_string(16);
+		let mut tokens = self.web_proxy_tokens.lock();
+		tokens.prune();
+		tokens.insert(token.clone(), ());
+		token
+	}",1,"0,4","	pub fn generate_web_proxy_access_token(&self) -> String {/~/		tokens.insert(token.clone(), ());"
+"pub fn retrieve_less_version() -> Option<usize> {
+    let cmd = Command::new(""less"").arg(""--version"").output().ok()?;
+    parse_less_version(&cmd.stdout)
+}",1,"1,2","    let cmd = Command::new(""less"").arg(""--version"").output().ok()?;/~/    parse_less_version(&cmd.stdout)"
+"pub fn native_version() -> NativeVersion {
+	NativeVersion {
+		runtime_version: VERSION,
+		can_author_with: Default::default(),
+	}
+}",0,,
+"    pub fn is_yielded(&self) -> bool {
+        self.yielded_ref().is_ok()
+    }",0,,
+"fn verify_transaction<F>(bytes: Bytes, request: FilledTransactionRequest, process: F) -> Result<ConfirmationResponse, Error> where
+		F: FnOnce(PendingTransaction) -> Result<ConfirmationResponse, Error>,
+	{
+		let signed_transaction = UntrustedRlp::new(&bytes.0).as_val().map_err(errors::from_rlp_error)?;
+		let signed_transaction = SignedTransaction::new(signed_transaction).map_err(|e| errors::invalid_params(""Invalid signature."", e))?;
+		let sender = signed_transaction.sender();
+
+		// Verification
+		let sender_matches = sender == request.from;
+		let data_matches = signed_transaction.data == request.data;
+		let value_matches = signed_transaction.value == request.value;
+		let nonce_matches = match request.nonce {
+			Some(nonce) => signed_transaction.nonce == nonce,
+			None => true,
+		};
+
+		// Dispatch if everything is ok
+		if sender_matches && data_matches && value_matches && nonce_matches {
+			let pending_transaction = PendingTransaction::new(signed_transaction, request.condition.map(Into::into));
+			process(pending_transaction)
+		} else {
+			let mut error = Vec::new();
+			if !sender_matches { error.push(""from"") }
+			if !data_matches { error.push(""data"") }
+			if !value_matches { error.push(""value"") }
+			if !nonce_matches { error.push(""nonce"") }
+
+			Err(errors::invalid_params(""Sent transaction does not match the request."", error))
+		}
+	}",0,,
+"fn extract_target_url(&self, url: Option<Url>) -> Result<String, State<F>> {
+		let token_and_url = self.path.app_params.get(0)
+			.map(|encoded| encoded.replace('.', """"))
+			.and_then(|encoded| base32::decode(base32::Alphabet::Crockford, &encoded.to_uppercase()))
+			.and_then(|data| String::from_utf8(data).ok())
+			.ok_or_else(|| State::Error(ContentHandler::error(
+				StatusCode::BadRequest,
+				""Invalid parameter"",
+				""Couldn't parse given parameter:"",
+				self.path.app_params.get(0).map(String::as_str),
+				self.embeddable_on.clone()
+			)))?;
+
+		let mut token_it = token_and_url.split('+');
+		let token = token_it.next();
+		let target_url = token_it.next();
+
+		// Check if token supplied in URL is correct.
+		match token {
+			Some(token) if self.web_proxy_tokens.is_web_proxy_token_valid(token) => {},
+			_ => {
+				return Err(State::Error(ContentHandler::error(
+					StatusCode::BadRequest, ""Invalid Access Token"", ""Invalid or old web proxy access token supplied."", Some(""Try refreshing the page.""), self.embeddable_on.clone()
+				)));
+			}
+		}
+
+		// Validate protocol
+		let mut target_url = match target_url {
+			Some(url) if url.starts_with(""http://"") || url.starts_with(""https://"") => url.to_owned(),
+			_ => {
+				return Err(State::Error(ContentHandler::error(
+					StatusCode::BadRequest, ""Invalid Protocol"", ""Invalid protocol used."", None, self.embeddable_on.clone()
+				)));
+			}
+		};
+
+		if !target_url.ends_with(""/"") {
+			target_url = format!(""{}/"", target_url);
+		}
+
+		// TODO [ToDr] Should just use `path.app_params`
+		let (path, query) = match (&url, self.path.using_dapps_domains) {
+			(&Some(ref url), true) => (&url.path[..], &url.query),
+			(&Some(ref url), false) => (&url.path[2..], &url.query),
+			_ => {
+				return Err(State::Error(ContentHandler::error(
+					StatusCode::BadRequest, ""Invalid URL"", ""Couldn't parse URL"", None, self.embeddable_on.clone()
+				)));
+			}
+		};
+
+		let query = match *query {
+			Some(ref query) => format!(""?{}"", query),
+			None => """".into(),
+		};
+
+		Ok(format!(""{}{}{}"", target_url, path.join(""/""), query))
+	}",1,"18,19,25","		match token {/~/			Some(token) if self.web_proxy_tokens.is_web_proxy_token_valid(token) => {},/~/		}"
+"fn test_ldindw() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov64 r1, 0x4
+        ldindw r1, 0x1
+        exit"",
+        [
+            0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, //
+            0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, //
+        ],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x88776655 } },
+        3
+    );
+}",0,,
+"pub fn replace_insns_from_regalloc(&mut self, result: RegAllocResult<Self>) {
+        // Record the spillslot count and clobbered registers for the ABI/stack
+        // setup code.
+        self.abi.set_num_spillslots(result.num_spill_slots as usize);
+        self.abi
+            .set_clobbered(result.clobbered_registers.map(|r| Writable::from_reg(*r)));
+
+        let mut final_insns = vec![];
+        let mut final_block_ranges = vec![(0, 0); self.num_blocks()];
+        let mut final_srclocs = vec![];
+        let mut final_safepoint_insns = vec![];
+        let mut safept_idx = 0;
+
+        assert!(result.target_map.elems().len() == self.num_blocks());
+        for block in 0..self.num_blocks() {
+            let start = result.target_map.elems()[block].get() as usize;
+            let end = if block == self.num_blocks() - 1 {
+                result.insns.len()
+            } else {
+                result.target_map.elems()[block + 1].get() as usize
+            };
+            let block = block as BlockIndex;
+            let final_start = final_insns.len() as InsnIndex;
+
+            if block == self.entry {
+                // Start with the prologue.
+                let prologue = self.abi.gen_prologue();
+                let len = prologue.len();
+                final_insns.extend(prologue.into_iter());
+                final_srclocs.extend(iter::repeat(SourceLoc::default()).take(len));
+            }
+
+            for i in start..end {
+                let insn = &result.insns[i];
+
+                // Elide redundant moves at this point (we only know what is
+                // redundant once registers are allocated).
+                if is_redundant_move(insn) {
+                    continue;
+                }
+
+                // Is there a srcloc associated with this insn? Look it up based on original
+                // instruction index (if new insn corresponds to some original insn, i.e., is not
+                // an inserted load/spill/move).
+                let orig_iix = result.orig_insn_map[InstIx::new(i as u32)];
+                let srcloc = if orig_iix.is_invalid() {
+                    SourceLoc::default()
+                } else {
+                    self.srclocs[orig_iix.get() as usize]
+                };
+
+                // Whenever encountering a return instruction, replace it
+                // with the epilogue.
+                let is_ret = insn.is_term() == MachTerminator::Ret;
+                if is_ret {
+                    let epilogue = self.abi.gen_epilogue();
+                    let len = epilogue.len();
+                    final_insns.extend(epilogue.into_iter());
+                    final_srclocs.extend(iter::repeat(srcloc).take(len));
+                } else {
+                    final_insns.push(insn.clone());
+                    final_srclocs.push(srcloc);
+                }
+
+                // Was this instruction a safepoint instruction? Add its final
+                // index to the safepoint insn-index list if so.
+                if safept_idx < result.new_safepoint_insns.len()
+                    && (result.new_safepoint_insns[safept_idx].get() as usize) == i
+                {
+                    let idx = final_insns.len() - 1;
+                    final_safepoint_insns.push(idx as InsnIndex);
+                    safept_idx += 1;
+                }
+            }
+
+            let final_end = final_insns.len() as InsnIndex;
+            final_block_ranges[block as usize] = (final_start, final_end);
+        }
+
+        debug_assert!(final_insns.len() == final_srclocs.len());
+
+        self.insts = final_insns;
+        self.srclocs = final_srclocs;
+        self.block_ranges = final_block_ranges;
+        self.safepoint_insns = final_safepoint_insns;
+
+        // Save safepoint slot-lists. These will be passed to the `EmitState`
+        // for the machine backend during emission so that it can do
+        // target-specific translations of slot numbers to stack offsets.
+        self.safepoint_slots = result.stackmaps;
+    }",0,,
+"pub fn shr_int(&mut self, n: usize) -> u32 {
+        let ret: u32;
+        debug_assert!(n > 0);
+        debug_assert!(n < 16);
+        ret = self.0[0] & ((1 << n) - 1);
+        self.0[0] = (self.0[0] >> n) + (self.0[1] << (32 - n));
+        self.0[1] = (self.0[1] >> n) + (self.0[2] << (32 - n));
+        self.0[2] = (self.0[2] >> n) + (self.0[3] << (32 - n));
+        self.0[3] = (self.0[3] >> n) + (self.0[4] << (32 - n));
+        self.0[4] = (self.0[4] >> n) + (self.0[5] << (32 - n));
+        self.0[5] = (self.0[5] >> n) + (self.0[6] << (32 - n));
+        self.0[6] = (self.0[6] >> n) + (self.0[7] << (32 - n));
+        self.0[7] = self.0[7] >> n;
+        return ret;
+    }",0,,
+"fn test_err_instruction_count_syscall_capped() {
+    let config = Config {
+        static_syscalls: false,
+        ..Config::default()
+    };
+    test_interpreter_and_jit_asm!(
+        ""
+        mov64 r2, 0x5
+        call 0
+        mov64 r0, 0x0
+        exit"",
+        config,
+        [72, 101, 108, 108, 111],
+        (
+            b""BpfSyscallString"" => syscalls::BpfSyscallString::init::<BpfSyscallContext, UserError>; syscalls::BpfSyscallString::call,
+        ),
+        0,
+        {
+            |_vm, res: Result| {
+                matches!(res.unwrap_err(),
+                    EbpfError::ExceededMaxInstructions(pc, initial_insn_count)
+                    if pc == 32 && initial_insn_count == 3
+                )
+            }
+        },
+        3
+    );
+}",0,,
+"fn withdraw_fee(who: &H160, fee: U256) -> Result<Self::LiquidityInfo, Error<T>> {
+		if fee.is_zero() {
+			return Ok(None);
+		}
+		let account_id = T::AddressMapping::into_account_id(*who);
+		let imbalance = C::withdraw(
+			&account_id,
+			fee.low_u128().unique_saturated_into(),
+			WithdrawReasons::FEE,
+			ExistenceRequirement::AllowDeath,
+		)
+		.map_err(|_| Error::<T>::BalanceLow)?;
+		Ok(Some(imbalance))
+	}",1,7,"fee.low_u128().unique_saturated_into(),"
+"fn correct_and_deposit_fee(
+		who: &H160,
+		corrected_fee: U256,
+		base_fee: U256,
+		already_withdrawn: Self::LiquidityInfo,
+	) -> Self::LiquidityInfo {
+		if let Some(paid) = already_withdrawn {
+			let account_id = T::AddressMapping::into_account_id(*who);
+
+			// Calculate how much refund we should return
+			let refund_amount = paid
+				.peek()
+				.saturating_sub(corrected_fee.low_u128().unique_saturated_into());
+			// refund to the account that paid the fees. If this fails, the
+			// account might have dropped below the existential balance. In
+			// that case we don't refund anything.
+			let refund_imbalance = C::deposit_into_existing(&account_id, refund_amount)
+				.unwrap_or_else(|_| C::PositiveImbalance::zero());
+
+			// Make sure this works with 0 ExistentialDeposit
+			// https://github.com/paritytech/substrate/issues/10117
+			// If we tried to refund something, the account still empty and the ED is set to 0,
+			// we call `make_free_balance_be` with the refunded amount.
+			let refund_imbalance = if C::minimum_balance().is_zero()
+				&& refund_amount > C::Balance::zero()
+				&& C::total_balance(&account_id).is_zero()
+			{
+				// Known bug: Substrate tried to refund to a zeroed AccountData, but
+				// interpreted the account to not exist.
+				match C::make_free_balance_be(&account_id, refund_amount) {
+					SignedImbalance::Positive(p) => p,
+					_ => C::PositiveImbalance::zero(),
+				}
+			} else {
+				refund_imbalance
+			};
+
+			// merge the imbalance caused by paying the fees and refunding parts of it again.
+			let adjusted_paid = paid
+				.offset(refund_imbalance)
+				.same()
+				.unwrap_or_else(|_| C::NegativeImbalance::zero());
+
+			let (base_fee, tip) = adjusted_paid.split(base_fee.low_u128().unique_saturated_into());
+			// Handle base fee. Can be either burned, rationed, etc ...
+			OU::on_unbalanced(base_fee);
+			return Some(tip);
+		}
+		None
+	}",1,"12,43",".saturating_sub(corrected_fee.low_u128().unique_saturated_into());/~/			let (base_fee, tip) = adjusted_paid.split(base_fee.low_u128().unique_saturated_into());"
+"pub fn call(&self, mut store: impl AsContextMut, params: Params) -> Result<Results, Trap> {
+        let mut store = store.as_context_mut();
+        assert!(
+            !store.0.async_support(),
+            ""must use `call_async` with async stores""
+        );
+        unsafe { self._call(&mut store, params) }
+    }",0,,
+"fn main() {
+    benchtool::runner();
+}",1,2,}

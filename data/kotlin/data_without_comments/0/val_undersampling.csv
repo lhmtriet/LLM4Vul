@@ -1,0 +1,40 @@
+processed_func,target
+"    override fun getCurrentLocation(): Location = getCurrentPath().endLocation
+}",0
+"                            override fun getAcceptedIssuers(): Array<X509Certificate?> {
+                                return arrayOfNulls(0)
+                            }",1
+"    override fun getInfectionReportDate(): Date? {
+        val infectionReportDateMillis = preferences.getLong(KEY_INFECTION_REPORT_DATE, 0)
+        return if (infectionReportDateMillis == 0L)
+            null
+        else
+            Date(infectionReportDateMillis)
+    }",0
+"    override fun setTDummy(time: Long) {
+        preferences.edit().putLong(KEY_T_DUMMY, time).apply()
+    }",0
+"        private fun start(
+            context: Context,
+            delayInMinutes: Long,
+            existingWorkPolicy: ExistingWorkPolicy
+        ) {
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+            val work =
+                OneTimeWorkRequest
+                    .Builder(FakeInfectionReportWorker::class.java)
+                    .setInitialDelay(delayInMinutes, TimeUnit.MINUTES)
+                    .setConstraints(constraints)
+                    .build()
+            WorkManager.getInstance(context)
+                .enqueueUniqueWork(TAG, existingWorkPolicy, work)
+        }",1
+"    override fun decodeElementIndex(descriptor: SerialDescriptor): Int = 0
+}",1
+"        private fun getRandomDelay(): Long = Random.nextLong(180, 360)
+
+    }",1
+"    override fun getCurrentPath(): YamlPath = node.path
+}",0

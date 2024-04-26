@@ -1,0 +1,3427 @@
+processed_func,target,flaw_line_index,flaw_line
+"pub fn num_params(&self) -> u8 {
+        let num_params = std::cmp::max(self.num_params, NUM_PARAMS_RANGE.start);
+        let num_params = std::cmp::min(num_params, NUM_PARAMS_RANGE.end);
+        num_params
+    }",0,,
+"    pub(crate) fn unknown_index(self) -> ParseError {
+        ParseError { kind: self, span: None }
+    }",0,,
+"    fn module(&self) -> &dyn Module {
+        self.module.deref()
+    }",0,,
+"	pub fn endpoints(&self) -> Endpoints {
+		Endpoints {
+			endpoints: self.endpoints.clone(),
+		}
+	}",0,,
+"pub fn serialize(&self) -> [u8; util::SECRET_KEY_SIZE] {
+        self.0.b32()
+    }",0,,
+"pub async fn init(
+        db: &Corestore,
+        host: IpAddr,
+        port: u16,
+        semaphore: Arc<Semaphore>,
+        signal: broadcast::Sender<()>,
+    ) -> Result<Self, IoError> {
+        let (terminate_tx, terminate_rx) = mpsc::channel(1);
+        Ok(Self {
+            db: db.clone(),
+            listener: TcpListener::bind((host, port)).await?,
+            climit: semaphore,
+            signal,
+            terminate_tx,
+            terminate_rx,
+        })
+    }",0,,
+"pub fn sqr_in_place(&mut self, a: &Scalar) {
+        let mut l = [0u32; 16];
+        a.sqr_512(&mut l);
+        self.reduce_512(&l);
+    }",0,,
+"fn test_jne_reg() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov32 r0, 0
+        mov32 r1, 0xb
+        mov32 r2, 0xb
+        jne r1, r2, +4
+        mov32 r0, 1
+        mov32 r1, 0xa
+        jne r1, r2, +1
+        mov32 r0, 2
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x1 } },
+        8
+    );
+}",0,,
+"fn test_tight_infinite_loop_unconditional() {
+    test_interpreter_and_jit_asm!(
+        ""
+        ja -1
+        exit"",
+        [],
+        (),
+        0,
+        {
+            |_vm, res: Result| {
+                matches!(res.unwrap_err(),
+                    EbpfError::ExceededMaxInstructions(pc, initial_insn_count)
+                    if pc == 30 && initial_insn_count == 4
+                )
+            }
+        },
+        4
+    );
+}",0,,
+"fn test_alu64_arithmetic() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov r0, 0
+        mov r1, 1
+        mov r2, 2
+        mov r3, 3
+        mov r4, 4
+        mov r5, 5
+        mov r6, 6
+        mov r7, 7
+        mov r8, 8
+        mov r9, 9
+        add r0, 23
+        add r0, r7
+        sub r0, 13
+        sub r0, r1
+        mul r0, 7
+        mul r0, r3
+        div r0, 2
+        div r0, r4
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x2a } },
+        19
+    );
+}",0,,
+"	fn generate_token(&self) -> Result<String, Error> {
+		self.signer.generate_token()
+			.map_err(|e| errors::token(e))
+	}",0,,
+"		fn on_request(
+			&self, _req: &hyper::server::Request<hyper::net::HttpStream>, _control: &hyper::Control
+		) -> RequestMiddlewareAction {
+			unreachable!()
+		}",0,,
+"    pub(crate) fn new(isa: Box<dyn TargetIsa>, linkopts: LinkOptions) -> Compiler {
+        Compiler {
+            translators: Default::default(),
+            isa,
+            linkopts,
+        }
+    }",0,,
+"pub fn check_device_is_keyboard(device: &Device) -> bool {
+    if device.supported_keys().map_or(false, |keys| keys.contains(Key::KEY_ENTER)) {
+        if device.name() == Some(""swhkd virtual output"") {
+            return false;
+        }
+        log::debug!(""Keyboard: {}"", device.name().unwrap(),);
+        true
+    } else {
+        log::trace!(""Other: {}"", device.name().unwrap(),);
+        false
+    }
+}",0,,
+"pub fn check_device_is_keyboard(device: &Device) -> bool {
+    if device.supported_keys().map_or(false, |keys| keys.contains(Key::KEY_ENTER)) {
+        if device.name() == Some(""swhkd virtual output"") {
+            return false;
+        }
+        log::debug!(""Keyboard: {}"", device.name().unwrap(),);
+        true
+    } else {
+        log::trace!(""Other: {}"", device.name().unwrap(),);
+        false
+    }
+}",0,,
+"fn new(
+        abi: Box<dyn ABICallee<I = I>>,
+        emit_info: I::Info,
+        block_order: BlockLoweringOrder,
+        constants: VCodeConstants,
+        generate_debug_info: bool,
+    ) -> VCode<I> {
+        VCode {
+            liveins: abi.liveins(),
+            liveouts: abi.liveouts(),
+            vreg_types: vec![],
+            have_ref_values: false,
+            insts: vec![],
+            srclocs: vec![],
+            entry: 0,
+            block_ranges: vec![],
+            block_succ_range: vec![],
+            block_succs: vec![],
+            block_order,
+            abi,
+            emit_info,
+            safepoint_insns: vec![],
+            safepoint_slots: vec![],
+            generate_debug_info,
+            insts_layout: RefCell::new(Default::default()),
+            constants,
+            has_value_labels: false,
+        }
+    }",0,,
+"fn build(&self) {
+			<Pallet<T>>::store_block(false, U256::zero());
+			frame_support::storage::unhashed::put::<EthereumStorageSchema>(
+				&PALLET_ETHEREUM_SCHEMA,
+				&EthereumStorageSchema::V1,
+			);
+		}",0,,
+"fn try_pager(
+        single_screen_action: SingleScreenAction,
+        wrapping_mode: WrappingMode,
+        pager_from_config: Option<&str>,
+    ) -> Result<Self> {
+        use crate::pager::{self, PagerKind, PagerSource};
+        use std::process::{Command, Stdio};
+
+        let pager_opt =
+            pager::get_pager(pager_from_config).chain_err(|| ""Could not parse pager command."")?;
+
+        let pager = match pager_opt {
+            Some(pager) => pager,
+            None => return Ok(OutputType::stdout()),
+        };
+
+        if pager.kind == PagerKind::Bat {
+            return Err(ErrorKind::InvalidPagerValueBat.into());
+        }
+
+        let mut p = Command::new(&pager.bin);
+        let args = pager.args;
+
+        if pager.kind == PagerKind::Less {
+            // less needs to be called with the '-R' option in order to properly interpret the
+            // ANSI color sequences printed by bat. If someone has set PAGER=""less -F"", we
+            // therefore need to overwrite the arguments and add '-R'.
+            //
+            // We only do this for PAGER (as it is not specific to 'bat'), not for BAT_PAGER
+            // or bats '--pager' command line option.
+            let replace_arguments_to_less = pager.source == PagerSource::EnvVarPager;
+
+            if args.is_empty() || replace_arguments_to_less {
+                p.arg(""--RAW-CONTROL-CHARS"");
+                if single_screen_action == SingleScreenAction::Quit {
+                    p.arg(""--quit-if-one-screen"");
+                }
+
+                if wrapping_mode == WrappingMode::NoWrapping(true) {
+                    p.arg(""--chop-long-lines"");
+                }
+
+                // Passing '--no-init' fixes a bug with '--quit-if-one-screen' in older
+                // versions of 'less'. Unfortunately, it also breaks mouse-wheel support.
+                //
+                // See: http://www.greenwoodsoftware.com/less/news.530.html
+                //
+                // For newer versions (530 or 558 on Windows), we omit '--no-init' as it
+                // is not needed anymore.
+                match retrieve_less_version(&pager.bin) {
+                    None => {
+                        p.arg(""--no-init"");
+                    }
+                    Some(version) if (version < 530 || (cfg!(windows) && version < 558)) => {
+                        p.arg(""--no-init"");
+                    }
+                    _ => {}
+                }
+            } else {
+                p.args(args);
+            }
+            p.env(""LESSCHARSET"", ""UTF-8"");
+        } else {
+            p.args(args);
+        };
+
+        Ok(p.stdin(Stdio::piped())
+            .spawn()
+            .map(OutputType::Pager)
+            .unwrap_or_else(|_| OutputType::stdout()))
+    }",1,20,        let mut p = Command::new(&pager.bin);
+"pub fn new(engine: &Engine, data: T) -> Self {
+        let functions = &Default::default();
+        // Wasmtime uses the callee argument to host functions to learn about
+        // the original pointer to the `Store` itself, allowing it to
+        // reconstruct a `StoreContextMut<T>`. When we initially call a `Func`,
+        // however, there's no ""callee"" to provide. To fix this we allocate a
+        // single ""default callee"" for the entire `Store`. This is then used as
+        // part of `Func::call` to guarantee that the `callee: *mut VMContext`
+        // is never null.
+        let default_callee = unsafe {
+            OnDemandInstanceAllocator::default()
+                .allocate(InstanceAllocationRequest {
+                    host_state: Box::new(()),
+                    image_base: 0,
+                    functions,
+                    shared_signatures: None.into(),
+                    imports: Default::default(),
+                    module: Arc::new(wasmtime_environ::Module::default()),
+                    store: None,
+                    wasm_data: &[],
+                })
+                .expect(""failed to allocate default callee"")
+        };
+        let mut inner = Box::new(StoreInner {
+            inner: StoreOpaque {
+                _marker: marker::PhantomPinned,
+                engine: engine.clone(),
+                interrupts: Default::default(),
+                instances: Vec::new(),
+                signal_handler: None,
+                externref_activations_table: VMExternRefActivationsTable::new(),
+                modules: ModuleRegistry::default(),
+                host_trampolines: HashMap::default(),
+                instance_count: 0,
+                instance_limit: wasmtime_runtime::DEFAULT_INSTANCE_LIMIT,
+                memory_count: 0,
+                memory_limit: wasmtime_runtime::DEFAULT_MEMORY_LIMIT,
+                table_count: 0,
+                table_limit: wasmtime_runtime::DEFAULT_TABLE_LIMIT,
+                fuel_adj: 0,
+                #[cfg(feature = ""async"")]
+                async_state: AsyncState {
+                    current_suspend: UnsafeCell::new(ptr::null()),
+                    current_poll_cx: UnsafeCell::new(ptr::null_mut()),
+                },
+                out_of_gas_behavior: OutOfGas::Trap,
+                store_data: StoreData::new(),
+                default_callee,
+                hostcall_val_storage: Vec::new(),
+            },
+            limiter: None,
+            call_hook: None,
+            data: ManuallyDrop::new(data),
+        });
+
+        // Once we've actually allocated the store itself we can configure the
+        // trait object pointer of the default callee. Note the erasure of the
+        // lifetime here into `'static`, so in general usage of this trait
+        // object must be strictly bounded to the `Store` itself, and is a
+        // variant that we have to maintain throughout Wasmtime.
+        unsafe {
+            let traitobj = std::mem::transmute::<
+                *mut (dyn wasmtime_runtime::Store + '_),
+                *mut (dyn wasmtime_runtime::Store + 'static),
+            >(&mut *inner);
+            inner.default_callee.set_store(traitobj);
+        }
+
+        Self {
+            inner: ManuallyDrop::new(inner),
+        }
+    }",0,,
+"fn test_le16() {
+    test_interpreter_and_jit_asm!(
+        ""
+        ldxh r0, [r1]
+        le16 r0
+        exit"",
+        [0x22, 0x11],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x1122 } },
+        3
+    );
+}",0,,
+"pub fn is_one(&self) -> bool {
+        ((self.0[0] ^ 1) |  self.0[1] | self.0[2] | self.0[3] | self.0[4] | self.0[5] | self.0[6] | self.0[7]) == 0
+    }",0,,
+"fn c_empty_look(&mut self, look: EmptyLook) -> ResultOrEmpty {
+        let hole = self.push_hole(InstHole::EmptyLook { look: look });
+        Ok(Some(Patch { hole: hole, entry: self.insts.len() - 1 }))
+    }",0,,
+"pub fn new64(minimum: u64, maximum: Option<u64>) -> MemoryType {
+        MemoryType {
+            ty: Memory {
+                memory64: true,
+                shared: false,
+                minimum,
+                maximum,
+            },
+        }
+    }",0,,
+"	pub fn current_receipts() -> Option<Vec<ethereum::Receipt>> {
+		CurrentReceipts::<T>::get()
+	}",0,,
+"pub fn parse_der_lax(p: &[u8]) -> Result<Signature, Error> {
+        let mut decoder = der::Decoder::new(p);
+
+        decoder.read_constructed_sequence()?;
+        decoder.read_seq_len_lax()?;
+
+        let r = decoder.read_integer_lax()?;
+        let s = decoder.read_integer_lax()?;
+
+        Ok(Signature { r, s })
+    }",0,,
+"fn test_ldindw() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov64 r1, 0x4
+        ldindw r1, 0x1
+        exit"",
+        [
+            0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, //
+            0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, //
+        ],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x88776655 } },
+        3
+    );
+}",0,,
+"fn test_ldindb() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov64 r1, 0x5
+        ldindb r1, 0x3
+        exit"",
+        [
+            0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, //
+            0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, //
+        ],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x88 } },
+        3
+    );
+}",0,,
+"fn on_initialize(_: T::BlockNumber) -> Weight {
+			Pending::<T>::kill();
+
+			if let Ok(log) = fp_consensus::find_pre_log(&frame_system::Pallet::<T>::digest()) {
+				let PreLog::Block(block) = log;
+
+				for transaction in block.transactions {
+					Self::do_transact(transaction).expect(
+						""pre-block transaction verification failed; the block cannot be built"",
+					);
+				}
+			}
+
+			0
+		}",0,,
+"pub fn mul_in_place(&mut self, a: &Scalar, b: &Scalar) {
+        let mut l = [0u32; 16];
+        a.mul_512(b, &mut l);
+        self.reduce_512(&l);
+    }",0,,
+"fn test_instruction_count_syscall() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov64 r2, 0x5
+        syscall BpfSyscallString
+        mov64 r0, 0x0
+        exit"",
+        [72, 101, 108, 108, 111],
+        (
+            b""BpfSyscallString"" => syscalls::BpfSyscallString::init::<BpfSyscallContext, UserError>; syscalls::BpfSyscallString::call,
+        ),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0 } },
+        4
+    );
+}",0,,
+"fn byte_classes(&self) -> Vec<u8> {
+        // N.B. If you're debugging the DFA, it's useful to simply return
+        // `(0..256).collect()`, which effectively removes the byte classes
+        // and makes the transitions easier to read.
+        // (0usize..256).map(|x| x as u8).collect()
+        let mut byte_classes = vec![0; 256];
+        let mut class = 0u8;
+        let mut i = 0;
+        loop {
+            byte_classes[i] = class as u8;
+            if i >= 255 {
+                break;
+            }
+            if self.0[i] {
+                class = class.checked_add(1).unwrap();
+            }
+            i += 1;
+        }
+        byte_classes
+    }",0,,
+"    pub fn is_returned(&self) -> bool {
+        self.returned_ref().is_ok()
+    }",0,,
+"pub fn check_user_permissions() -> Result<(), ()> {
+    if !Uid::current().is_root() {
+        let groups = nix::unistd::getgroups();
+        for (_, groups) in groups.iter().enumerate() {
+            for group in groups {
+                let group = Group::from_gid(*group);
+                if group.unwrap().unwrap().name == ""input"" {
+                    log::error!(""Note: INVOKING USER IS IN INPUT GROUP!!!!"");
+                    log::error!(""THIS IS A HUGE SECURITY RISK!!!!"");
+                }
+            }
+        }
+        log::error!(""Consider using `pkexec swhkd ...`"");
+        Err(())
+    } else {
+        log::warn!(""Running swhkd as root!"");
+        Ok(())
+    }
+}",0,,
+"    unsafe fn layout_for(value_size: usize, value_align: usize) -> (Layout, usize) {
+        let extern_data_size = mem::size_of::<VMExternData>();
+        let extern_data_align = mem::align_of::<VMExternData>();
+
+        let value_and_padding_size = round_up_to_align(value_size, extern_data_align).unwrap();
+
+        let alloc_align = std::cmp::max(value_align, extern_data_align);
+        let alloc_size = value_and_padding_size + extern_data_size;
+
+        debug_assert!(Layout::from_size_align(alloc_size, alloc_align).is_ok());
+        (
+            Layout::from_size_align_unchecked(alloc_size, alloc_align),
+            value_and_padding_size,
+        )
+    }",0,,
+"pub fn is_empty(&self) -> bool {
+		self.len() == 0
+	}",0,,
+"fn c_utf8_seq(&mut self, seq: &Utf8Sequence) -> Result {
+        if self.c.compiled.is_reverse {
+            self.c_utf8_seq_(seq)
+        } else {
+            self.c_utf8_seq_(seq.into_iter().rev())
+        }
+    }",0,,
+"fn test_err_ldindb_nomem() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov64 r1, 0x5
+        ldindb r1, 0x33
+        exit"",
+        [],
+        (),
+        0,
+        {
+            |_vm, res: Result| {
+                matches!(res.unwrap_err(),
+                    EbpfError::AccessViolation(pc, access_type, vm_addr, len, name)
+                    if access_type == AccessType::Load && pc == 30 && vm_addr == 0x400000038 && len == 1 && name == ""input""
+                )
+            }
+        },
+        2
+    );
+}",0,,
+"pub fn parse_slice(p: &[u8]) -> Result<Message, Error> {
+        if p.len() != util::MESSAGE_SIZE {
+            return Err(Error::InvalidInputLength);
+        }
+
+        let mut a = [0; util::MESSAGE_SIZE];
+        a.copy_from_slice(p);
+        Ok(Self::parse(&a))
+    }",0,,
+"	fn on_request(&self, req: &hyper::server::Request<hyper::net::HttpStream>, control: &hyper::Control) -> http::RequestMiddlewareAction {
+		self.router.on_request(req, control)
+	}",0,,
+"fn test_div32_reg() {
+    test_interpreter_and_jit_asm!(
+        ""
+        lddw r0, 0x10000000c
+        mov r1, 4
+        div32 r0, r1
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x3 } },
+        4
+    );
+}",0,,
+"pub fn shr_int(&mut self, n: usize) -> u32 {
+        let ret: u32;
+        debug_assert!(n > 0);
+        debug_assert!(n < 16);
+        ret = self.0[0] & ((1 << n) - 1);
+        self.0[0] = (self.0[0] >> n) + (self.0[1] << (32 - n));
+        self.0[1] = (self.0[1] >> n) + (self.0[2] << (32 - n));
+        self.0[2] = (self.0[2] >> n) + (self.0[3] << (32 - n));
+        self.0[3] = (self.0[3] >> n) + (self.0[4] << (32 - n));
+        self.0[4] = (self.0[4] >> n) + (self.0[5] << (32 - n));
+        self.0[5] = (self.0[5] >> n) + (self.0[6] << (32 - n));
+        self.0[6] = (self.0[6] >> n) + (self.0[7] << (32 - n));
+        self.0[7] = self.0[7] >> n;
+        return ret;
+    }",0,,
+"    pub fn returned(self) -> Result<UntypedRetVal, Error> {
+        match self {
+            RunResult::Returned(rv) => Ok(rv),
+            RunResult::Yielded(_) => Err(Error::InstanceNotReturned),
+        }
+    }",0,,
+"fn calculate_iteration_count(exp_length: u64, exponent: &BigUint) -> u64 {
+		let mut iteration_count: u64 = 0;
+
+		if exp_length <= 32 && exponent.is_zero() {
+			iteration_count = 0;
+		} else if exp_length <= 32 {
+			iteration_count = exponent.bits() - 1;
+		} else if exp_length > 32 {
+			// construct BigUint to represent (2^256) - 1
+			let bytes: [u8; 32] = [0xFF; 32];
+			let max_256_bit_uint = BigUint::from_bytes_be(&bytes);
+
+			iteration_count =
+				(8 * (exp_length - 32)) + ((exponent.bitand(max_256_bit_uint)).bits() - 1);
+		}
+
+		max(iteration_count, 1)
+	}",1,13,(8 * (exp_length - 32)) + ((exponent.bitand(max_256_bit_uint)).bits() - 1);
+"fn test_jeq_imm() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov32 r0, 0
+        mov32 r1, 0xa
+        jeq r1, 0xb, +4
+        mov32 r0, 1
+        mov32 r1, 0xb
+        jeq r1, 0xb, +1
+        mov32 r0, 2
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x1 } },
+        7
+    );
+}",0,,
+"fn test_engine(engine: &Engine) -> anyhow::Result<()> {
+        let mut store = Store::new(&engine, ());
+        let flag = Arc::new(AtomicBool::new(false));
+        let externref = ExternRef::new(SetFlagOnDrop(flag.clone()));
+        Global::new(
+            &mut store,
+            GlobalType::new(ValType::ExternRef, Mutability::Const),
+            externref.into(),
+        )?;
+        drop(store);
+        assert!(flag.load(SeqCst));
+
+        let mut store = Store::new(&engine, ());
+        let module = Module::new(
+            &engine,
+            r#""
+                (module
+                    (global (mut externref) (ref.null extern))
+
+                    (func (export ""run"") (param externref)
+                        local.get 0
+                        global.set 0
+                    )
+                )
+            ""#,
+        )?;
+        let instance = Instance::new(&mut store, &module, &[])?;
+        let run = instance.get_typed_func::<Option<ExternRef>, (), _>(&mut store, ""run"")?;
+        let flag = Arc::new(AtomicBool::new(false));
+        let externref = ExternRef::new(SetFlagOnDrop(flag.clone()));
+        run.call(&mut store, Some(externref))?;
+        drop(store);
+        assert!(flag.load(SeqCst));
+        Ok(())
+    }",0,,
+"fn test_jgt_reg() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov r0, 0
+        mov r1, 5
+        mov r2, 6
+        mov r3, 4
+        jgt r1, r2, +2
+        jgt r1, r1, +1
+        jgt r1, r3, +1
+        exit
+        mov r0, 1
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x1 } },
+        9
+    );
+}",0,,
+"pub fn instance_handle_to_raw(mut inst: InstanceHandle) -> *mut Instance {
+    inst.needs_inst_drop = false;
+    inst.inst.as_ptr()
+}",0,,
+"fn test_alu64_logic() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov r0, 0
+        mov r1, 1
+        mov r2, 2
+        mov r3, 3
+        mov r4, 4
+        mov r5, 5
+        mov r6, 6
+        mov r7, 7
+        mov r8, 8
+        or r0, r5
+        or r0, 0xa0
+        and r0, 0xa3
+        mov r9, 0x91
+        and r0, r9
+        lsh r0, 32
+        lsh r0, 22
+        lsh r0, r8
+        rsh r0, 32
+        rsh r0, 19
+        rsh r0, r7
+        xor r0, 0x03
+        xor r0, r2
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x11 } },
+        23
+    );
+}",0,,
+"    pub fn kill_switch(&self) -> KillSwitch {
+        KillSwitch::new(Arc::downgrade(&self.kill_state))
+    }",0,,
+"fn min_gas_price() -> U256 {
+		1.into()
+	}",0,,
+"pub fn decode_config_slice<T: AsRef<[u8]>>(
+    input: T,
+    config: Config,
+    output: &mut [u8],
+) -> Result<usize, DecodeError> {
+    let input_bytes = input.as_ref();
+
+    decode_helper(input_bytes, num_chunks(input_bytes), config, output)
+}",0,,
+"    fn drop(&mut self) {
+        if let Some(thread) = self.thread.take() {
+            let (lock, cvar) = &*self.state;
+            // Signal our thread that we've been dropped and wake it up if it's
+            // blocked.
+            let mut g = lock.lock().unwrap();
+            *g = true;
+            cvar.notify_one();
+            drop(g);
+
+            // ... and then wait for the thread to exit to ensure we clean up
+            // after ourselves.
+            thread.join().unwrap();
+        }
+    }",0,,
+"    fn init_hang_limit<T>(store: &mut Store<T>, instance: Instance) {
+        match instance.get_export(&mut *store, ""hangLimitInitializer"") {
+            None => return,
+            Some(Extern::Func(f)) => {
+                f.call(store, &[])
+                    .expect(""initializing the hang limit should not fail"");
+            }
+            Some(_) => panic!(""unexpected hangLimitInitializer export""),
+        }
+    }",0,,
+"    fn unwrap(self) -> Inst {
+        match self {
+            MaybeInst::Compiled(inst) => inst,
+            _ => unreachable!(
+                ""must be called on a compiled instruction, \
+                 instead it was called on: {:?}"",
+                self
+            ),
+        }
+    }",0,,
+"fn parse_char_group<'i, 'b>(input: Input<'i, 'b>) -> PResult<'i, 'b, CharGroup> {
+        let span1 = input.span();
+
+        let (input, ranges) = many1(alt((
+            parse_chars_or_range,
+            value(CharGroup::Dot, Token::Dot),
+            try_map(
+                pair(opt(Token::Not), Token::Identifier),
+                |(not, (s, _))| {
+                    // FIXME: When this fails on a negative item, the span of the exclamation mark
+                    // is used instead of the identifier's span
+                    CharGroup::try_from_group_name(s, not.is_some())
+                        .map_err(ParseErrorKind::CharClass)
+                },
+                nom::Err::Failure,
+            ),
+            err(|| ParseErrorKind::CharClass(CharClassError::Invalid)),
+        )))(input)?;
+
+        let mut iter = ranges.into_iter();
+        let mut class = iter.next().unwrap();
+
+        for range in iter {
+            class.add(range).map_err(|e| {
+                nom::Err::Failure(ParseErrorKind::CharClass(e).at(span1.join(input.span().start())))
+            })?;
+        }
+        Ok((input, class))
+    }",0,,
+"fn test_err_reg_stack_depth() {
+    let config = Config::default();
+    test_interpreter_and_jit_asm!(
+        ""
+        mov64 r0, 0x1
+        lsh64 r0, 0x20
+        callx r0
+        exit"",
+        [],
+        (),
+        0,
+        {
+            |_vm, res: Result| {
+                matches!(res.unwrap_err(),
+                    EbpfError::CallDepthExceeded(pc, depth)
+                    if pc == 31 && depth == config.max_call_depth
+                )
+            }
+        },
+        60
+    );
+}",0,,
+"fn test_call_reg() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov64 r0, 0x0
+        mov64 r8, 0x1
+        lsh64 r8, 0x20
+        or64 r8, 0x30
+        callx r8
+        exit
+        mov64 r0, 0x2A
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 42 } },
+        8
+    );
+}",0,,
+"fn test_stack1() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov r1, 51
+        stdw [r10-16], 0xab
+        stdw [r10-8], 0xcd
+        and r1, 1
+        lsh r1, 3
+        mov r2, r10
+        add r2, r1
+        ldxdw r0, [r2-16]
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0xcd } },
+        9
+    );
+}",0,,
+"    pub fn into_data(mut self) -> T {
+        // This is an unsafe operation because we want to avoid having a runtime
+        // check or boolean for whether the data is actually contained within a
+        // `Store`. The data itself is stored as `ManuallyDrop` since we're
+        // manually managing the memory here, and there's also a `ManuallyDrop`
+        // around the `Box<StoreInner<T>>`. The way this works though is a bit
+        // tricky, so here's how things get dropped appropriately:
+        //
+        // * When a `Store<T>` is normally dropped, the custom destructor for
+        //   `Store<T>` will drop `T`, then the `self.inner` field. The
+        //   rustc-glue destructor runs for `Box<StoreInner<T>>` which drops
+        //   `StoreInner<T>`. This cleans up all internal fields and doesn't
+        //   touch `T` because it's wrapped in `ManuallyDrop`.
+        //
+        // * When calling this method we skip the top-level destructor for
+        //   `Store<T>` with `mem::forget`. This skips both the destructor for
+        //   `T` and the destructor for `StoreInner<T>`. We do, however, run the
+        //   destructor for `Box<StoreInner<T>>` which, like above, will skip
+        //   the destructor for `T` since it's `ManuallyDrop`.
+        //
+        // In both cases all the other fields of `StoreInner<T>` should all get
+        // dropped, and the manual management of destructors is basically
+        // between this method and `Drop for Store<T>`. Note that this also
+        // means that `Drop for StoreInner<T>` cannot access `self.data`, so
+        // there is a comment indicating this as well.
+        unsafe {
+            let mut inner = ManuallyDrop::take(&mut self.inner);
+            std::mem::forget(self);
+            ManuallyDrop::take(&mut inner.data)
+        }
+    }",0,,
+"fn test_ldxh_all() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov r0, r1
+        ldxh r9, [r0+0]
+        be16 r9
+        lsh r9, 0
+        ldxh r8, [r0+2]
+        be16 r8
+        lsh r8, 4
+        ldxh r7, [r0+4]
+        be16 r7
+        lsh r7, 8
+        ldxh r6, [r0+6]
+        be16 r6
+        lsh r6, 12
+        ldxh r5, [r0+8]
+        be16 r5
+        lsh r5, 16
+        ldxh r4, [r0+10]
+        be16 r4
+        lsh r4, 20
+        ldxh r3, [r0+12]
+        be16 r3
+        lsh r3, 24
+        ldxh r2, [r0+14]
+        be16 r2
+        lsh r2, 28
+        ldxh r1, [r0+16]
+        be16 r1
+        lsh r1, 32
+        ldxh r0, [r0+18]
+        be16 r0
+        lsh r0, 36
+        or r0, r1
+        or r0, r2
+        or r0, r3
+        or r0, r4
+        or r0, r5
+        or r0, r6
+        or r0, r7
+        or r0, r8
+        or r0, r9
+        exit"",
+        [
+            0x00, 0x00, 0x00, 0x01, 0x00, 0x02, 0x00, 0x03, //
+            0x00, 0x04, 0x00, 0x05, 0x00, 0x06, 0x00, 0x07, //
+            0x00, 0x08, 0x00, 0x09, //
+        ],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x9876543210 } },
+        41
+    );
+}",0,,
+"fn wrong_store() -> anyhow::Result<()> {
+    let dropped = Arc::new(AtomicBool::new(false));
+    {
+        let mut store1 = Store::<()>::default();
+        let mut store2 = Store::<()>::default();
+
+        let set = SetOnDrop(dropped.clone());
+        let f1 = Func::wrap(&mut store1, move || drop(&set));
+        let f2 = Func::wrap(&mut store2, move || Some(f1.clone()));
+        assert!(f2.call(&mut store2, &[], &mut []).is_err());
+    }
+    assert!(dropped.load(SeqCst));
+
+    return Ok(());
+
+    struct SetOnDrop(Arc<AtomicBool>);
+
+    impl Drop for SetOnDrop {
+        fn drop(&mut self) {
+            self.0.store(true, SeqCst);
+        }
+    }
+}",0,,
+"fn call(
+        &mut self,
+        depth: u64,
+        throw: u64,
+        _arg3: u64,
+        _arg4: u64,
+        _arg5: u64,
+        _memory_mapping: &MemoryMapping,
+        result: &mut Result,
+    ) {
+        #[allow(unused_mut)]
+        if depth > 0 {
+            let mut syscall_registry = SyscallRegistry::default();
+            syscall_registry
+                .register_syscall_by_name(
+                    b""NestedVmSyscall"",
+                    NestedVmSyscall::init::<UserContext, UserError>,
+                    NestedVmSyscall::call,
+                )
+                .unwrap();
+            let mem = [depth as u8 - 1, throw as u8];
+            let mut executable = assemble::<UserError, TestInstructionMeter>(
+                ""
+                ldabsb 0
+                mov64 r1, r0
+                ldabsb 1
+                mov64 r2, r0
+                syscall NestedVmSyscall
+                exit"",
+                None,
+                Config::default(),
+                syscall_registry,
+            )
+            .unwrap();
+            test_interpreter_and_jit!(
+                executable,
+                mem,
+                0,
+                {
+                    |_vm, res: Result| {
+                        *result = res;
+                        true
+                    }
+                },
+                if throw == 0 { 6 } else { 5 }
+            );
+        } else {
+            *result = if throw == 0 {
+                Ok(42)
+            } else {
+                Err(EbpfError::CallDepthExceeded(33, 0))
+            };
+        }
+    }",0,,
+"async fn accept(&mut self) -> TResult<TcpStream> {
+        // We will steal the idea of Ethernet's backoff for connection errors
+        let mut backoff = 1;
+        loop {
+            match self.base.listener.accept().await {
+                // We don't need the bindaddr
+                Ok((stream, _)) => return Ok(stream),
+                Err(e) => {
+                    if backoff > 64 {
+                        // Too many retries, goodbye user
+                        return Err(e.into());
+                    }
+                }
+            }
+            // Wait for the `backoff` duration
+            time::sleep(Duration::from_secs(backoff)).await;
+            // We're using exponential backoff
+            backoff *= 2;
+        }
+    }",0,,
+"fn test_stw() {
+    test_interpreter_and_jit_asm!(
+        ""
+        stw [r1+2], 0x44332211
+        ldxw r0, [r1+2]
+        exit"",
+        [
+            0xaa, 0xbb, 0xff, 0xff, 0xff, 0xff, 0xcc, 0xdd, //
+        ],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x44332211 } },
+        3
+    );
+}",0,,
+"pub(super) fn parse_special_char<'i, 'b>(input: Input<'i, 'b>) -> PResult<'i, 'b, char> {
+    try_map(
+        Token::Identifier,
+        |(s, _)| {
+            Ok(match s {
+                ""n"" => '\n',
+                ""r"" => '\r',
+                ""t"" => '\t',
+                ""a"" => '\u{07}',
+                ""e"" => '\u{1B}',
+                ""f"" => '\u{0C}',
+                _ => return Err(ParseErrorKind::Incomplete),
+            })
+        },
+        nom::Err::Error,
+    )(input)
+}",0,,
+"    pub(super) fn from(source: &'i str, tokens: &'b [(Token, Span)]) -> Result<Self, ParseError> {
+        let error = tokens.iter().find_map(|&(t, span)| match t {
+            Token::Error => Some((span, None)),
+            Token::ErrorMsg(m) => Some((span, Some(m))),
+            _ => None,
+        });
+        if let Some((span, msg)) = error {
+            return match msg {
+                Some(msg) => Err(ParseErrorKind::LexErrorWithMessage(msg).at(span)),
+                None => Err(ParseErrorKind::UnknownToken.at(span)),
+            };
+        }
+
+        Ok(Input { source, tokens })
+    }",1,"0,13","    pub(super) fn from(source: &'i str, tokens: &'b [(Token, Span)]) -> Result<Self, ParseError> {/~/        Ok(Input { source, tokens })"
+"fn drop(&mut self) {
+         unsafe {
+            core::ptr::write_volatile(&mut self.0, [0u8; 32]);
+        }
+    }",0,,
+"pub async fn test_run(listener: TcpListener, db: CoreDB, sig: impl Future) {
+    let (signal, _) = broadcast::channel(1);
+    let (terminate_tx, terminate_rx) = mpsc::channel(1);
+    let mut server = Listener {
+        listener,
+        db,
+        climit: Arc::new(Semaphore::new(50000)),
+        signal,
+        terminate_tx,
+        terminate_rx,
+    };
+    tokio::select! {
+        _ = server.run() => {}
+        _ = sig => {}
+    }
+    let Listener {
+        mut terminate_rx,
+        terminate_tx,
+        signal,
+        ..
+    } = server;
+    drop(signal);
+    drop(terminate_tx);
+    let _ = terminate_rx.recv().await;
+}",0,,
+"    pub fn is_yielded(&self) -> bool {
+        self.state.is_yielded()
+    }",0,,
+"pub fn get(&self, offset: usize, size: usize) -> Vec<u8> {
+		let mut ret = Vec::new();
+		ret.resize(size, 0);
+
+		for index in 0..size {
+			let position = offset + index;
+			if position >= self.data.len() {
+				break
+			}
+
+			ret[index] = self.data[position];
+		}
+
+		ret
+	}",0,,
+"    pub fn new(config: TargetFrontendConfig, return_mode: ReturnMode, debug_info: bool) -> Self {
+        Self {
+            info: DummyModuleInfo::new(config),
+            trans: FuncTranslator::new(),
+            func_bytecode_sizes: Vec::new(),
+            return_mode,
+            debug_info,
+            module_name: None,
+            function_names: SecondaryMap::new(),
+            expected_reachability: None,
+        }
+    }",0,,
+"fn register(&mut self, start: usize, end: usize, module: &Module) {
+        let info = self.0.entry(end).or_insert_with(|| GlobalRegisteredModule {
+            start,
+            module: module.compiled_module().clone(),
+            wasm_backtrace_details_env_used: module
+                .engine()
+                .config()
+                .wasm_backtrace_details_env_used,
+            references: 0,
+        });
+
+        // Note that ideally we'd debug_assert that the information previously
+        // stored, if any, matches the `functions` we were given, but for now we
+        // just do some simple checks to hope it's the same.
+        assert_eq!(info.start, start);
+        info.references += 1;
+    }",0,,
+"fn fill_scalar_with_leading_zero(scalar: &Scalar) -> [u8; 33] {
+            let mut ret = [0u8; 33];
+            scalar.fill_b32(array_mut_ref!(ret, 1, 32));
+            ret
+        }",0,,
+"pub async fn call_async<T>(
+        &self,
+        mut store: impl AsContextMut<Data = T>,
+        params: &[Val],
+    ) -> Result<Box<[Val]>>
+    where
+        T: Send,
+    {
+        let mut store = store.as_context_mut();
+        assert!(
+            store.0.async_support(),
+            ""cannot use `call_async` without enabling async support in the config"",
+        );
+        let my_ty = self.ty(&store);
+        let result = store
+            .on_fiber(|store| self.call_impl(store, my_ty, params))
+            .await??;
+        Ok(result)
+    }",0,,
+"fn test_be16_high() {
+    test_interpreter_and_jit_asm!(
+        ""
+        ldxdw r0, [r1]
+        be16 r0
+        exit"",
+        [0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x1122 } },
+        3
+    );
+}",0,,
+"pub fn register(&mut self, module: &Module) {
+        let compiled_module = module.compiled_module();
+
+        // If there's not actually any functions in this module then we may
+        // still need to preserve it for its data segments. Instances of this
+        // module will hold a pointer to the data stored in the module itself,
+        // and for schemes like uffd this performs lazy initialization which
+        // could use the module in the future. For that reason we continue to
+        // register empty modules and retain them.
+        if compiled_module.finished_functions().len() == 0 {
+            self.modules_without_code.push(compiled_module.clone());
+            return;
+        }
+
+        // The module code range is exclusive for end, so make it inclusive as it
+        // may be a valid PC value
+        let code = compiled_module.code();
+        assert!(!code.is_empty());
+        let start = code.as_ptr() as usize;
+        let end = start + code.len() - 1;
+
+        // Ensure the module isn't already present in the registry
+        // This is expected when a module is instantiated multiple times in the
+        // same store
+        if let Some(m) = self.modules_with_code.get(&end) {
+            assert_eq!(m.start, start);
+            return;
+        }
+
+        // Assert that this module's code doesn't collide with any other registered modules
+        if let Some((_, prev)) = self.modules_with_code.range(end..).next() {
+            assert!(prev.start > end);
+        }
+
+        if let Some((prev_end, _)) = self.modules_with_code.range(..=start).next_back() {
+            assert!(*prev_end < start);
+        }
+
+        let prev = self.modules_with_code.insert(
+            end,
+            Arc::new(RegisteredModule {
+                start,
+                module: compiled_module.clone(),
+                signatures: module.signatures().clone(),
+            }),
+        );
+        assert!(prev.is_none());
+
+        GLOBAL_MODULES.write().unwrap().register(start, end, module);
+    }",0,,
+"fn global_drops_externref() -> anyhow::Result<()> {
+    test_engine(&Engine::default())?;
+
+    if !skip_pooling_allocator_tests() {
+        test_engine(&Engine::new(
+            Config::new().allocation_strategy(InstanceAllocationStrategy::pooling()),
+        )?)?;
+    }
+
+    return Ok(());
+
+    fn test_engine(engine: &Engine) -> anyhow::Result<()> {
+        let mut store = Store::new(&engine, ());
+        let flag = Arc::new(AtomicBool::new(false));
+        let externref = ExternRef::new(SetFlagOnDrop(flag.clone()));
+        Global::new(
+            &mut store,
+            GlobalType::new(ValType::ExternRef, Mutability::Const),
+            externref.into(),
+        )?;
+        drop(store);
+        assert!(flag.load(SeqCst));
+
+        let mut store = Store::new(&engine, ());
+        let module = Module::new(
+            &engine,
+            r#""
+                (module
+                    (global (mut externref) (ref.null extern))
+
+                    (func (export ""run"") (param externref)
+                        local.get 0
+                        global.set 0
+                    )
+                )
+            ""#,
+        )?;
+        let instance = Instance::new(&mut store, &module, &[])?;
+        let run = instance.get_typed_func::<Option<ExternRef>, (), _>(&mut store, ""run"")?;
+        let flag = Arc::new(AtomicBool::new(false));
+        let externref = ExternRef::new(SetFlagOnDrop(flag.clone()));
+        run.call(&mut store, Some(externref))?;
+        drop(store);
+        assert!(flag.load(SeqCst));
+        Ok(())
+    }
+}",0,,
+"fn test_string_stack() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov r1, 0x78636261
+        stxw [r10-8], r1
+        mov r6, 0x0
+        stxb [r10-4], r6
+        stxb [r10-12], r6
+        mov r1, 0x79636261
+        stxw [r10-16], r1
+        mov r1, r10
+        add r1, -8
+        mov r2, r1
+        syscall BpfStrCmp
+        mov r1, r0
+        mov r0, 0x1
+        lsh r1, 0x20
+        rsh r1, 0x20
+        jne r1, 0x0, +11
+        mov r1, r10
+        add r1, -8
+        mov r2, r10
+        add r2, -16
+        syscall BpfStrCmp
+        mov r1, r0
+        lsh r1, 0x20
+        rsh r1, 0x20
+        mov r0, 0x1
+        jeq r1, r6, +1
+        mov r0, 0x0
+        exit"",
+        [],
+        (
+            b""BpfStrCmp"" => syscalls::BpfStrCmp::init::<BpfSyscallContext, UserError>; syscalls::BpfStrCmp::call,
+        ),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x0 } },
+        28
+    );
+}",0,,
+"    fn from(ty: GlobalType) -> ExternType {
+        ExternType::Global(ty)
+    }",0,,
+"fn test_sdiv32_reg() {
+    test_interpreter_and_jit_asm!(
+        ""
+        lddw r0, 0x10000000c
+        mov r1, 4
+        sdiv32 r0, r1
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x3 } },
+        4
+    );
+}",0,,
+"fn hash<H>(&self, hasher: &mut H)
+    where
+        H: Hasher,
+    {
+        VMExternRef::hash(&self.0, hasher)
+    }",0,,
+"pub(crate) fn sig_index(&self, data: &StoreData) -> VMSharedSignatureIndex {
+        unsafe { data[self.0].export().anyfunc.as_ref().type_index }
+    }",0,,
+"fn from(val: i32) -> Val {
+        Val::I32(val)
+    }",0,,
+"fn test_dynamic_frame_ptr() {
+    let config = Config {
+        dynamic_stack_frames: true,
+        ..Config::default()
+    };
+
+    // Check that upon entering a function (foo) the frame pointer is advanced
+    // to the top of the stack
+    test_interpreter_and_jit_asm!(
+        ""
+        sub r11, 8
+        call foo
+        exit
+        foo:
+        mov r0, r10
+        exit"",
+        config,
+        [],
+        (),
+        0,
+        {
+            |_vm, res: Result| res.unwrap() == ebpf::MM_STACK_START + config.stack_size() as u64 - 8
+        },
+        5
+    );
+
+    // And check that when exiting a function (foo) the caller's frame pointer
+    // is restored
+    test_interpreter_and_jit_asm!(
+        ""
+        sub r11, 8
+        call foo
+        mov r0, r10
+        exit
+        foo:
+        exit
+        "",
+        config,
+        [],
+        (),
+        0,
+        { |_vm, res: Result| res.unwrap() == ebpf::MM_STACK_START + config.stack_size() as u64 },
+        5
+    );
+}",0,,
+"    pub fn is_ready(&self) -> bool {
+        self.state.is_ready()
+    }",0,,
+"pub fn neg_in_place(&mut self, a: &Scalar) {
+        let nonzero: u64 = 0xFFFFFFFF * if !a.is_zero() { 1 } else { 0 };
+        let mut t: u64 = (!a.0[0]) as u64 + (SECP256K1_N_0 + 1) as u64;
+        self.0[0] = (t & nonzero) as u32; t >>= 32;
+        t += (!a.0[1]) as u64 + SECP256K1_N_1 as u64;
+        self.0[1] = (t & nonzero) as u32; t >>= 32;
+        t += (!a.0[2]) as u64 + SECP256K1_N_2 as u64;
+        self.0[2] = (t & nonzero) as u32; t >>= 32;
+        t += (!a.0[3]) as u64 + SECP256K1_N_3 as u64;
+        self.0[3] = (t & nonzero) as u32; t >>= 32;
+        t += (!a.0[4]) as u64 + SECP256K1_N_4 as u64;
+        self.0[4] = (t & nonzero) as u32; t >>= 32;
+        t += (!a.0[5]) as u64 + SECP256K1_N_5 as u64;
+        self.0[5] = (t & nonzero) as u32; t >>= 32;
+        t += (!a.0[6]) as u64 + SECP256K1_N_6 as u64;
+        self.0[6] = (t & nonzero) as u32; t >>= 32;
+        t += (!a.0[7]) as u64 + SECP256K1_N_7 as u64;
+        self.0[7] = (t & nonzero) as u32;
+    }",0,,
+"fn test_mod32_imm() {
+    test_interpreter_and_jit_asm!(
+        ""
+        lddw r0, 0x100000003
+        mod32 r0, 3
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x0 } },
+        3
+    );
+}",0,,
+"fn test_mul32_reg_overflow() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov r0, 0x40000001
+        mov r1, 4
+        mul32 r0, r1
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x4 } },
+        4
+    );
+}",0,,
+"    fn iter_elements(&self) -> Self::IterElem {
+        Input { source: self.source, tokens: self.tokens }
+    }",1,1,"        Input { source: self.source, tokens: self.tokens }"
+"    pub fn abi(&mut self) -> &mut dyn ABICallee<I = I> {
+        &mut *self.vcode.abi
+    }",0,,
+"pub fn check_user_permissions() -> Result<(), ()> {
+    if !Uid::current().is_root() {
+        let groups = nix::unistd::getgroups();
+        for (_, groups) in groups.iter().enumerate() {
+            for group in groups {
+                let group = Group::from_gid(*group);
+                if group.unwrap().unwrap().name == ""input"" {
+                    log::error!(""Note: INVOKING USER IS IN INPUT GROUP!!!!"");
+                    log::error!(""THIS IS A HUGE SECURITY RISK!!!!"");
+                }
+            }
+        }
+        log::error!(""Consider using `pkexec swhkd ...`"");
+        Err(())
+    } else {
+        log::warn!(""Running swhkd as root!"");
+        Ok(())
+    }
+}",0,,
+"fn create(
+		source: H160,
+		init: Vec<u8>,
+		value: U256,
+		gas_limit: u64,
+		max_fee_per_gas: Option<U256>,
+		max_priority_fee_per_gas: Option<U256>,
+		nonce: Option<U256>,
+		access_list: Vec<(H160, Vec<H256>)>,
+		is_transactional: bool,
+		validate: bool,
+		config: &evm::Config,
+	) -> Result<CreateInfo, RunnerError<Self::Error>> {
+		if validate {
+			let _ = Self::validate(
+				source,
+				None,
+				init.clone(),
+				value,
+				gas_limit,
+				max_fee_per_gas,
+				max_priority_fee_per_gas,
+				nonce,
+				access_list.clone(),
+				is_transactional,
+				config,
+			)?;
+		}
+		let precompiles = T::PrecompilesValue::get();
+		Self::execute(
+			source,
+			value,
+			gas_limit,
+			max_fee_per_gas,
+			max_priority_fee_per_gas,
+			config,
+			&precompiles,
+			is_transactional,
+			|executor| {
+				let address = executor.create_address(evm::CreateScheme::Legacy { caller: source });
+				let (reason, _) =
+					executor.transact_create(source, value, init, gas_limit, access_list);
+				(reason, address)
+			},
+		)
+	}",0,,
+"pub fn cond_neg_mut(&mut self, flag: bool) -> isize {
+        let mask = if flag { u32::max_value() } else { 0 };
+        let nonzero: u64 = 0xFFFFFFFF * if !self.is_zero() { 1 } else { 0 };
+        let mut t: u64 = (self.0[0] ^ mask) as u64 + ((SECP256K1_N_0 + 1) & mask) as u64;
+        self.0[0] = (t & nonzero) as u32; t >>= 32;
+        t += (self.0[1] ^ mask) as u64 + (SECP256K1_N_1 & mask) as u64;
+        self.0[1] = (t & nonzero) as u32; t >>= 32;
+        t += (self.0[2] ^ mask) as u64 + (SECP256K1_N_2 & mask) as u64;
+        self.0[2] = (t & nonzero) as u32; t >>= 32;
+        t += (self.0[3] ^ mask) as u64 + (SECP256K1_N_3 & mask) as u64;
+        self.0[3] = (t & nonzero) as u32; t >>= 32;
+        t += (self.0[4] ^ mask) as u64 + (SECP256K1_N_4 & mask) as u64;
+        self.0[4] = (t & nonzero) as u32; t >>= 32;
+        t += (self.0[5] ^ mask) as u64 + (SECP256K1_N_5 & mask) as u64;
+        self.0[5] = (t & nonzero) as u32; t >>= 32;
+        t += (self.0[6] ^ mask) as u64 + (SECP256K1_N_6 & mask) as u64;
+        self.0[6] = (t & nonzero) as u32; t >>= 32;
+        t += (self.0[7] ^ mask) as u64 + (SECP256K1_N_7 & mask) as u64;
+        self.0[7] = (t & nonzero) as u32;
+
+        if mask == 0 {
+            return 1;
+        } else {
+            return -1;
+        }
+    }",0,,
+"pub fn check_ptr<T>(out_ptr: *const T) -> Result<()> {
+        if !sgx_trts::trts::rsgx_raw_is_outside_enclave(out_ptr as *const u8, size_of::<T>()) {
+            return_errno!(EFAULT, ""the pointer is not outside enclave"");
+        }
+        Ok(())
+    }",0,,
+"    fn map_regs<RUM: RegUsageMapper>(insn: &mut I, mapper: &RUM) {
+        insn.map_regs(mapper);
+    }",0,,
+"    pub fn content(&self) -> &ValType {
+        &self.content
+    }",0,,
+"fn is_inside_user_space(addr: *const u8, len: usize) -> bool {
+        let current = current!();
+        let user_range = current.vm().get_process_range();
+        let ur_start = user_range.start();
+        let ur_end = user_range.end();
+        let addr_start = addr as usize;
+        addr_start >= ur_start && addr_start < ur_end && ur_end - addr_start >= len
+    }",0,,
+"fn new(size: usize) -> Self {
+        SuffixCache {
+            sparse: vec![0usize; size].into(),
+            dense: Vec::with_capacity(size),
+        }
+    }",0,,
+"fn test_ldabsb() {
+    test_interpreter_and_jit_asm!(
+        ""
+        ldabsb 0x3
+        exit"",
+        [
+            0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, //
+            0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, //
+        ],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x33 } },
+        2
+    );
+}",0,,
+"fn new() -> Self {
+        ByteClassSet([false; 256])
+    }",0,,
+"fn test_mul_loop() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov r0, 0x7
+        add r1, 0xa
+        lsh r1, 0x20
+        rsh r1, 0x20
+        jeq r1, 0x0, +4
+        mov r0, 0x7
+        mul r0, 0x7
+        add r1, -1
+        jne r1, 0x0, -3
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x75db9c97 } },
+        37
+    );
+}",0,,
+"    pub fn neg(&self) -> Scalar {
+        let mut ret = Scalar::default();
+        ret.neg_in_place(self);
+        ret
+    }",0,,
+"	fn on_request_readable(&mut self, decoder: &mut Decoder<net::HttpStream>) -> Next {
+		match self.state {
+			State::Initial => Next::end(),
+			State::Error(ref mut handler) => handler.on_request_readable(decoder),
+			State::Fetching(ref mut handler) => handler.on_request_readable(decoder),
+		}
+	}",0,,
+"    pub(crate) fn lookup_trap_code(&self, pc: usize) -> Option<TrapCode> {
+        let (module, offset) = self.module(pc)?;
+        wasmtime_environ::lookup_trap_code(module.module.trap_data(), offset)
+    }",0,,
+"    pub fn unwrap_yielded(self) -> YieldedVal {
+        self.yielded().unwrap()
+    }",0,,
+"    fn tls_write(&mut self) -> io::Result<usize> {
+        use crate::util::WriteVAdapter;
+        self.tls_session.writev_tls(&mut WriteVAdapter::new(&mut self.socket))
+    }",0,,
+"fn drop(&mut self) {
+        self.0.store(true, SeqCst);
+    }",0,,
+"fn do_transact(source: H160, transaction: Transaction) -> DispatchResultWithPostInfo {
+		let transaction_hash =
+			H256::from_slice(Keccak256::digest(&rlp::encode(&transaction)).as_slice());
+		let transaction_index = Pending::<T>::get().len() as u32;
+
+		let (to, _, info) = Self::execute(
+			source,
+			transaction.input.clone(),
+			transaction.value,
+			transaction.gas_limit,
+			Some(transaction.gas_price),
+			Some(transaction.nonce),
+			transaction.action,
+			None,
+		)?;
+
+		let (reason, status, used_gas, dest) = match info {
+			CallOrCreateInfo::Call(info) => (
+				info.exit_reason,
+				TransactionStatus {
+					transaction_hash,
+					transaction_index,
+					from: source,
+					to,
+					contract_address: None,
+					logs: info.logs.clone(),
+					logs_bloom: {
+						let mut bloom: Bloom = Bloom::default();
+						Self::logs_bloom(info.logs, &mut bloom);
+						bloom
+					},
+				},
+				info.used_gas,
+				to,
+			),
+			CallOrCreateInfo::Create(info) => (
+				info.exit_reason,
+				TransactionStatus {
+					transaction_hash,
+					transaction_index,
+					from: source,
+					to,
+					contract_address: Some(info.value),
+					logs: info.logs.clone(),
+					logs_bloom: {
+						let mut bloom: Bloom = Bloom::default();
+						Self::logs_bloom(info.logs, &mut bloom);
+						bloom
+					},
+				},
+				info.used_gas,
+				Some(info.value),
+			),
+		};
+
+		let receipt = ethereum::Receipt {
+			state_root: match reason {
+				ExitReason::Succeed(_) => H256::from_low_u64_be(1),
+				ExitReason::Error(_) => H256::from_low_u64_le(0),
+				ExitReason::Revert(_) => H256::from_low_u64_le(0),
+				ExitReason::Fatal(_) => H256::from_low_u64_le(0),
+			},
+			used_gas,
+			logs_bloom: status.clone().logs_bloom,
+			logs: status.clone().logs,
+		};
+
+		Pending::<T>::append((transaction, status, receipt));
+
+		Self::deposit_event(Event::Executed(
+			source,
+			dest.unwrap_or_default(),
+			transaction_hash,
+			reason,
+		));
+		Ok(PostDispatchInfo {
+			actual_weight: Some(T::GasWeightMapping::gas_to_weight(
+				used_gas.unique_saturated_into(),
+			)),
+			pays_fee: Pays::No,
+		})
+		.into()
+	}",1,0,"fn do_transact(source: H160, transaction: Transaction) -> DispatchResultWithPostInfo {"
+"pub fn only_utf8(mut self, yes: bool) -> Self {
+        self.compiled.only_utf8 = yes;
+        self
+    }",0,,
+"fn extract_target_url(&self, url: Option<Url>) -> Result<String, State<F>> {
+		let token_and_url = self.path.app_params.get(0)
+			.map(|encoded| encoded.replace('.', """"))
+			.and_then(|encoded| base32::decode(base32::Alphabet::Crockford, &encoded.to_uppercase()))
+			.and_then(|data| String::from_utf8(data).ok())
+			.ok_or_else(|| State::Error(ContentHandler::error(
+				StatusCode::BadRequest,
+				""Invalid parameter"",
+				""Couldn't parse given parameter:"",
+				self.path.app_params.get(0).map(String::as_str),
+				self.embeddable_on.clone()
+			)))?;
+
+		let mut token_it = token_and_url.split('+');
+		let token = token_it.next();
+		let target_url = token_it.next();
+
+		// Check if token supplied in URL is correct.
+		match token {
+			Some(token) if self.web_proxy_tokens.is_web_proxy_token_valid(token) => {},
+			_ => {
+				return Err(State::Error(ContentHandler::error(
+					StatusCode::BadRequest, ""Invalid Access Token"", ""Invalid or old web proxy access token supplied."", Some(""Try refreshing the page.""), self.embeddable_on.clone()
+				)));
+			}
+		}
+
+		// Validate protocol
+		let mut target_url = match target_url {
+			Some(url) if url.starts_with(""http://"") || url.starts_with(""https://"") => url.to_owned(),
+			_ => {
+				return Err(State::Error(ContentHandler::error(
+					StatusCode::BadRequest, ""Invalid Protocol"", ""Invalid protocol used."", None, self.embeddable_on.clone()
+				)));
+			}
+		};
+
+		if !target_url.ends_with(""/"") {
+			target_url = format!(""{}/"", target_url);
+		}
+
+		// TODO [ToDr] Should just use `path.app_params`
+		let (path, query) = match (&url, self.path.using_dapps_domains) {
+			(&Some(ref url), true) => (&url.path[..], &url.query),
+			(&Some(ref url), false) => (&url.path[2..], &url.query),
+			_ => {
+				return Err(State::Error(ContentHandler::error(
+					StatusCode::BadRequest, ""Invalid URL"", ""Couldn't parse URL"", None, self.embeddable_on.clone()
+				)));
+			}
+		};
+
+		let query = match *query {
+			Some(ref query) => format!(""?{}"", query),
+			None => """".into(),
+		};
+
+		Ok(format!(""{}{}{}"", target_url, path.join(""/""), query))
+	}",1,"18,19,25","		match token {/~/			Some(token) if self.web_proxy_tokens.is_web_proxy_token_valid(token) => {},/~/		}"
+"    fn test_diff_empty_vs_non_empty_file() {
+        _do_diff_test(""/dev/null"", ""/etc/passwd"", true);
+    }",0,,
+"fn sock_send(command: &str) -> std::io::Result<()> {
+    let sock_file_path =
+        String::from(format!(""/run/user/{}/swhkd.sock"", env::var(""PKEXEC_UID"").unwrap()));
+    let mut stream = UnixStream::connect(sock_file_path)?;
+    stream.write_all(command.as_bytes())?;
+    Ok(())
+}",0,,
+"fn test_prime() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov r1, 67
+        mov r0, 0x1
+        mov r2, 0x2
+        jgt r1, 0x2, +4
+        ja +10
+        add r2, 0x1
+        mov r0, 0x1
+        jge r2, r1, +7
+        mov r3, r1
+        div r3, r2
+        mul r3, r2
+        mov r4, r1
+        sub r4, r3
+        mov r0, 0x0
+        jne r4, 0x0, -10
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x1 } },
+        655
+    );
+}",0,,
+"fn test_parse_less_version_581_2() {
+    let output = b""less 581.2 (PCRE2 regular expressions)
+Copyright (C) 1984-2021  Mark Nudelman
+
+less comes with NO WARRANTY, to the extent permitted by law.
+For information about the terms of redistribution,
+see the file named README in the less distribution.
+Home page: https://greenwoodsoftware.com/less"";
+
+    assert_eq!(Some(581), parse_less_version(output));
+}",0,,
+"fn test_stxdw() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov r2, -2005440939
+        lsh r2, 32
+        or r2, 0x44332211
+        stxdw [r1+2], r2
+        ldxdw r0, [r1+2]
+        exit"",
+        [
+            0xaa, 0xbb, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, //
+            0xff, 0xff, 0xcc, 0xdd, //
+        ],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x8877665544332211 } },
+        6
+    );
+}",0,,
+"pub fn execute(
+		from: H160,
+		input: Vec<u8>,
+		value: U256,
+		gas_limit: U256,
+		gas_price: Option<U256>,
+		nonce: Option<U256>,
+		action: TransactionAction,
+		config: Option<evm::Config>,
+	) -> Result<(Option<H160>, Option<H160>, CallOrCreateInfo), DispatchError> {
+		match action {
+			ethereum::TransactionAction::Call(target) => {
+				let res = T::Runner::call(
+					from,
+					target,
+					input.clone(),
+					value,
+					gas_limit.low_u64(),
+					gas_price,
+					nonce,
+					config.as_ref().unwrap_or(T::config()),
+				)
+				.map_err(Into::into)?;
+
+				Ok((Some(target), None, CallOrCreateInfo::Call(res)))
+			}
+			ethereum::TransactionAction::Create => {
+				let res = T::Runner::create(
+					from,
+					input.clone(),
+					value,
+					gas_limit.low_u64(),
+					gas_price,
+					nonce,
+					config.as_ref().unwrap_or(T::config()),
+				)
+				.map_err(Into::into)?;
+
+				Ok((None, Some(res.value), CallOrCreateInfo::Create(res)))
+			}
+		}
+	}",0,,
+"    pub(crate) fn lookup_frame_info(&self, pc: usize) -> Option<(FrameInfo, bool, bool)> {
+        let (module, offset) = self.module(pc)?;
+        module.lookup_frame_info(offset).map(|info| {
+            (
+                info,
+                module.has_unparsed_debuginfo(),
+                module.wasm_backtrace_details_env_used,
+            )
+        })
+    }",0,,
+"	fn logs_bloom(logs: Vec<Log>, bloom: &mut Bloom) {
+		for log in logs {
+			bloom.accrue(BloomInput::Raw(&log.address[..]));
+			for topic in log.topics {
+				bloom.accrue(BloomInput::Raw(&topic[..]));
+			}
+		}
+	}",0,,
+"pub fn retrieve_less_version() -> Option<usize> {
+    let cmd = Command::new(""less"").arg(""--version"").output().ok()?;
+    parse_less_version(&cmd.stdout)
+}",1,"1,2","    let cmd = Command::new(""less"").arg(""--version"").output().ok()?;/~/    parse_less_version(&cmd.stdout)"
+"fn blocks(&self) -> Range<BlockIx> {
+        Range::new(BlockIx::new(0), self.block_ranges.len())
+    }",0,,
+"fn parse_char_group<'i, 'b>(input: Input<'i, 'b>) -> PResult<'i, 'b, CharGroup> {
+        let span1 = input.span();
+
+        let (input, ranges) = many1(alt((
+            parse_chars_or_range,
+            value(CharGroup::Dot, Token::Dot),
+            try_map(
+                pair(opt(Token::Not), Token::Identifier),
+                |(not, (s, _))| {
+                    // FIXME: When this fails on a negative item, the span of the exclamation mark
+                    // is used instead of the identifier's span
+                    CharGroup::try_from_group_name(s, not.is_some())
+                        .map_err(ParseErrorKind::CharClass)
+                },
+                nom::Err::Failure,
+            ),
+            err(|| ParseErrorKind::CharClass(CharClassError::Invalid)),
+        )))(input)?;
+
+        let mut iter = ranges.into_iter();
+        let mut class = iter.next().unwrap();
+
+        for range in iter {
+            class.add(range).map_err(|e| {
+                nom::Err::Failure(ParseErrorKind::CharClass(e).at(span1.join(input.span().start())))
+            })?;
+        }
+        Ok((input, class))
+    }",0,,
+"fn decode_chunk_precise_writes_only_6_bytes() {
+        let input = b""Zm9vYmFy""; // ""foobar""
+        let mut output = [0_u8, 1, 2, 3, 4, 5, 6, 7];
+        decode_chunk_precise(&input[..], 0, tables::STANDARD_DECODE, &mut output).unwrap();
+        assert_eq!(&vec![b'f', b'o', b'o', b'b', b'a', b'r', 6, 7], &output);
+    }",0,,
+"pub fn check_user_permissions() -> Result<(), ()> {
+    if !Uid::current().is_root() {
+        let groups = nix::unistd::getgroups();
+        for (_, groups) in groups.iter().enumerate() {
+            for group in groups {
+                let group = Group::from_gid(*group);
+                if group.unwrap().unwrap().name == ""input"" {
+                    log::error!(""Note: INVOKING USER IS IN INPUT GROUP!!!!"");
+                    log::error!(""THIS IS A HUGE SECURITY RISK!!!!"");
+                }
+            }
+        }
+        log::error!(""Consider using `pkexec swhkd ...`"");
+        Err(())
+    } else {
+        log::warn!(""Running swhkd as root!"");
+        Ok(())
+    }
+}",0,,
+"fn validate(
+		source: H160,
+		target: Option<H160>,
+		input: Vec<u8>,
+		value: U256,
+		gas_limit: u64,
+		max_fee_per_gas: Option<U256>,
+		max_priority_fee_per_gas: Option<U256>,
+		nonce: Option<U256>,
+		access_list: Vec<(H160, Vec<H256>)>,
+		is_transactional: bool,
+		evm_config: &evm::Config,
+	) -> Result<(), RunnerError<Self::Error>> {
+		let (base_fee, mut weight) = T::FeeCalculator::min_gas_price();
+		let (source_account, inner_weight) = Pallet::<T>::account_basic(&source);
+		weight = weight.saturating_add(inner_weight);
+
+		let _ = fp_evm::CheckEvmTransaction::<Self::Error>::new(
+			fp_evm::CheckEvmTransactionConfig {
+				evm_config,
+				block_gas_limit: T::BlockGasLimit::get(),
+				base_fee,
+				chain_id: T::ChainId::get(),
+				is_transactional,
+			},
+			fp_evm::CheckEvmTransactionInput {
+				chain_id: Some(T::ChainId::get()),
+				to: target,
+				input,
+				nonce: nonce.unwrap_or(source_account.nonce),
+				gas_limit: gas_limit.into(),
+				gas_price: None,
+				max_fee_per_gas,
+				max_priority_fee_per_gas,
+				value,
+				access_list,
+			},
+		)
+		.validate_in_block_for(&source_account)
+		.and_then(|v| v.with_base_fee())
+		.and_then(|v| v.with_balance_for(&source_account))
+		.map_err(|error| RunnerError { error, weight })?;
+		Ok(())
+	}",0,,
+"fn is_redundant_move<I: VCodeInst>(insn: &I) -> bool {
+    if let Some((to, from)) = insn.is_move() {
+        to.to_reg() == from
+    } else {
+        false
+    }
+}",0,,
+"fn test_syscall() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov64 r1, 0xAA
+        mov64 r2, 0xBB
+        mov64 r3, 0xCC
+        mov64 r4, 0xDD
+        mov64 r5, 0xEE
+        syscall BpfSyscallU64
+        mov64 r0, 0x0
+        exit"",
+        [],
+        (
+            b""BpfSyscallU64"" => syscalls::BpfSyscallU64::init::<BpfSyscallContext, UserError>; syscalls::BpfSyscallU64::call,
+        ),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0 } },
+        8
+    );
+}",0,,
+"    pub fn globals_mut(&mut self) -> &mut [GlobalValue] {
+        unsafe { self.alloc.globals_mut() }
+    }",0,,
+    fn _assert<T: Send + Sync>() {},0,,
+"fn test_stack_call_depth_tracking() {
+    for dynamic_stack_frames in [false, true] {
+        let config = Config {
+            dynamic_stack_frames,
+            max_call_depth: 2,
+            ..Config::default()
+        };
+
+        // Given max_call_depth=2, make sure that two sibling calls don't
+        // trigger CallDepthExceeded. In other words ensure that we correctly
+        // pop frames in the interpreter and decrement
+        // EnvironmentStackSlot::CallDepth on ebpf::EXIT in the jit.
+        test_interpreter_and_jit_asm!(
+            ""
+            call foo
+            call foo
+            exit
+            foo:
+            exit
+            "",
+            config,
+            [],
+            (),
+            0,
+            { |_vm, res: Result| { res.is_ok() } },
+            5
+        );
+
+        // two nested calls should trigger CallDepthExceeded instead
+        test_interpreter_and_jit_asm!(
+            ""
+            entrypoint:
+            call foo
+            exit
+            foo:
+            call bar
+            exit
+            bar:
+            exit
+            "",
+            config,
+            [],
+            (),
+            0,
+            {
+                |_vm, res: Result| {
+                    matches!(res.unwrap_err(),
+                        EbpfError::CallDepthExceeded(pc, depth)
+                        if pc == 29 + 2 && depth == config.max_call_depth
+                    )
+                }
+            },
+            2
+        );
+    }
+}",0,,
+"pub(crate) unsafe fn write_value_to(&self, store: &mut StoreOpaque, p: *mut u128) {
+        match self {
+            Val::I32(i) => ptr::write(p as *mut i32, *i),
+            Val::I64(i) => ptr::write(p as *mut i64, *i),
+            Val::F32(u) => ptr::write(p as *mut u32, *u),
+            Val::F64(u) => ptr::write(p as *mut u64, *u),
+            Val::V128(b) => ptr::write(p as *mut u128, *b),
+            Val::ExternRef(None) => ptr::write(p, 0),
+            Val::ExternRef(Some(x)) => {
+                let externref_ptr = x.inner.as_raw();
+                store.insert_vmexternref(x.inner.clone());
+                ptr::write(p as *mut *mut u8, externref_ptr)
+            }
+            Val::FuncRef(f) => ptr::write(
+                p as *mut *mut runtime::VMCallerCheckedAnyfunc,
+                if let Some(f) = f {
+                    f.caller_checked_anyfunc(store).as_ptr()
+                } else {
+                    ptr::null_mut()
+                },
+            ),
+        }
+    }",1,"0,1,2,3,4,5,6,8,10","pub(crate) unsafe fn write_value_to(&self, store: &mut StoreOpaque, p: *mut u128) {/~/        match self {/~/            Val::I32(i) => ptr::write(p as *mut i32, *i),/~/            Val::I64(i) => ptr::write(p as *mut i64, *i),/~/            Val::F32(u) => ptr::write(p as *mut u32, *u),/~/            Val::F64(u) => ptr::write(p as *mut u64, *u),/~/            Val::V128(b) => ptr::write(p as *mut u128, *b),/~/            Val::ExternRef(Some(x)) => {/~/                store.insert_vmexternref(x.inner.clone());"
+"    fn test_diff_same_non_empty_file() {
+        _do_diff_test(""/etc/passwd"", ""/etc/passwd"", false);
+    }",0,,
+"fn compile_one(mut self, expr: &Hir) -> result::Result<Program, Error> {
+        // If we're compiling a forward DFA and we aren't anchored, then
+        // add a `.*?` before the first capture group.
+        // Other matching engines handle this by baking the logic into the
+        // matching engine itself.
+        let mut dotstar_patch = Patch { hole: Hole::None, entry: 0 };
+        self.compiled.is_anchored_start = expr.is_anchored_start();
+        self.compiled.is_anchored_end = expr.is_anchored_end();
+        if self.compiled.needs_dotstar() {
+            dotstar_patch = self.c_dotstar()?;
+            self.compiled.start = dotstar_patch.entry;
+        }
+        self.compiled.captures = vec![None];
+        let patch = self.c_capture(0, expr)?.unwrap_or(self.next_inst());
+        if self.compiled.needs_dotstar() {
+            self.fill(dotstar_patch.hole, patch.entry);
+        } else {
+            self.compiled.start = patch.entry;
+        }
+        self.fill_to_next(patch.hole);
+        self.compiled.matches = vec![self.insts.len()];
+        self.push_compiled(Inst::Match(0));
+        self.compile_finish()
+    }",0,,
+"pub fn get_instruction_count(&self) -> Option<u64> {
+        if self.module.is_instruction_count_instrumented() {
+            let implicits = self.get_instance_implicits();
+            let sum = implicits.instruction_count_bound + implicits.instruction_count_adj;
+            // This invariant is ensured as we always set up the fields to have a positive sum, and
+            // generated code only increments `adj`.
+            debug_assert!(sum >= 0);
+            return Some(sum as u64);
+        }
+        None
+    }",0,,
+"    pub(crate) fn from_wasmtime_global(global: &Global) -> GlobalType {
+        let ty = ValType::from_wasm_type(&global.wasm_ty);
+        let mutability = if global.mutability {
+            Mutability::Var
+        } else {
+            Mutability::Const
+        };
+        GlobalType::new(ty, mutability)
+    }",0,,
+"    fn reregister(&self, poll: &mut mio::Poll) {
+        poll.reregister(&self.socket,
+                        self.token,
+                        self.event_set(),
+                        mio::PollOpt::level() | mio::PollOpt::oneshot())
+            .unwrap();
+
+        if self.back.is_some() {
+            poll.reregister(self.back.as_ref().unwrap(),
+                            self.token,
+                            mio::Ready::readable(),
+                            mio::PollOpt::level() | mio::PollOpt::oneshot())
+                .unwrap();
+        }
+    }",0,,
+"    pub(crate) fn into_table_element(
+        self,
+        store: &mut StoreOpaque,
+        ty: ValType,
+    ) -> Result<runtime::TableElement> {
+        match (self, ty) {
+            (Val::FuncRef(Some(f)), ValType::FuncRef) => {
+                if !f.comes_from_same_store(store) {
+                    bail!(""cross-`Store` values are not supported in tables"");
+                }
+                Ok(runtime::TableElement::FuncRef(
+                    f.caller_checked_anyfunc(store).as_ptr(),
+                ))
+            }
+            (Val::FuncRef(None), ValType::FuncRef) => {
+                Ok(runtime::TableElement::FuncRef(ptr::null_mut()))
+            }
+            (Val::ExternRef(Some(x)), ValType::ExternRef) => {
+                Ok(runtime::TableElement::ExternRef(Some(x.inner)))
+            }
+            (Val::ExternRef(None), ValType::ExternRef) => {
+                Ok(runtime::TableElement::ExternRef(None))
+            }
+            _ => bail!(""value does not match table element type""),
+        }
+    }",0,,
+"    fn drop(&mut self) {
+        if self.needs_inst_drop {
+            unsafe {
+                let inst = self.inst.as_mut();
+
+                // Grab a handle to the region to ensure it outlives `inst`.
+                //
+                // This ensures that the region won't be dropped by `inst` being
+                // dropped, which could result in `inst` being unmapped by the
+                // Region *during* drop of the Instance's fields.
+                let region: Arc<dyn RegionInternal> = inst.alloc().region.clone();
+
+                // drop the actual instance
+                std::ptr::drop_in_place(inst);
+
+                // and now we can drop what may be the last Arc<Region>. If it is
+                // it can safely do what it needs with memory; we're not running
+                // destructors on it anymore.
+                mem::drop(region);
+            }
+        }
+    }",1,"5,7,8,9,10,15,16,17,18","                // Grab a handle to the region to ensure it outlives `inst`./~/                // This ensures that the region won't be dropped by `inst` being/~/                // dropped, which could result in `inst` being unmapped by the/~/                // Region *during* drop of the Instance's fields./~/                let region: Arc<dyn RegionInternal> = inst.alloc().region.clone();/~/                // and now we can drop what may be the last Arc<Region>. If it is/~/                // it can safely do what it needs with memory; we're not running/~/                // destructors on it anymore./~/                mem::drop(region);"
+"fn test_err_mod64_by_zero_reg() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov32 r0, 1
+        mov32 r1, 0
+        mod r0, r1
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| matches!(res.unwrap_err(), EbpfError::DivideByZero(pc) if pc == 31) },
+        3
+    );
+}",0,,
+"    pub fn data(&self) -> &T {
+        self.inner.data()
+    }",0,,
+"pub async fn connect(
+    ports: PortConfig,
+    maxcon: usize,
+    db: Corestore,
+    signal: broadcast::Sender<()>,
+) -> Result<MultiListener, String> {
+    let climit = Arc::new(Semaphore::const_new(maxcon));
+    let server = match ports {
+        PortConfig::InsecureOnly { host, port } => MultiListener::new_insecure_only(
+            BaseListener::init(&db, host, port, climit.clone(), signal.clone())
+                .await
+                .map_err(|e| format!(""Failed to bind to TCP port with error: {}"", e))?,
+        )?,
+        PortConfig::SecureOnly { host, ssl } => MultiListener::new_secure_only(
+            BaseListener::init(&db, host, ssl.port, climit.clone(), signal.clone())
+                .await
+                .map_err(|e| format!(""Failed to initialize secure port with error: {}"", e))?,
+            ssl,
+        )?,
+        PortConfig::Multi { host, port, ssl } => {
+            let secure_listener =
+                BaseListener::init(&db, host, ssl.port, climit.clone(), signal.clone())
+                    .await
+                    .map_err(|e| format!(""Failed to bind to TCP port with error: {}"", e))?;
+            let insecure_listener =
+                BaseListener::init(&db, host, port, climit.clone(), signal.clone())
+                    .await
+                    .map_err(|e| format!(""Failed to initialize secure port with error: {}"", e))?;
+            MultiListener::new_multi(secure_listener, insecure_listener, ssl).await?
+        }
+    };
+    Ok(server)
+}",0,,
+"fn test_jsgt_imm() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov32 r0, 0
+        mov r1, -2
+        jsgt r1, -1, +4
+        mov32 r0, 1
+        mov32 r1, 0
+        jsgt r1, -1, +1
+        mov32 r0, 2
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x1 } },
+        7
+    );
+}",0,,
+"    pub fn iter(&self) -> impl Iterator<Item = (VCodeConstant, &VCodeConstantData)> {
+        self.constants.iter()
+    }",0,,
+"pub fn serialize(&self) -> [u8; util::MESSAGE_SIZE] {
+        self.0.b32()
+    }",0,,
+"fn test_le32_high() {
+    test_interpreter_and_jit_asm!(
+        ""
+        ldxdw r0, [r1]
+        le32 r0
+        exit"",
+        [0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x44332211 } },
+        3
+    );
+}",0,,
+"pub fn new() -> Self {
+        Compiler {
+            insts: vec![],
+            compiled: Program::new(),
+            capture_name_idx: HashMap::new(),
+            num_exprs: 0,
+            size_limit: 10 * (1 << 20),
+            suffix_cache: SuffixCache::new(1000),
+            utf8_seqs: Some(Utf8Sequences::new('\x00', '\x00')),
+            byte_classes: ByteClassSet::new(),
+            extra_inst_bytes: 0,
+        }
+    }",0,,
+"fn test_tcp_sack_match() {
+    test_interpreter_and_jit_asm!(
+        TCP_SACK_ASM,
+        TCP_SACK_MATCH,
+        (),
+        0,
+        { |_vm, res: Result| res.unwrap() == 0x1 },
+        79
+    );
+}",0,,
+"pub(crate) fn sig_index(&self, data: &StoreData) -> VMSharedSignatureIndex {
+        unsafe { data[self.0].export().anyfunc.as_ref().type_index }
+    }",0,,
+"pub fn grow_memory_from_hostcall(
+        &mut self,
+        vmctx: &Vmctx,
+        additional_pages: u32,
+    ) -> Result<u32, Error> {
+        // Use a function so that we can report all Errs via memory_grow_failed.
+        fn aux(
+            instance: &mut Instance,
+            vmctx: &Vmctx,
+            additional_pages: u32,
+        ) -> Result<u32, Error> {
+            // Calculate current and desired bytes
+            let current_bytes = instance.alloc.heap_len();
+            let additional_bytes =
+                additional_pages
+                    .checked_mul(WASM_PAGE_SIZE)
+                    .ok_or_else(|| {
+                        lucet_format_err!(""additional pages larger than wasm address space"",)
+                    })? as usize;
+            let desired_bytes = additional_bytes
+                .checked_add(current_bytes)
+                .ok_or_else(|| lucet_format_err!(""desired bytes overflow"",))?;
+            // Let the limiter reject the grow
+            if let Some(ref mut limiter) = instance.memory_limiter {
+                if !vmctx.block_on(async move {
+                    limiter.memory_growing(current_bytes, desired_bytes).await
+                }) {
+                    lucet_bail!(""memory limiter denied growth"");
+                }
+            }
+            // Try the grow itself
+            instance.grow_memory(additional_pages)
+        }
+
+        match aux(self, vmctx, additional_pages) {
+            Ok(n) => Ok(n),
+            Err(e) => {
+                if let Some(ref mut limiter) = self.memory_limiter {
+                    limiter.memory_grow_failed(&e);
+                    Err(e)
+                } else {
+                    Err(e)
+                }
+            }
+        }
+    }",0,,
+"fn into(self) -> Scalar {
+        self.0.clone()
+    }",0,,
+"pub fn seteuid(uid: u32) {
+    let uid = Uid::from_raw(uid);
+    match nix::unistd::seteuid(uid) {
+        Ok(_) => log::debug!(""Dropping privileges...""),
+        Err(e) => {
+            log::error!(""Failed to set EUID: {:#?}"", e);
+            exit(1);
+        }
+    }
+}",0,,
+"    pub fn func(&self) -> &Func {
+        &self.func
+    }",0,,
+"fn from(val: u128) -> Val {
+        Val::V128(val)
+    }",0,,
+"    fn lookup_stack_map(&self, pc: usize) -> Option<&StackMap>;
+}
+
+#[derive(Debug, Default)]
+struct DebugOnly<T> {
+    inner: T,
+}",0,,
+"fn test_total_chaos() {
+    let instruction_count = 6;
+    let iteration_count = 1000000;
+    let mut program = vec![0; instruction_count * ebpf::INSN_SIZE];
+    program[ebpf::INSN_SIZE * (instruction_count - 1)..ebpf::INSN_SIZE * instruction_count]
+        .copy_from_slice(&[ebpf::EXIT, 0, 0, 0, 0, 0, 0, 0]);
+    let seed = 0xC2DB2F8F282284A0;
+    let mut prng = SmallRng::seed_from_u64(seed);
+    for _ in 0..iteration_count {
+        prng.fill_bytes(&mut program[0..ebpf::INSN_SIZE * (instruction_count - 1)]);
+        execute_generated_program(&program);
+    }
+    for _ in 0..iteration_count {
+        prng.fill_bytes(&mut program[0..ebpf::INSN_SIZE * (instruction_count - 1)]);
+        for index in (0..program.len()).step_by(ebpf::INSN_SIZE) {
+            program[index + 0x1] &= 0x77;
+            program[index + 0x2] &= 0x00;
+            program[index + 0x3] &= 0x77;
+            program[index + 0x4] &= 0x00;
+            program[index + 0x5] &= 0x77;
+            program[index + 0x6] &= 0x77;
+            program[index + 0x7] &= 0x77;
+        }
+        execute_generated_program(&program);
+    }
+}",0,,
+"pub fn read64<R>(reader: &mut R) -> Result<u64, io::Error> where R: io::Read {
+    let mut buf = [0u8; 8];
+    reader.read_exact(&mut buf)?;
+    Ok(u64::from_be_bytes(buf))
+}",0,,
+"    fn fill(&mut self, hole: Hole, goto: InstPtr) {
+        match hole {
+            Hole::None => {}
+            Hole::One(pc) => {
+                self.insts[pc].fill(goto);
+            }
+            Hole::Many(holes) => {
+                for hole in holes {
+                    self.fill(hole, goto);
+                }
+            }
+        }
+    }",0,,
+"pub(crate) unsafe fn read_value_from(
+        store: &mut StoreOpaque,
+        p: *const u128,
+        ty: ValType,
+    ) -> Val {
+        match ty {
+            ValType::I32 => Val::I32(ptr::read(p as *const i32)),
+            ValType::I64 => Val::I64(ptr::read(p as *const i64)),
+            ValType::F32 => Val::F32(ptr::read(p as *const u32)),
+            ValType::F64 => Val::F64(ptr::read(p as *const u64)),
+            ValType::V128 => Val::V128(ptr::read(p as *const u128)),
+            ValType::ExternRef => {
+                let raw = ptr::read(p as *const *mut u8);
+                if raw.is_null() {
+                    Val::ExternRef(None)
+                } else {
+                    Val::ExternRef(Some(ExternRef {
+                        inner: VMExternRef::clone_from_raw(raw),
+                    }))
+                }
+            }
+            ValType::FuncRef => {
+                let func = ptr::read(p as *const *mut runtime::VMCallerCheckedAnyfunc);
+                from_checked_anyfunc(func, store)
+            }
+        }
+    }",0,,
+"    fn push_split_hole(&mut self) -> Hole {
+        let hole = self.insts.len();
+        self.insts.push(MaybeInst::Split);
+        Hole::One(hole)
+    }",0,,
+"pub fn set_vreg_type(&mut self, vreg: VirtualReg, ty: Type) {
+        if self.vcode.vreg_types.len() <= vreg.get_index() {
+            self.vcode
+                .vreg_types
+                .resize(vreg.get_index() + 1, ir::types::I8);
+        }
+        self.vcode.vreg_types[vreg.get_index()] = ty;
+        if is_reftype(ty) {
+            self.stack_map_info.reftyped_vregs.push(vreg);
+            self.vcode.have_ref_values = true;
+        }
+    }",0,,
+"pub fn serialize(&self) -> u8 {
+        self.0
+    }",0,,
+"fn test_err_mem_access_out_of_bound() {
+    let mem = [0; 512];
+    let mut prog = [0; 32];
+    prog[0] = ebpf::LD_DW_IMM;
+    prog[16] = ebpf::ST_B_IMM;
+    prog[24] = ebpf::EXIT;
+    for address in [0x2u64, 0x8002u64, 0x80000002u64, 0x8000000000000002u64] {
+        LittleEndian::write_u32(&mut prog[4..], address as u32);
+        LittleEndian::write_u32(&mut prog[12..], (address >> 32) as u32);
+        let config = Config::default();
+        let mut bpf_functions = BTreeMap::new();
+        let syscall_registry = SyscallRegistry::default();
+        register_bpf_function(
+            &config,
+            &mut bpf_functions,
+            &syscall_registry,
+            0,
+            ""entrypoint"",
+        )
+        .unwrap();
+        #[allow(unused_mut)]
+        let mut executable = Executable::<UserError, TestInstructionMeter>::from_text_bytes(
+            &prog,
+            None,
+            config,
+            syscall_registry,
+            bpf_functions,
+        )
+        .unwrap();
+        test_interpreter_and_jit!(
+            executable,
+            mem,
+            0,
+            {
+                |_vm, res: Result| {
+                    matches!(res.unwrap_err(),
+                        EbpfError::AccessViolation(pc, access_type, vm_addr, len, name)
+                        if access_type == AccessType::Store && pc == 31 && vm_addr == address && len == 1 && name == ""unknown""
+                    )
+                }
+            },
+            2
+        );
+    }
+}",0,,
+"fn table_end_is_at_correct_offset() {
+        let table = VMExternRefActivationsTable::new();
+
+        let table_ptr = &table as *const _;
+        let end_ptr = &table.alloc.end as *const _;
+
+        let actual_offset = (end_ptr as usize) - (table_ptr as usize);
+
+        let offsets = wasmtime_environ::VMOffsets::from(wasmtime_environ::VMOffsetsFields {
+            ptr: 8,
+            num_signature_ids: 0,
+            num_imported_functions: 0,
+            num_imported_tables: 0,
+            num_imported_memories: 0,
+            num_imported_globals: 0,
+            num_defined_functions: 0,
+            num_defined_tables: 0,
+            num_defined_memories: 0,
+            num_defined_globals: 0,
+        });
+        assert_eq!(
+            offsets.vm_extern_ref_activation_table_end() as usize,
+            actual_offset
+        );
+    }",0,,
+"pub fn current_block() -> Option<ethereum::BlockV0> {
+		CurrentBlock::<T>::get()
+	}",0,,
+"fn test_reloc_64_64_high_vaddr() {
+    // Same as test_reloc_64_64, but with .text already alinged to
+    // MM_PROGRAM_START by the linker
+    test_interpreter_and_jit_elf!(
+        ""tests/elfs/reloc_64_64_high_vaddr.so"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == ebpf::MM_PROGRAM_START } },
+        2
+    );
+}",0,,
+"fn test_mod64() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov32 r0, -1316649930
+        lsh r0, 32
+        or r0, 0x100dc5c8
+        mov32 r1, 0xdde263e
+        lsh r1, 32
+        or r1, 0x3cbef7f3
+        mod r0, r1
+        mod r0, 0x658f1778
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x30ba5a04 } },
+        9
+    );
+}",0,,
+"    fn mul_assign(&mut self, other: Scalar) {
+        self.mul_assign(&other)
+    }",0,,
+"        fn drop(&mut self) {
+            // Signal all the workers to shut down
+            for _ in &mut self.workers {
+                self.sender.send(WhatToDo::Nothing).unwrap();
+            }
+            // Terminate all the threads
+            for worker in &mut self.workers {
+                if let Some(thread) = worker.thread.take() {
+                    thread.join().unwrap();
+                }
+            }
+        }",0,,
+"    pub fn block_order(&self) -> &BlockLoweringOrder {
+        &self.vcode.block_order
+    }",0,,
+"	pub fn generate_token(&self) -> Result<String, String> {
+		(self.generate_new_token)()
+	}",0,,
+"fn test_stxb() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov32 r2, 0x11
+        stxb [r1+2], r2
+        ldxb r0, [r1+2]
+        exit"",
+        [
+            0xaa, 0xbb, 0xff, 0xcc, 0xdd, //
+        ],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x11 } },
+        4
+    );
+}",0,,
+"fn log_wasm(wasm: &[u8]) {
+    if !log::log_enabled!(log::Level::Debug) {
+        return;
+    }
+
+    let i = CNT.fetch_add(1, SeqCst);
+    let name = format!(""testcase{}.wasm"", i);
+    std::fs::write(&name, wasm).expect(""failed to write wasm file"");
+    log::debug!(""wrote wasm file to `{}`"", name);
+    let wat = format!(""testcase{}.wat"", i);
+    match wasmprinter::print_bytes(wasm) {
+        Ok(s) => std::fs::write(&wat, s).expect(""failed to write wat file""),
+        // If wasmprinter failed remove a `*.wat` file, if any, to avoid
+        // confusing a preexisting one with this wasm which failed to get
+        // printed.
+        Err(_) => drop(std::fs::remove_file(&wat)),
+    }
+}",0,,
+"fn test_err_instruction_count_syscall_capped() {
+    let config = Config {
+        static_syscalls: false,
+        ..Config::default()
+    };
+    test_interpreter_and_jit_asm!(
+        ""
+        mov64 r2, 0x5
+        call 0
+        mov64 r0, 0x0
+        exit"",
+        config,
+        [72, 101, 108, 108, 111],
+        (
+            b""BpfSyscallString"" => syscalls::BpfSyscallString::init::<BpfSyscallContext, UserError>; syscalls::BpfSyscallString::call,
+        ),
+        0,
+        {
+            |_vm, res: Result| {
+                matches!(res.unwrap_err(),
+                    EbpfError::ExceededMaxInstructions(pc, initial_insn_count)
+                    if pc == 32 && initial_insn_count == 3
+                )
+            }
+        },
+        3
+    );
+}",0,,
+"fn test_sdiv32_imm() {
+    test_interpreter_and_jit_asm!(
+        ""
+        lddw r0, 0x10000000c
+        sdiv32 r0, 4
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x3 } },
+        3
+    );
+}",0,,
+"fn test_ldxb() {
+    test_interpreter_and_jit_asm!(
+        ""
+        ldxb r0, [r1+2]
+        exit"",
+        [0xaa, 0xbb, 0x11, 0xcc, 0xdd],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x11 } },
+        2
+    );
+}",0,,
+"    pub fn ensure_signal_handler_installed(&mut self, ensure: bool) {
+        self.ensure_signal_handler_installed = ensure;
+    }",0,,
+"pub fn hash<H>(externref: &Self, hasher: &mut H)
+    where
+        H: Hasher,
+    {
+        ptr::hash(externref.0.as_ptr() as *const _, hasher);
+    }",0,,
+"    pub fn new(config: TargetFrontendConfig) -> Self {
+        Self {
+            config,
+            signatures: PrimaryMap::new(),
+            imported_funcs: Vec::new(),
+            imported_globals: Vec::new(),
+            imported_tables: Vec::new(),
+            imported_memories: Vec::new(),
+            functions: PrimaryMap::new(),
+            function_bodies: PrimaryMap::new(),
+            tables: PrimaryMap::new(),
+            memories: PrimaryMap::new(),
+            globals: PrimaryMap::new(),
+            start_func: None,
+        }
+    }",0,,
+"fn test_arsh32_reg() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov32 r0, 0xf8
+        mov32 r1, 16
+        lsh32 r0, 28
+        arsh32 r0, r1
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0xffff8000 } },
+        5
+    );
+}",0,,
+"fn test_rsh64_reg() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov r0, 0x10
+        mov r7, 4
+        rsh r0, r7
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x1 } },
+        4
+    );
+}",0,,
+"    fn compile_finish(mut self) -> result::Result<Program, Error> {
+        self.compiled.insts =
+            self.insts.into_iter().map(|inst| inst.unwrap()).collect();
+        self.compiled.byte_classes = self.byte_classes.byte_classes();
+        self.compiled.capture_name_idx = Arc::new(self.capture_name_idx);
+        Ok(self.compiled)
+    }",0,,
+"    fn fill_to_next(&mut self, hole: Hole) {
+        let next = self.insts.len();
+        self.fill(hole, next);
+    }",0,,
+"    fn c_repeat_zero_or_one(
+        &mut self,
+        expr: &Hir,
+        greedy: bool,
+    ) -> ResultOrEmpty {
+        let split_entry = self.insts.len();
+        let split = self.push_split_hole();
+        let Patch { hole: hole_rep, entry: entry_rep } = match self.c(expr)? {
+            Some(p) => p,
+            None => return self.pop_split_hole(),
+        };
+        let split_hole = if greedy {
+            self.fill_split(split, Some(entry_rep), None)
+        } else {
+            self.fill_split(split, None, Some(entry_rep))
+        };
+        let holes = vec![hole_rep, split_hole];
+        Ok(Some(Patch { hole: Hole::Many(holes), entry: split_entry }))
+    }",0,,
+"    fn insns_mut(&mut self) -> &mut [I] {
+        &mut self.insts[..]
+    }",0,,
+"pub fn check_mut_array<T>(user_buf: *mut T, count: usize) -> Result<()> {
+        // The user space is both readable and writable on SGX1.
+        // TODO: Fine-tune the checking on SGX2.
+        check_array(user_buf, count)
+    }",0,,
+"fn test_parse_less_version_529() {
+    let output = b""less 529 (Spencer V8 regular expressions)
+Copyright (C) 1984-2017  Mark Nudelman
+
+less comes with NO WARRANTY, to the extent permitted by law.
+For information about the terms of redistribution,
+see the file named README in the less distribution.
+Homepage: http://www.greenwoodsoftware.com/less"";
+
+    assert_eq!(Some(529), parse_less_version(output));
+}",0,,
+"    fn module(&self, pc: usize) -> Option<&Arc<RegisteredModule>> {
+        let (end, info) = self.modules_with_code.range(pc..).next()?;
+        if pc < info.start || *end < pc {
+            return None;
+        }
+
+        Some(info)
+    }",0,,
+"fn main() {
+    benchtool::runner();
+}",1,2,}
+"	pub fn is_enabled(&self) -> bool {
+		self.is_enabled
+	}",0,,
+"    pub fn diagnostic(self, source_code: &str) -> Diagnostic {
+        Diagnostic::from_parse_error(self, source_code)
+    }",0,,
+"fn global_init_no_leak() -> anyhow::Result<()> {
+    let (mut store, module) = ref_types_module(
+        r#""
+            (module
+                (import """" """" (global externref))
+                (global externref (global.get 0))
+            )
+        ""#,
+    )?;
+
+    let externref = ExternRef::new(());
+    let global = Global::new(
+        &mut store,
+        GlobalType::new(ValType::ExternRef, Mutability::Const),
+        externref.clone().into(),
+    )?;
+    Instance::new(&mut store, &module, &[global.into()])?;
+    drop(store);
+    assert_eq!(externref.strong_count(), 1);
+
+    Ok(())
+}",0,,
+"    pub fn unwrap_externref(&self) -> Option<ExternRef> {
+        self.externref().expect(""expected externref"")
+    }",0,,
+"fn try_from(ty: wasmparser::Type) -> Result<Self, Self::Error> {
+        use wasmparser::Type::*;
+        match ty {
+            I32 => Ok(WasmType::I32),
+            I64 => Ok(WasmType::I64),
+            F32 => Ok(WasmType::F32),
+            F64 => Ok(WasmType::F64),
+            V128 => Ok(WasmType::V128),
+            FuncRef => Ok(WasmType::FuncRef),
+            ExternRef => Ok(WasmType::ExternRef),
+            ExnRef => Ok(WasmType::ExnRef),
+            EmptyBlockType | Func => Err(WasmError::InvalidWebAssembly {
+                message: ""unexpected value type"".to_string(),
+                offset: 0,
+            }),
+        }
+    }",0,,
+"pub fn find_author() -> H160 {
+		let digest = <frame_system::Pallet<T>>::digest();
+		let pre_runtime_digests = digest.logs.iter().filter_map(|d| d.as_pre_runtime());
+
+		T::FindAuthor::find_author(pre_runtime_digests).unwrap_or_default()
+	}",0,,
+"fn check_overflow(&self) -> bool {
+        let mut yes: bool = false;
+        let mut no: bool = false;
+        no = no || (self.0[7] < SECP256K1_N_7); /* No need for a > check. */
+        no = no || (self.0[6] < SECP256K1_N_6); /* No need for a > check. */
+        no = no || (self.0[5] < SECP256K1_N_5); /* No need for a > check. */
+        no = no || (self.0[4] < SECP256K1_N_4);
+        yes = yes || ((self.0[4] > SECP256K1_N_4) && !no);
+        no = no || ((self.0[3] < SECP256K1_N_3) && !yes);
+        yes = yes || ((self.0[3] > SECP256K1_N_3) && !no);
+        no = no || ((self.0[2] < SECP256K1_N_2) && !yes);
+        yes = yes || ((self.0[2] > SECP256K1_N_2) && !no);
+        no = no || ((self.0[1] < SECP256K1_N_1) && !yes);
+        yes = yes || ((self.0[1] > SECP256K1_N_1) && !no);
+        yes = yes || ((self.0[0] >= SECP256K1_N_0) && !no);
+        return yes;
+    }",1,"1,2,3,4,5,6,7,8,9,10,11,12,13,14,15",let mut yes: bool = false;/~/        let mut no: bool = false;/~/        no = no || (self.0[7] < SECP256K1_N_7); /* No need for a > check. *//~/        no = no || (self.0[6] < SECP256K1_N_6); /* No need for a > check. *//~/        no = no || (self.0[5] < SECP256K1_N_5); /* No need for a > check. *//~/        no = no || (self.0[4] < SECP256K1_N_4);/~/        yes = yes || ((self.0[4] > SECP256K1_N_4) && !no);/~/        no = no || ((self.0[3] < SECP256K1_N_3) && !yes);/~/        yes = yes || ((self.0[3] > SECP256K1_N_3) && !no);/~/        no = no || ((self.0[2] < SECP256K1_N_2) && !yes);/~/        yes = yes || ((self.0[2] > SECP256K1_N_2) && !no);/~/        no = no || ((self.0[1] < SECP256K1_N_1) && !yes);/~/        yes = yes || ((self.0[1] > SECP256K1_N_1) && !no);/~/        yes = yes || ((self.0[0] >= SECP256K1_N_0) && !no);/~/        return yes;
+"fn half_fill_split_goto2(&mut self, goto2: InstPtr) {
+        let half_filled = match *self {
+            MaybeInst::Split => goto2,
+            _ => unreachable!(
+                ""must be called on Split instruction, \
+                 instead it was called on: {:?}"",
+                self
+            ),
+        };
+        *self = MaybeInst::Split2(half_filled);
+    }",0,,
+"fn test_jsge_reg() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov32 r0, 0
+        mov r1, -2
+        mov r2, -1
+        mov32 r3, 0
+        jsge r1, r2, +5
+        jsge r1, r3, +4
+        mov32 r0, 1
+        mov r1, r2
+        jsge r1, r2, +1
+        mov32 r0, 2
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x1 } },
+        10
+    );
+}",0,,
+"fn parse_chars_or_range<'i, 'b>(input: Input<'i, 'b>) -> PResult<'i, 'b, CharGroup> {
+        // this is not clean code, but using the combinators results in worse error
+        // spans
+        let span1 = input.span();
+        let (input, first) = parse_string_or_char(input)?;
+
+        if let Ok((input, _)) = Token::Dash.parse(input.clone()) {
+            let span2 = input.span();
+            let (input, last) = cut(parse_string_or_char)(input)?;
+
+            let first = first.to_char().map_err(|e| nom::Err::Failure(e.at(span1)))?;
+            let last = last.to_char().map_err(|e| nom::Err::Failure(e.at(span2)))?;
+
+            let group = CharGroup::try_from_range(first, last).ok_or_else(|| {
+                nom::Err::Failure(
+                    ParseErrorKind::CharClass(CharClassError::DescendingRange(first, last))
+                        .at(span1.join(span2)),
+                )
+            })?;
+            Ok((input, group))
+        } else {
+            let group = match first {
+                StringOrChar::String(s) => CharGroup::from_chars(
+                    parse_quoted_text(s).map_err(|k| nom::Err::Failure(k.at(span1)))?.borrow(),
+                ),
+                StringOrChar::Char(c) => CharGroup::from_char(c),
+            };
+            Ok((input, group))
+        }
+    }",0,,
+"async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let args = set_command_line_args().get_matches();
+    env::set_var(""RUST_LOG"", ""swhkd=warn"");
+
+    if args.is_present(""debug"") {
+        env::set_var(""RUST_LOG"", ""swhkd=trace"");
+    }
+
+    env_logger::init();
+    log::trace!(""Logger initialized."");
+
+    let pidfile: String = String::from(""/tmp/swhkd.pid"");
+    if Path::new(&pidfile).exists() {
+        log::trace!(""Reading {} file and checking for running instances."", pidfile);
+        let swhkd_pid = match fs::read_to_string(&pidfile) {
+            Ok(swhkd_pid) => swhkd_pid,
+            Err(e) => {
+                log::error!(""Unable to read {} to check all running instances"", e);
+                exit(1);
+            }
+        };
+        log::debug!(""Previous PID: {}"", swhkd_pid);
+
+        let mut sys = System::new_all();
+        sys.refresh_all();
+        for (pid, process) in sys.processes() {
+            if pid.to_string() == swhkd_pid && process.exe() == env::current_exe().unwrap() {
+                log::error!(""Swhkd is already running!"");
+                log::error!(""pid of existing swhkd process: {}"", pid.to_string());
+                log::error!(""To close the existing swhkd process, run `sudo killall swhkd`"");
+                exit(1);
+            }
+        }
+    }
+
+    match fs::write(&pidfile, id().to_string()) {
+        Ok(_) => {}
+        Err(e) => {
+            log::error!(""Unable to write to {}: {}"", pidfile, e);
+            exit(1);
+        }
+    }
+
+    if check_user_permissions().is_err() {
+        exit(1);
+    }
+
+    let load_config = || {
+        let config_file_path: std::path::PathBuf = if args.is_present(""config"") {
+            Path::new(args.value_of(""config"").unwrap()).to_path_buf()
+        } else {
+            fetch_xdg_config_path()
+        };
+
+        log::debug!(""Using config file path: {:#?}"", config_file_path);
+
+        if !config_file_path.exists() {
+            log::error!(""{:#?} doesn't exist"", config_file_path);
+            exit(1);
+        }
+
+        let hotkeys = match config::load(&config_file_path) {
+            Err(e) => {
+                log::error!(""Config Error: {}"", e);
+                exit(1);
+            }
+            Ok(out) => out,
+        };
+
+        for hotkey in &hotkeys {
+            log::debug!(""hotkey: {:#?}"", hotkey);
+        }
+
+        hotkeys
+    };
+
+    let mut hotkeys = load_config();
+
+    log::trace!(""Attempting to find all keyboard file descriptors."");
+    let keyboard_devices: Vec<Device> =
+        evdev::enumerate().filter(check_device_is_keyboard).collect();
+
+    let mut uinput_device = match uinput::create_uinput_device() {
+        Ok(dev) => dev,
+        Err(e) => {
+            log::error!(""Err: {:#?}"", e);
+            exit(1);
+        }
+    };
+
+    if keyboard_devices.is_empty() {
+        log::error!(""No valid keyboard device was detected!"");
+        exit(1);
+    }
+    log::debug!(""{} Keyboard device(s) detected."", keyboard_devices.len());
+
+    let modifiers_map: HashMap<Key, config::Modifier> = HashMap::from([
+        (Key::KEY_LEFTMETA, config::Modifier::Super),
+        (Key::KEY_RIGHTMETA, config::Modifier::Super),
+        (Key::KEY_LEFTMETA, config::Modifier::Super),
+        (Key::KEY_RIGHTMETA, config::Modifier::Super),
+        (Key::KEY_LEFTALT, config::Modifier::Alt),
+        (Key::KEY_RIGHTALT, config::Modifier::Alt),
+        (Key::KEY_LEFTCTRL, config::Modifier::Control),
+        (Key::KEY_RIGHTCTRL, config::Modifier::Control),
+        (Key::KEY_LEFTSHIFT, config::Modifier::Shift),
+        (Key::KEY_RIGHTSHIFT, config::Modifier::Shift),
+    ]);
+
+    let repeat_cooldown_duration: u64 = if args.is_present(""cooldown"") {
+        args.value_of(""cooldown"").unwrap().parse::<u64>().unwrap()
+    } else {
+        250
+    };
+
+    let mut signals = Signals::new(&[
+        SIGUSR1, SIGUSR2, SIGHUP, SIGABRT, SIGBUS, SIGCHLD, SIGCONT, SIGINT, SIGPIPE, SIGQUIT,
+        SIGSYS, SIGTERM, SIGTRAP, SIGTSTP, SIGVTALRM, SIGXCPU, SIGXFSZ,
+    ])?;
+
+    let mut execution_is_paused = false;
+    let mut last_hotkey: Option<config::Hotkey> = None;
+    let mut pending_release: bool = false;
+    let mut keyboard_states: Vec<KeyboardState> = Vec::new();
+    let mut keyboard_stream_map = StreamMap::new();
+
+    for (i, mut device) in keyboard_devices.into_iter().enumerate() {
+        let _ = device.grab();
+        keyboard_stream_map.insert(i, device.into_event_stream()?);
+        keyboard_states.push(KeyboardState::new());
+    }
+
+    // The initial sleep duration is never read because last_hotkey is initialized to None
+    let hotkey_repeat_timer = sleep(Duration::from_millis(0));
+    tokio::pin!(hotkey_repeat_timer);
+
+    loop {
+        select! {
+            _ = &mut hotkey_repeat_timer, if &last_hotkey.is_some() => {
+                let hotkey = last_hotkey.clone().unwrap();
+                if hotkey.keybinding.on_release {
+                    continue;
+                }
+                send_command(hotkey.clone());
+                hotkey_repeat_timer.as_mut().reset(Instant::now() + Duration::from_millis(repeat_cooldown_duration));
+            }
+
+            Some(signal) = signals.next() => {
+                match signal {
+                    SIGUSR1 => {
+                        execution_is_paused = true;
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.ungrab();
+                        }
+                    }
+
+                    SIGUSR2 => {
+                        execution_is_paused = false;
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.grab();
+                        }
+                    }
+
+                    SIGHUP => {
+                        hotkeys = load_config();
+                    }
+
+                    SIGINT => {
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.ungrab();
+                        }
+                        log::warn!(""Received SIGINT signal, exiting..."");
+                        exit(1);
+                    }
+
+                    _ => {
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.ungrab();
+                        }
+
+                        log::warn!(""Received signal: {:#?}"", signal);
+                        log::warn!(""Exiting..."");
+                        exit(1);
+                    }
+                }
+            }
+
+            Some((i, Ok(event))) = keyboard_stream_map.next() => {
+                let keyboard_state = &mut keyboard_states[i];
+
+                let key = match event.kind() {
+                    InputEventKind::Key(keycode) => keycode,
+                    _ => continue
+                };
+
+                match event.value() {
+                    // Key press
+                    1 => {
+                        if let Some(modifier) = modifiers_map.get(&key) {
+                            keyboard_state.state_modifiers.insert(*modifier);
+                        } else {
+                            keyboard_state.state_keysyms.insert(key);
+                        }
+                    }
+
+                    // Key release
+                    0 => {
+                        if last_hotkey.is_some() && pending_release {
+                            pending_release = false;
+                            send_command(last_hotkey.clone().unwrap());
+                            last_hotkey = None;
+                        }
+                        if let Some(modifier) = modifiers_map.get(&key) {
+                            if let Some(hotkey) = &last_hotkey {
+                                if hotkey.modifiers().contains(modifier) {
+                                    last_hotkey = None;
+                                }
+                            }
+                            keyboard_state.state_modifiers.remove(modifier);
+                        } else if keyboard_state.state_keysyms.contains(key) {
+                            if let Some(hotkey) = &last_hotkey {
+                                if key == hotkey.keysym() {
+                                    last_hotkey = None;
+                                }
+                            }
+                            keyboard_state.state_keysyms.remove(key);
+                        }
+                    }
+
+                    _ => {}
+                }
+
+                let possible_hotkeys: Vec<&config::Hotkey> = hotkeys.iter()
+                    .filter(|hotkey| hotkey.modifiers().len() == keyboard_state.state_modifiers.len())
+                    .collect();
+
+                let event_in_hotkeys = hotkeys.iter().any(|hotkey| {
+                    hotkey.keysym().code() == event.code() &&
+                    keyboard_state.state_modifiers
+                        .iter()
+                        .all(|x| hotkey.modifiers().contains(x)) &&
+                    keyboard_state.state_modifiers.len() == hotkey.modifiers().len()
+                    && !hotkey.is_send()
+                        });
+
+                // Don't emit event to virtual device if it's from a valid hotkey
+                if !event_in_hotkeys {
+                    uinput_device.emit(&[event]).unwrap();
+                }
+
+                if execution_is_paused || possible_hotkeys.is_empty() || last_hotkey.is_some() {
+                    continue;
+                }
+
+                log::debug!(""state_modifiers: {:#?}"", keyboard_state.state_modifiers);
+                log::debug!(""state_keysyms: {:#?}"", keyboard_state.state_keysyms);
+                log::debug!(""hotkey: {:#?}"", possible_hotkeys);
+
+                for hotkey in possible_hotkeys {
+                    // this should check if state_modifiers and hotkey.modifiers have the same elements
+                    if keyboard_state.state_modifiers.iter().all(|x| hotkey.modifiers().contains(x))
+                        && keyboard_state.state_modifiers.len() == hotkey.modifiers().len()
+                        && keyboard_state.state_keysyms.contains(hotkey.keysym())
+                    {
+                        last_hotkey = Some(hotkey.clone());
+                        if pending_release { break; }
+                        if hotkey.is_on_release() {
+                            pending_release = true;
+                            break;
+                        }
+                        send_command(hotkey.clone());
+                        hotkey_repeat_timer.as_mut().reset(Instant::now() + Duration::from_millis(repeat_cooldown_duration));
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}",1,77,
+"    pub fn num_blocks(&self) -> usize {
+        self.block_ranges.len()
+    }",0,,
+"fn test_add32() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov32 r0, 0
+        mov32 r1, 2
+        add32 r0, 1
+        add32 r0, r1
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x3 } },
+        5
+    );
+}",0,,
+"pub async fn call_async<T>(
+        &self,
+        mut store: impl AsContextMut<Data = T>,
+        params: &[Val],
+    ) -> Result<Box<[Val]>>
+    where
+        T: Send,
+    {
+        let mut store = store.as_context_mut();
+        assert!(
+            store.0.async_support(),
+            ""cannot use `call_async` without enabling async support in the config"",
+        );
+        let my_ty = self.ty(&store);
+        let result = store
+            .on_fiber(|store| self.call_impl(store, my_ty, params))
+            .await??;
+        Ok(result)
+    }",0,,
+"pub(crate) fn ref_types_module(
+    source: &str,
+) -> anyhow::Result<(wasmtime::Store<()>, wasmtime::Module)> {
+    use wasmtime::*;
+
+    let _ = env_logger::try_init();
+
+    let mut config = Config::new();
+    config.wasm_reference_types(true);
+
+    let engine = Engine::new(&config)?;
+    let store = Store::new(&engine, ());
+
+    let module = Module::new(&engine, source)?;
+
+    Ok((store, module))
+}",1,11,"    let store = Store::new(&engine, ());"
+"	fn on_response_writable(&mut self, encoder: &mut Encoder<net::HttpStream>) -> Next {
+		match self.state {
+			State::Initial => Next::end(),
+			State::Error(ref mut handler) => handler.on_response_writable(encoder),
+			State::Fetching(ref mut handler) => handler.on_response_writable(encoder),
+		}
+	}",0,,
+"fn drop(&mut self) {
+        self.0.store(true, SeqCst);
+    }",0,,
+"fn confirm_request_with_token(&self, id: U256, modification: TransactionModification, token: String)
+		-> BoxFuture<ConfirmationResponseWithToken, Error>
+	{
+		self.confirm_internal(id, modification, move |dis, accounts, payload| {
+			dispatch::execute(dis, accounts, payload, dispatch::SignWith::Token(token))
+		}).and_then(|v| match v {
+			WithToken::No(_) => Err(errors::internal(""Unexpected response without token."", """")),
+			WithToken::Yes(response, token) => Ok(ConfirmationResponseWithToken {
+				result: response,
+				token: token,
+			}),
+		}).boxed()
+	}",0,,
+"fn mul_512(&self, b: &Scalar, l: &mut [u32; 16]) {
+        let (mut c0, mut c1, mut c2): (u32, u32, u32) = (0, 0, 0);
+        define_ops!(c0, c1, c2);
+
+        /* l[0..15] = a[0..7] * b[0..7]. */
+        muladd_fast!(self.0[0], b.0[0]);
+        l[0] = extract_fast!();
+        muladd!(self.0[0], b.0[1]);
+        muladd!(self.0[1], b.0[0]);
+        l[1] = extract!();
+        muladd!(self.0[0], b.0[2]);
+        muladd!(self.0[1], b.0[1]);
+        muladd!(self.0[2], b.0[0]);
+        l[2] = extract!();
+        muladd!(self.0[0], b.0[3]);
+        muladd!(self.0[1], b.0[2]);
+        muladd!(self.0[2], b.0[1]);
+        muladd!(self.0[3], b.0[0]);
+        l[3] = extract!();
+        muladd!(self.0[0], b.0[4]);
+        muladd!(self.0[1], b.0[3]);
+        muladd!(self.0[2], b.0[2]);
+        muladd!(self.0[3], b.0[1]);
+        muladd!(self.0[4], b.0[0]);
+        l[4] = extract!();
+        muladd!(self.0[0], b.0[5]);
+        muladd!(self.0[1], b.0[4]);
+        muladd!(self.0[2], b.0[3]);
+        muladd!(self.0[3], b.0[2]);
+        muladd!(self.0[4], b.0[1]);
+        muladd!(self.0[5], b.0[0]);
+        l[5] = extract!();
+        muladd!(self.0[0], b.0[6]);
+        muladd!(self.0[1], b.0[5]);
+        muladd!(self.0[2], b.0[4]);
+        muladd!(self.0[3], b.0[3]);
+        muladd!(self.0[4], b.0[2]);
+        muladd!(self.0[5], b.0[1]);
+        muladd!(self.0[6], b.0[0]);
+        l[6] = extract!();
+        muladd!(self.0[0], b.0[7]);
+        muladd!(self.0[1], b.0[6]);
+        muladd!(self.0[2], b.0[5]);
+        muladd!(self.0[3], b.0[4]);
+        muladd!(self.0[4], b.0[3]);
+        muladd!(self.0[5], b.0[2]);
+        muladd!(self.0[6], b.0[1]);
+        muladd!(self.0[7], b.0[0]);
+        l[7] = extract!();
+        muladd!(self.0[1], b.0[7]);
+        muladd!(self.0[2], b.0[6]);
+        muladd!(self.0[3], b.0[5]);
+        muladd!(self.0[4], b.0[4]);
+        muladd!(self.0[5], b.0[3]);
+        muladd!(self.0[6], b.0[2]);
+        muladd!(self.0[7], b.0[1]);
+        l[8] = extract!();
+        muladd!(self.0[2], b.0[7]);
+        muladd!(self.0[3], b.0[6]);
+        muladd!(self.0[4], b.0[5]);
+        muladd!(self.0[5], b.0[4]);
+        muladd!(self.0[6], b.0[3]);
+        muladd!(self.0[7], b.0[2]);
+        l[9] = extract!();
+        muladd!(self.0[3], b.0[7]);
+        muladd!(self.0[4], b.0[6]);
+        muladd!(self.0[5], b.0[5]);
+        muladd!(self.0[6], b.0[4]);
+        muladd!(self.0[7], b.0[3]);
+        l[10] = extract!();
+        muladd!(self.0[4], b.0[7]);
+        muladd!(self.0[5], b.0[6]);
+        muladd!(self.0[6], b.0[5]);
+        muladd!(self.0[7], b.0[4]);
+        l[11] = extract!();
+        muladd!(self.0[5], b.0[7]);
+        muladd!(self.0[6], b.0[6]);
+        muladd!(self.0[7], b.0[5]);
+        l[12] = extract!();
+        muladd!(self.0[6], b.0[7]);
+        muladd!(self.0[7], b.0[6]);
+        l[13] = extract!();
+        muladd_fast!(self.0[7], b.0[7]);
+        l[14] = extract_fast!();
+        debug_assert!(c1 == 0);
+        l[15] = c0;
+    }",0,,
+"fn test_call_memfrob() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov r6, r1
+        add r1, 2
+        mov r2, 4
+        syscall BpfMemFrob
+        ldxdw r0, [r6]
+        be64 r0
+        exit"",
+        [
+            0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, //
+        ],
+        (
+            b""BpfMemFrob"" => syscalls::BpfMemFrob::init::<BpfSyscallContext, UserError>; syscalls::BpfMemFrob::call,
+        ),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x102292e2f2c0708 } },
+        7
+    );
+}",0,,

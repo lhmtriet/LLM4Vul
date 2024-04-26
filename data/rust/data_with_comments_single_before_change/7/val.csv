@@ -1,0 +1,3730 @@
+processed_func,target,flaw_line_index,flaw_line
+"fn module(&self, pc: usize) -> Option<(&GlobalRegisteredModule, usize)> {
+        let (end, info) = self.0.range(pc..).next()?;
+        if pc < info.start || *end < pc {
+            return None;
+        }
+        Some((info, pc - info.start))
+    }",0,,
+"fn test_le64() {
+    test_interpreter_and_jit_asm!(
+        ""
+        ldxdw r0, [r1]
+        le64 r0
+        exit"",
+        [0x88, 0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x1122334455667788 } },
+        3
+    );
+}",0,,
+"async fn accept(&mut self) -> TResult<TcpStream> {
+        // We will steal the idea of Ethernet's backoff for connection errors
+        let mut backoff = 1;
+        loop {
+            match self.listener.accept().await {
+                // We don't need the bindaddr
+                Ok((stream, _)) => return Ok(stream),
+                Err(e) => {
+                    if backoff > 64 {
+                        // Too many retries, goodbye user
+                        return Err(e.into());
+                    }
+                }
+            }
+            // Wait for the `backoff` duration
+            time::sleep(Duration::from_secs(backoff)).await;
+            // We're using exponential backoff
+            backoff *= 2;
+        }
+    }",0,,
+"pub fn bits_var(&self, offset: usize, count: usize) -> u32 {
+        debug_assert!(count < 32);
+        debug_assert!(offset + count <= 256);
+        if (offset + count - 1) >> 5 == offset >> 5 {
+            return self.bits(offset, count);
+        } else {
+            debug_assert!((offset >> 5) + 1 < 8);
+            return ((self.0[offset >> 5] >> (offset & 0x1f)) | (self.0[(offset >> 5) + 1] << (32 - (offset & 0x1f)))) & ((1 << count) - 1);
+        }
+    }",0,,
+"    pub(crate) fn from_wasm_func_type(sig: WasmFuncType) -> FuncType {
+        Self { sig }
+    }",0,,
+"pub fn add_in_place(&mut self, a: &Scalar, b: &Scalar) -> bool {
+        let mut overflow: u64;
+        let mut t: u64 = (a.0[0] as u64) + (b.0[0] as u64);
+        self.0[0] = (t & 0xFFFFFFFF) as u32; t >>= 32;
+        t += (a.0[1] as u64) + (b.0[1] as u64);
+        self.0[1] = (t & 0xFFFFFFFF) as u32; t >>= 32;
+        t += (a.0[2] as u64) + (b.0[2] as u64);
+        self.0[2] = (t & 0xFFFFFFFF) as u32; t >>= 32;
+        t += (a.0[3] as u64) + (b.0[3] as u64);
+        self.0[3] = (t & 0xFFFFFFFF) as u32; t >>= 32;
+        t += (a.0[4] as u64) + (b.0[4] as u64);
+        self.0[4] = (t & 0xFFFFFFFF) as u32; t >>= 32;
+        t += (a.0[5] as u64) + (b.0[5] as u64);
+        self.0[5] = (t & 0xFFFFFFFF) as u32; t >>= 32;
+        t += (a.0[6] as u64) + (b.0[6] as u64);
+        self.0[6] = (t & 0xFFFFFFFF) as u32; t >>= 32;
+        t += (a.0[7] as u64) + (b.0[7] as u64);
+        self.0[7] = (t & 0xFFFFFFFF) as u32; t >>= 32;
+        overflow = t + if self.check_overflow() { 1 } else { 0 };
+        debug_assert!(overflow == 0 || overflow == 1);
+        overflow = overflow | if self.reduce(overflow == 1) { 1 } else { 0 };
+        return overflow == 1;
+    }",0,,
+"    pub fn get_num_func_imports(&self) -> usize {
+        self.info.imported_funcs.len()
+    }",0,,
+"fn withdraw_fee(who: &H160, fee: U256) -> Result<Self::LiquidityInfo, Error<T>> {
+		if fee.is_zero() {
+			return Ok(None);
+		}
+		let account_id = T::AddressMapping::into_account_id(*who);
+		let imbalance = C::withdraw(
+			&account_id,
+			fee.low_u128().unique_saturated_into(),
+			WithdrawReasons::FEE,
+			ExistenceRequirement::AllowDeath,
+		)
+		.map_err(|_| Error::<T>::BalanceLow)?;
+		Ok(Some(imbalance))
+	}",1,7,"fee.low_u128().unique_saturated_into(),"
+"fn compile_many(
+        mut self,
+        exprs: &[Hir],
+    ) -> result::Result<Program, Error> {
+        debug_assert!(exprs.len() > 1);
+
+        self.compiled.is_anchored_start =
+            exprs.iter().all(|e| e.is_anchored_start());
+        self.compiled.is_anchored_end =
+            exprs.iter().all(|e| e.is_anchored_end());
+        let mut dotstar_patch = Patch { hole: Hole::None, entry: 0 };
+        if self.compiled.needs_dotstar() {
+            dotstar_patch = self.c_dotstar()?;
+            self.compiled.start = dotstar_patch.entry;
+        } else {
+            self.compiled.start = 0; // first instruction is always split
+        }
+        self.fill_to_next(dotstar_patch.hole);
+
+        let mut prev_hole = Hole::None;
+        for (i, expr) in exprs[0..exprs.len() - 1].iter().enumerate() {
+            self.fill_to_next(prev_hole);
+            let split = self.push_split_hole();
+            let Patch { hole, entry } =
+                self.c_capture(0, expr)?.unwrap_or(self.next_inst());
+            self.fill_to_next(hole);
+            self.compiled.matches.push(self.insts.len());
+            self.push_compiled(Inst::Match(i));
+            prev_hole = self.fill_split(split, Some(entry), None);
+        }
+        let i = exprs.len() - 1;
+        let Patch { hole, entry } =
+            self.c_capture(0, &exprs[i])?.unwrap_or(self.next_inst());
+        self.fill(prev_hole, entry);
+        self.fill_to_next(hole);
+        self.compiled.matches.push(self.insts.len());
+        self.push_compiled(Inst::Match(i));
+        self.compile_finish()
+    }",0,,
+"fn test_jge_reg() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov32 r0, 0
+        mov32 r1, 0xa
+        mov32 r2, 0xb
+        jge r1, r2, +4
+        mov32 r0, 1
+        mov32 r1, 0xb
+        jge r1, r2, +1
+        mov32 r0, 2
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x1 } },
+        8
+    );
+}",0,,
+"pub fn check_array<T>(user_buf: *const T, count: usize) -> Result<()> {
+        let checked_len = count
+            .checked_mul(size_of::<T>())
+            .ok_or_else(|| errno!(EINVAL, ""the array is too long""))?;
+        if !is_inside_user_space(user_buf as *const u8, checked_len) {
+            return_errno!(EFAULT, ""the whole buffer is not in the user space"");
+        }
+        Ok(())
+    }",0,,
+"fn reduce_512(&mut self, l: &[u32; 16]) {
+        let (mut c0, mut c1, mut c2): (u32, u32, u32);
+        define_ops!(c0, c1, c2);
+
+        let mut c: u64;
+        let (n0, n1, n2, n3, n4, n5, n6, n7) = (l[8], l[9], l[10], l[11], l[12], l[13], l[14], l[15]);
+        let (m0, m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11, m12): (u32, u32, u32, u32, u32, u32, u32, u32, u32, u32, u32, u32, u32);
+        let (p0, p1, p2, p3, p4, p5, p6, p7, p8): (u32, u32, u32, u32, u32, u32, u32, u32, u32);
+
+        c0 = l[0]; c1 = 0; c2 = 0;
+        muladd_fast!(n0, SECP256K1_N_C_0);
+        m0 = extract_fast!();
+        sumadd_fast!(l[1]);
+        muladd!(n1, SECP256K1_N_C_0);
+        muladd!(n0, SECP256K1_N_C_1);
+        m1 = extract!();
+        sumadd!(l[2]);
+        muladd!(n2, SECP256K1_N_C_0);
+        muladd!(n1, SECP256K1_N_C_1);
+        muladd!(n0, SECP256K1_N_C_2);
+        m2 = extract!();
+        sumadd!(l[3]);
+        muladd!(n3, SECP256K1_N_C_0);
+        muladd!(n2, SECP256K1_N_C_1);
+        muladd!(n1, SECP256K1_N_C_2);
+        muladd!(n0, SECP256K1_N_C_3);
+        m3 = extract!();
+        sumadd!(l[4]);
+        muladd!(n4, SECP256K1_N_C_0);
+        muladd!(n3, SECP256K1_N_C_1);
+        muladd!(n2, SECP256K1_N_C_2);
+        muladd!(n1, SECP256K1_N_C_3);
+        sumadd!(n0);
+        m4 = extract!();
+        sumadd!(l[5]);
+        muladd!(n5, SECP256K1_N_C_0);
+        muladd!(n4, SECP256K1_N_C_1);
+        muladd!(n3, SECP256K1_N_C_2);
+        muladd!(n2, SECP256K1_N_C_3);
+        sumadd!(n1);
+        m5 = extract!();
+        sumadd!(l[6]);
+        muladd!(n6, SECP256K1_N_C_0);
+        muladd!(n5, SECP256K1_N_C_1);
+        muladd!(n4, SECP256K1_N_C_2);
+        muladd!(n3, SECP256K1_N_C_3);
+        sumadd!(n2);
+        m6 = extract!();
+        sumadd!(l[7]);
+        muladd!(n7, SECP256K1_N_C_0);
+        muladd!(n6, SECP256K1_N_C_1);
+        muladd!(n5, SECP256K1_N_C_2);
+        muladd!(n4, SECP256K1_N_C_3);
+        sumadd!(n3);
+        m7 = extract!();
+        muladd!(n7, SECP256K1_N_C_1);
+        muladd!(n6, SECP256K1_N_C_2);
+        muladd!(n5, SECP256K1_N_C_3);
+        sumadd!(n4);
+        m8 = extract!();
+        muladd!(n7, SECP256K1_N_C_2);
+        muladd!(n6, SECP256K1_N_C_3);
+        sumadd!(n5);
+        m9 = extract!();
+        muladd!(n7, SECP256K1_N_C_3);
+        sumadd!(n6);
+        m10 = extract!();
+        sumadd_fast!(n7);
+        m11 = extract_fast!();
+        debug_assert!(c0 <= 1);
+        m12 = c0;
+
+        /* Reduce 385 bits into 258. */
+        /* p[0..8] = m[0..7] + m[8..12] * SECP256K1_N_C. */
+        c0 = m0; c1 = 0; c2 = 0;
+        muladd_fast!(m8, SECP256K1_N_C_0);
+        p0 = extract_fast!();
+        sumadd_fast!(m1);
+        muladd!(m9, SECP256K1_N_C_0);
+        muladd!(m8, SECP256K1_N_C_1);
+        p1 = extract!();
+        sumadd!(m2);
+        muladd!(m10, SECP256K1_N_C_0);
+        muladd!(m9, SECP256K1_N_C_1);
+        muladd!(m8, SECP256K1_N_C_2);
+        p2 = extract!();
+        sumadd!(m3);
+        muladd!(m11, SECP256K1_N_C_0);
+        muladd!(m10, SECP256K1_N_C_1);
+        muladd!(m9, SECP256K1_N_C_2);
+        muladd!(m8, SECP256K1_N_C_3);
+        p3 = extract!();
+        sumadd!(m4);
+        muladd!(m12, SECP256K1_N_C_0);
+        muladd!(m11, SECP256K1_N_C_1);
+        muladd!(m10, SECP256K1_N_C_2);
+        muladd!(m9, SECP256K1_N_C_3);
+        sumadd!(m8);
+        p4 = extract!();
+        sumadd!(m5);
+        muladd!(m12, SECP256K1_N_C_1);
+        muladd!(m11, SECP256K1_N_C_2);
+        muladd!(m10, SECP256K1_N_C_3);
+        sumadd!(m9);
+        p5 = extract!();
+        sumadd!(m6);
+        muladd!(m12, SECP256K1_N_C_2);
+        muladd!(m11, SECP256K1_N_C_3);
+        sumadd!(m10);
+        p6 = extract!();
+        sumadd_fast!(m7);
+        muladd_fast!(m12, SECP256K1_N_C_3);
+        sumadd_fast!(m11);
+        p7 = extract_fast!();
+        p8 = c0 + m12;
+        debug_assert!(p8 <= 2);
+
+        /* Reduce 258 bits into 256. */
+        /* r[0..7] = p[0..7] + p[8] * SECP256K1_N_C. */
+        c = p0 as u64 + SECP256K1_N_C_0 as u64 * p8 as u64;
+        self.0[0] = (c & 0xFFFFFFFF) as u32; c >>= 32;
+        c += p1 as u64 + SECP256K1_N_C_1 as u64 * p8 as u64;
+        self.0[1] = (c & 0xFFFFFFFF) as u32; c >>= 32;
+        c += p2 as u64 + SECP256K1_N_C_2 as u64 * p8 as u64;
+        self.0[2] = (c & 0xFFFFFFFF) as u32; c >>= 32;
+        c += p3 as u64 + SECP256K1_N_C_3 as u64 * p8 as u64;
+        self.0[3] = (c & 0xFFFFFFFF) as u32; c >>= 32;
+        c += p4 as u64 + p8 as u64;
+        self.0[4] = (c & 0xFFFFFFFF) as u32; c >>= 32;
+        c += p5 as u64;
+        self.0[5] = (c & 0xFFFFFFFF) as u32; c >>= 32;
+        c += p6 as u64;
+        self.0[6] = (c & 0xFFFFFFFF) as u32; c >>= 32;
+        c += p7 as u64;
+        self.0[7] = (c & 0xFFFFFFFF) as u32; c >>= 32;
+
+        let overflow = self.check_overflow();
+        debug_assert!(c + if overflow { 1 } else { 0 } <= 1);
+        let _ = self.reduce(c + if overflow { 1 } else { 0 } == 1);
+    }",0,,
+"fn half_fill_split_goto2(&mut self, goto2: InstPtr) {
+        let half_filled = match *self {
+            MaybeInst::Split => goto2,
+            _ => unreachable!(
+                ""must be called on Split instruction, \
+                 instead it was called on: {:?}"",
+                self
+            ),
+        };
+        *self = MaybeInst::Split2(half_filled);
+    }",0,,
+"fn test_reloc_64_relative_high_vaddr() {
+    // Same as test_reloc_64_relative, but with .text placed already within
+    // MM_PROGRAM_START by the linker
+    // [ 1] .text             PROGBITS        0000000100000000 001000 000018 00  AX  0   0  8
+    // [ 2] .rodata           PROGBITS        0000000100000018 001018 00000b 01 AMS  0   0  1
+    test_interpreter_and_jit_elf!(
+        ""tests/elfs/reloc_64_relative_high_vaddr.so"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == ebpf::MM_PROGRAM_START + 0x18 } },
+        2
+    );
+}",0,,
+"    fn fill_to_next(&mut self, hole: Hole) {
+        let next = self.insts.len();
+        self.fill(hole, next);
+    }",0,,
+"fn test_mov() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov32 r1, 1
+        mov32 r0, r1
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x1 } },
+        3
+    );
+}",0,,
+"fn store_block(post_log: bool, block_number: U256) {
+		let mut transactions = Vec::new();
+		let mut statuses = Vec::new();
+		let mut receipts = Vec::new();
+		let mut logs_bloom = Bloom::default();
+		for (transaction, status, receipt) in Pending::<T>::get() {
+			transactions.push(transaction);
+			statuses.push(status);
+			receipts.push(receipt.clone());
+			Self::logs_bloom(receipt.logs.clone(), &mut logs_bloom);
+		}
+
+		let ommers = Vec::<ethereum::Header>::new();
+		let receipts_root =
+			ethereum::util::ordered_trie_root(receipts.iter().map(|r| rlp::encode(r)));
+		let partial_header = ethereum::PartialHeader {
+			parent_hash: Self::current_block_hash().unwrap_or_default(),
+			beneficiary: pallet_evm::Pallet::<T>::find_author(),
+			state_root: T::StateRoot::get(),
+			receipts_root,
+			logs_bloom,
+			difficulty: U256::zero(),
+			number: block_number,
+			gas_limit: T::BlockGasLimit::get(),
+			gas_used: receipts
+				.clone()
+				.into_iter()
+				.fold(U256::zero(), |acc, r| acc + r.used_gas),
+			timestamp: UniqueSaturatedInto::<u64>::unique_saturated_into(
+				pallet_timestamp::Pallet::<T>::get(),
+			),
+			extra_data: Vec::new(),
+			mix_hash: H256::default(),
+			nonce: H64::default(),
+		};
+		let block = ethereum::Block::new(partial_header, transactions.clone(), ommers);
+
+		CurrentBlock::<T>::put(block.clone());
+		CurrentReceipts::<T>::put(receipts.clone());
+		CurrentTransactionStatuses::<T>::put(statuses.clone());
+		BlockHash::<T>::insert(block_number, block.header.hash());
+
+		if post_log {
+			let digest = DigestItem::<T::Hash>::Consensus(
+				FRONTIER_ENGINE_ID,
+				PostLog::Hashes(fp_consensus::Hashes::from_block(block)).encode(),
+			);
+			frame_system::Pallet::<T>::deposit_log(digest.into());
+		}
+	}",0,,
+"fn c_byte(&mut self, b: u8) -> ResultOrEmpty {
+        self.c_class_bytes(&[hir::ClassBytesRange::new(b, b)])
+    }",0,,
+"pub fn neg_in_place(&mut self, a: &Scalar) {
+        let nonzero: u64 = 0xFFFFFFFF * if !a.is_zero() { 1 } else { 0 };
+        let mut t: u64 = (!a.0[0]) as u64 + (SECP256K1_N_0 + 1) as u64;
+        self.0[0] = (t & nonzero) as u32; t >>= 32;
+        t += (!a.0[1]) as u64 + SECP256K1_N_1 as u64;
+        self.0[1] = (t & nonzero) as u32; t >>= 32;
+        t += (!a.0[2]) as u64 + SECP256K1_N_2 as u64;
+        self.0[2] = (t & nonzero) as u32; t >>= 32;
+        t += (!a.0[3]) as u64 + SECP256K1_N_3 as u64;
+        self.0[3] = (t & nonzero) as u32; t >>= 32;
+        t += (!a.0[4]) as u64 + SECP256K1_N_4 as u64;
+        self.0[4] = (t & nonzero) as u32; t >>= 32;
+        t += (!a.0[5]) as u64 + SECP256K1_N_5 as u64;
+        self.0[5] = (t & nonzero) as u32; t >>= 32;
+        t += (!a.0[6]) as u64 + SECP256K1_N_6 as u64;
+        self.0[6] = (t & nonzero) as u32; t >>= 32;
+        t += (!a.0[7]) as u64 + SECP256K1_N_7 as u64;
+        self.0[7] = (t & nonzero) as u32;
+    }",0,,
+"fn test_mul32_reg() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov r0, 3
+        mov r1, 4
+        mul32 r0, r1
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0xc } },
+        4
+    );
+}",0,,
+"pub async fn connect(
+    ports: PortConfig,
+    maxcon: usize,
+    db: Corestore,
+    signal: broadcast::Sender<()>,
+) -> Result<MultiListener, String> {
+    let climit = Arc::new(Semaphore::const_new(maxcon));
+    let server = match ports {
+        PortConfig::InsecureOnly { host, port } => MultiListener::new_insecure_only(
+            BaseListener::init(&db, host, port, climit.clone(), signal.clone())
+                .await
+                .map_err(|e| format!(""Failed to bind to TCP port with error: {}"", e))?,
+        )?,
+        PortConfig::SecureOnly { host, ssl } => MultiListener::new_secure_only(
+            BaseListener::init(&db, host, ssl.port, climit.clone(), signal.clone())
+                .await
+                .map_err(|e| format!(""Failed to initialize secure port with error: {}"", e))?,
+            ssl,
+        )?,
+        PortConfig::Multi { host, port, ssl } => {
+            let secure_listener =
+                BaseListener::init(&db, host, ssl.port, climit.clone(), signal.clone())
+                    .await
+                    .map_err(|e| format!(""Failed to bind to TCP port with error: {}"", e))?;
+            let insecure_listener =
+                BaseListener::init(&db, host, port, climit.clone(), signal.clone())
+                    .await
+                    .map_err(|e| format!(""Failed to initialize secure port with error: {}"", e))?;
+            MultiListener::new_multi(secure_listener, insecure_listener, ssl).await?
+        }
+    };
+    Ok(server)
+}",0,,
+"async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let args = set_command_line_args().get_matches();
+    env::set_var(""RUST_LOG"", ""swhkd=warn"");
+
+    if args.is_present(""debug"") {
+        env::set_var(""RUST_LOG"", ""swhkd=trace"");
+    }
+
+    env_logger::init();
+    log::trace!(""Logger initialized."");
+
+    let pidfile: String = String::from(""/tmp/swhkd.pid"");
+    if Path::new(&pidfile).exists() {
+        log::trace!(""Reading {} file and checking for running instances."", pidfile);
+        let swhkd_pid = match fs::read_to_string(&pidfile) {
+            Ok(swhkd_pid) => swhkd_pid,
+            Err(e) => {
+                log::error!(""Unable to read {} to check all running instances"", e);
+                exit(1);
+            }
+        };
+        log::debug!(""Previous PID: {}"", swhkd_pid);
+
+        let mut sys = System::new_all();
+        sys.refresh_all();
+        for (pid, process) in sys.processes() {
+            if pid.to_string() == swhkd_pid && process.exe() == env::current_exe().unwrap() {
+                log::error!(""Swhkd is already running!"");
+                log::error!(""pid of existing swhkd process: {}"", pid.to_string());
+                log::error!(""To close the existing swhkd process, run `sudo killall swhkd`"");
+                exit(1);
+            }
+        }
+    }
+
+    match fs::write(&pidfile, id().to_string()) {
+        Ok(_) => {}
+        Err(e) => {
+            log::error!(""Unable to write to {}: {}"", pidfile, e);
+            exit(1);
+        }
+    }
+
+    if check_user_permissions().is_err() {
+        exit(1);
+    }
+
+    let load_config = || {
+        let config_file_path: std::path::PathBuf = if args.is_present(""config"") {
+            Path::new(args.value_of(""config"").unwrap()).to_path_buf()
+        } else {
+            fetch_xdg_config_path()
+        };
+
+        log::debug!(""Using config file path: {:#?}"", config_file_path);
+
+        if !config_file_path.exists() {
+            log::error!(""{:#?} doesn't exist"", config_file_path);
+            exit(1);
+        }
+
+        let hotkeys = match config::load(&config_file_path) {
+            Err(e) => {
+                log::error!(""Config Error: {}"", e);
+                exit(1);
+            }
+            Ok(out) => out,
+        };
+
+        for hotkey in &hotkeys {
+            log::debug!(""hotkey: {:#?}"", hotkey);
+        }
+
+        hotkeys
+    };
+
+    let mut hotkeys = load_config();
+
+    log::trace!(""Attempting to find all keyboard file descriptors."");
+    let keyboard_devices: Vec<Device> =
+        evdev::enumerate().filter(check_device_is_keyboard).collect();
+
+    let mut uinput_device = match uinput::create_uinput_device() {
+        Ok(dev) => dev,
+        Err(e) => {
+            log::error!(""Err: {:#?}"", e);
+            exit(1);
+        }
+    };
+
+    if keyboard_devices.is_empty() {
+        log::error!(""No valid keyboard device was detected!"");
+        exit(1);
+    }
+    log::debug!(""{} Keyboard device(s) detected."", keyboard_devices.len());
+
+    let modifiers_map: HashMap<Key, config::Modifier> = HashMap::from([
+        (Key::KEY_LEFTMETA, config::Modifier::Super),
+        (Key::KEY_RIGHTMETA, config::Modifier::Super),
+        (Key::KEY_LEFTMETA, config::Modifier::Super),
+        (Key::KEY_RIGHTMETA, config::Modifier::Super),
+        (Key::KEY_LEFTALT, config::Modifier::Alt),
+        (Key::KEY_RIGHTALT, config::Modifier::Alt),
+        (Key::KEY_LEFTCTRL, config::Modifier::Control),
+        (Key::KEY_RIGHTCTRL, config::Modifier::Control),
+        (Key::KEY_LEFTSHIFT, config::Modifier::Shift),
+        (Key::KEY_RIGHTSHIFT, config::Modifier::Shift),
+    ]);
+
+    let repeat_cooldown_duration: u64 = if args.is_present(""cooldown"") {
+        args.value_of(""cooldown"").unwrap().parse::<u64>().unwrap()
+    } else {
+        250
+    };
+
+    let mut signals = Signals::new(&[
+        SIGUSR1, SIGUSR2, SIGHUP, SIGABRT, SIGBUS, SIGCHLD, SIGCONT, SIGINT, SIGPIPE, SIGQUIT,
+        SIGSYS, SIGTERM, SIGTRAP, SIGTSTP, SIGVTALRM, SIGXCPU, SIGXFSZ,
+    ])?;
+
+    let mut execution_is_paused = false;
+    let mut last_hotkey: Option<config::Hotkey> = None;
+    let mut pending_release: bool = false;
+    let mut keyboard_states: Vec<KeyboardState> = Vec::new();
+    let mut keyboard_stream_map = StreamMap::new();
+
+    for (i, mut device) in keyboard_devices.into_iter().enumerate() {
+        let _ = device.grab();
+        keyboard_stream_map.insert(i, device.into_event_stream()?);
+        keyboard_states.push(KeyboardState::new());
+    }
+
+    // The initial sleep duration is never read because last_hotkey is initialized to None
+    let hotkey_repeat_timer = sleep(Duration::from_millis(0));
+    tokio::pin!(hotkey_repeat_timer);
+
+    loop {
+        select! {
+            _ = &mut hotkey_repeat_timer, if &last_hotkey.is_some() => {
+                let hotkey = last_hotkey.clone().unwrap();
+                if hotkey.keybinding.on_release {
+                    continue;
+                }
+                send_command(hotkey.clone());
+                hotkey_repeat_timer.as_mut().reset(Instant::now() + Duration::from_millis(repeat_cooldown_duration));
+            }
+
+            Some(signal) = signals.next() => {
+                match signal {
+                    SIGUSR1 => {
+                        execution_is_paused = true;
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.ungrab();
+                        }
+                    }
+
+                    SIGUSR2 => {
+                        execution_is_paused = false;
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.grab();
+                        }
+                    }
+
+                    SIGHUP => {
+                        hotkeys = load_config();
+                    }
+
+                    SIGINT => {
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.ungrab();
+                        }
+                        log::warn!(""Received SIGINT signal, exiting..."");
+                        exit(1);
+                    }
+
+                    _ => {
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.ungrab();
+                        }
+
+                        log::warn!(""Received signal: {:#?}"", signal);
+                        log::warn!(""Exiting..."");
+                        exit(1);
+                    }
+                }
+            }
+
+            Some((i, Ok(event))) = keyboard_stream_map.next() => {
+                let keyboard_state = &mut keyboard_states[i];
+
+                let key = match event.kind() {
+                    InputEventKind::Key(keycode) => keycode,
+                    _ => continue
+                };
+
+                match event.value() {
+                    // Key press
+                    1 => {
+                        if let Some(modifier) = modifiers_map.get(&key) {
+                            keyboard_state.state_modifiers.insert(*modifier);
+                        } else {
+                            keyboard_state.state_keysyms.insert(key);
+                        }
+                    }
+
+                    // Key release
+                    0 => {
+                        if last_hotkey.is_some() && pending_release {
+                            pending_release = false;
+                            send_command(last_hotkey.clone().unwrap());
+                            last_hotkey = None;
+                        }
+                        if let Some(modifier) = modifiers_map.get(&key) {
+                            if let Some(hotkey) = &last_hotkey {
+                                if hotkey.modifiers().contains(modifier) {
+                                    last_hotkey = None;
+                                }
+                            }
+                            keyboard_state.state_modifiers.remove(modifier);
+                        } else if keyboard_state.state_keysyms.contains(key) {
+                            if let Some(hotkey) = &last_hotkey {
+                                if key == hotkey.keysym() {
+                                    last_hotkey = None;
+                                }
+                            }
+                            keyboard_state.state_keysyms.remove(key);
+                        }
+                    }
+
+                    _ => {}
+                }
+
+                let possible_hotkeys: Vec<&config::Hotkey> = hotkeys.iter()
+                    .filter(|hotkey| hotkey.modifiers().len() == keyboard_state.state_modifiers.len())
+                    .collect();
+
+                let event_in_hotkeys = hotkeys.iter().any(|hotkey| {
+                    hotkey.keysym().code() == event.code() &&
+                    keyboard_state.state_modifiers
+                        .iter()
+                        .all(|x| hotkey.modifiers().contains(x)) &&
+                    keyboard_state.state_modifiers.len() == hotkey.modifiers().len()
+                    && !hotkey.is_send()
+                        });
+
+                // Don't emit event to virtual device if it's from a valid hotkey
+                if !event_in_hotkeys {
+                    uinput_device.emit(&[event]).unwrap();
+                }
+
+                if execution_is_paused || possible_hotkeys.is_empty() || last_hotkey.is_some() {
+                    continue;
+                }
+
+                log::debug!(""state_modifiers: {:#?}"", keyboard_state.state_modifiers);
+                log::debug!(""state_keysyms: {:#?}"", keyboard_state.state_keysyms);
+                log::debug!(""hotkey: {:#?}"", possible_hotkeys);
+
+                for hotkey in possible_hotkeys {
+                    // this should check if state_modifiers and hotkey.modifiers have the same elements
+                    if keyboard_state.state_modifiers.iter().all(|x| hotkey.modifiers().contains(x))
+                        && keyboard_state.state_modifiers.len() == hotkey.modifiers().len()
+                        && keyboard_state.state_keysyms.contains(hotkey.keysym())
+                    {
+                        last_hotkey = Some(hotkey.clone());
+                        if pending_release { break; }
+                        if hotkey.is_on_release() {
+                            pending_release = true;
+                            break;
+                        }
+                        send_command(hotkey.clone());
+                        hotkey_repeat_timer.as_mut().reset(Instant::now() + Duration::from_millis(repeat_cooldown_duration));
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}",1,77,
+"fn test_reloc_64_64_high_vaddr() {
+    // Same as test_reloc_64_64, but with .text already alinged to
+    // MM_PROGRAM_START by the linker
+    test_interpreter_and_jit_elf!(
+        ""tests/elfs/reloc_64_64_high_vaddr.so"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == ebpf::MM_PROGRAM_START } },
+        2
+    );
+}",0,,
+"fn test_jle_reg() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov r0, 0
+        mov r1, 5
+        mov r2, 4
+        mov r3, 6
+        jle r1, r2, +2
+        jle r1, r1, +1
+        exit
+        jle r1, r3, +1
+        exit
+        mov r0, 1
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x1 } },
+        9
+    );
+}",0,,
+"    pub fn ensure_sigstack_installed(&mut self, ensure: bool) {
+        self.ensure_sigstack_installed = ensure;
+    }",0,,
+"fn global_drops_externref() -> anyhow::Result<()> {
+    test_engine(&Engine::default())?;
+
+    if !skip_pooling_allocator_tests() {
+        test_engine(&Engine::new(
+            Config::new().allocation_strategy(InstanceAllocationStrategy::pooling()),
+        )?)?;
+    }
+
+    return Ok(());
+
+    fn test_engine(engine: &Engine) -> anyhow::Result<()> {
+        let mut store = Store::new(&engine, ());
+        let flag = Arc::new(AtomicBool::new(false));
+        let externref = ExternRef::new(SetFlagOnDrop(flag.clone()));
+        Global::new(
+            &mut store,
+            GlobalType::new(ValType::ExternRef, Mutability::Const),
+            externref.into(),
+        )?;
+        drop(store);
+        assert!(flag.load(SeqCst));
+
+        let mut store = Store::new(&engine, ());
+        let module = Module::new(
+            &engine,
+            r#""
+                (module
+                    (global (mut externref) (ref.null extern))
+
+                    (func (export ""run"") (param externref)
+                        local.get 0
+                        global.set 0
+                    )
+                )
+            ""#,
+        )?;
+        let instance = Instance::new(&mut store, &module, &[])?;
+        let run = instance.get_typed_func::<Option<ExternRef>, (), _>(&mut store, ""run"")?;
+        let flag = Arc::new(AtomicBool::new(false));
+        let externref = ExternRef::new(SetFlagOnDrop(flag.clone()));
+        run.call(&mut store, Some(externref))?;
+        drop(store);
+        assert!(flag.load(SeqCst));
+        Ok(())
+    }
+}",0,,
+"fn from_str<T: FromStr>(s: &str) -> Result<T, ParseErrorKind> {
+    str::parse(s).map_err(|_| ParseErrorKind::Number(NumberError::TooLarge))
+}",0,,
+"pub fn parse_der(p: &[u8]) -> Result<Signature, Error> {
+        let mut decoder = der::Decoder::new(p);
+
+        decoder.read_constructed_sequence()?;
+        let rlen = decoder.read_len()?;
+
+        if rlen != decoder.remaining_len() {
+            return Err(Error::InvalidSignature);
+        }
+
+        let r = decoder.read_integer()?;
+        let s = decoder.read_integer()?;
+
+        if decoder.remaining_len() != 0 {
+            return Err(Error::InvalidSignature);
+        }
+
+        Ok(Signature { r, s })
+    }",0,,
+"    pub fn bytes(mut self, yes: bool) -> Self {
+        self.compiled.is_bytes = yes;
+        self
+    }",0,,
+"    fn deref(&self) -> &dyn Any {
+        unsafe { self.extern_data().value_ptr.as_ref() }
+    }",0,,
+"fn new(
+        abi: Box<dyn ABICallee<I = I>>,
+        emit_info: I::Info,
+        block_order: BlockLoweringOrder,
+        constants: VCodeConstants,
+        generate_debug_info: bool,
+    ) -> VCode<I> {
+        VCode {
+            liveins: abi.liveins(),
+            liveouts: abi.liveouts(),
+            vreg_types: vec![],
+            have_ref_values: false,
+            insts: vec![],
+            srclocs: vec![],
+            entry: 0,
+            block_ranges: vec![],
+            block_succ_range: vec![],
+            block_succs: vec![],
+            block_order,
+            abi,
+            emit_info,
+            safepoint_insns: vec![],
+            safepoint_slots: vec![],
+            generate_debug_info,
+            insts_layout: RefCell::new(Default::default()),
+            constants,
+            has_value_labels: false,
+        }
+    }",0,,
+"fn parse_test_sig(input: syn::ItemFn, rand: u16) -> TokenStream {
+    for attr in &input.attrs {
+        if attr.path.is_ident(""test"") {
+            let msg = ""second test attribute is supplied"";
+            return syn::Error::new_spanned(&attr, msg)
+                .to_compile_error()
+                .into();
+        }
+    }
+
+    if !input.sig.inputs.is_empty() {
+        let msg = ""the test function cannot accept arguments"";
+        return syn::Error::new_spanned(&input.sig.inputs, msg)
+            .to_compile_error()
+            .into();
+    }
+    parse_dbtest(input, rand).unwrap_or_else(|e| e.to_compile_error().into())
+}",0,,
+"fn test_load_elf_rodata_high_vaddr() {
+    test_interpreter_and_jit_elf!(
+        ""tests/elfs/rodata_high_vaddr.so"",
+        [1],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 42 } },
+        3
+    );
+}",0,,
+"fn test_reloc_64_relative_data_high_vaddr() {
+    // Same as test_reloc_64_relative_data, but with rodata already placed
+    // within MM_PROGRAM_START by the linker
+    // [ 1] .text             PROGBITS        0000000100000000 001000 000020 00  AX  0   0  8
+    // [ 2] .rodata           PROGBITS        0000000100000020 001020 000019 01 AMS  0   0  1
+    //
+    // 0000000100000110 <FILE>:
+    // 536870946:      20 00 00 00 01 00 00 00
+    test_interpreter_and_jit_elf!(
+        ""tests/elfs/reloc_64_relative_data_high_vaddr.so"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == ebpf::MM_PROGRAM_START + 0x20 } },
+        3
+    );
+}",0,,
+"pub fn module_offset(&self) -> usize {
+        self.instr.file_offset().unwrap_or(u32::MAX) as usize
+    }",0,,
+"    fn get_insn(&self, insn: InstIx) -> &I {
+        &self.insts[insn.get() as usize]
+    }",0,,
+"    fn add(self, other: &'a Scalar) -> Scalar {
+        let mut ret = Scalar::default();
+        let _ = ret.add_in_place(self, other);
+        ret
+    }
+}
+
+impl<'a> AddAssign<&'a Scalar> for Scalar {
+    fn add_assign(&mut self, other: &'a Scalar) {
+        let mut ret = Scalar::default();
+        let _ = ret.add_in_place(self, other);
+        *self = ret;
+    }",0,,
+"fn correct_and_deposit_fee(
+		who: &H160,
+		corrected_fee: U256,
+		base_fee: U256,
+		already_withdrawn: Self::LiquidityInfo,
+	) -> Self::LiquidityInfo {
+		if let Some(paid) = already_withdrawn {
+			let account_id = T::AddressMapping::into_account_id(*who);
+
+			// Calculate how much refund we should return
+			let refund_amount = paid
+				.peek()
+				.saturating_sub(corrected_fee.low_u128().unique_saturated_into());
+			// refund to the account that paid the fees. If this fails, the
+			// account might have dropped below the existential balance. In
+			// that case we don't refund anything.
+			let refund_imbalance = C::deposit_into_existing(&account_id, refund_amount)
+				.unwrap_or_else(|_| C::PositiveImbalance::zero());
+
+			// Make sure this works with 0 ExistentialDeposit
+			// https://github.com/paritytech/substrate/issues/10117
+			// If we tried to refund something, the account still empty and the ED is set to 0,
+			// we call `make_free_balance_be` with the refunded amount.
+			let refund_imbalance = if C::minimum_balance().is_zero()
+				&& refund_amount > C::Balance::zero()
+				&& C::total_balance(&account_id).is_zero()
+			{
+				// Known bug: Substrate tried to refund to a zeroed AccountData, but
+				// interpreted the account to not exist.
+				match C::make_free_balance_be(&account_id, refund_amount) {
+					SignedImbalance::Positive(p) => p,
+					_ => C::PositiveImbalance::zero(),
+				}
+			} else {
+				refund_imbalance
+			};
+
+			// merge the imbalance caused by paying the fees and refunding parts of it again.
+			let adjusted_paid = paid
+				.offset(refund_imbalance)
+				.same()
+				.unwrap_or_else(|_| C::NegativeImbalance::zero());
+
+			let (base_fee, tip) = adjusted_paid.split(base_fee.low_u128().unique_saturated_into());
+			// Handle base fee. Can be either burned, rationed, etc ...
+			OU::on_unbalanced(base_fee);
+			return Some(tip);
+		}
+		None
+	}",1,"12,43",".saturating_sub(corrected_fee.low_u128().unique_saturated_into());/~/			let (base_fee, tip) = adjusted_paid.split(base_fee.low_u128().unique_saturated_into());"
+"    fn from(val: Func) -> Val {
+        Val::FuncRef(Some(val))
+    }",0,,
+"fn extern_data(&self) -> &VMExternData {
+        unsafe { self.0.as_ref() }
+    }",0,,
+"pub fn sqr_in_place(&mut self, a: &Scalar) {
+        let mut l = [0u32; 16];
+        a.sqr_512(&mut l);
+        self.reduce_512(&l);
+    }",0,,
+"fn test_div32_reg() {
+    test_interpreter_and_jit_asm!(
+        ""
+        lddw r0, 0x10000000c
+        mov r1, 4
+        div32 r0, r1
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x3 } },
+        4
+    );
+}",0,,
+"    fn deref_mut(&mut self) -> &mut T {
+        if cfg!(debug_assertions) {
+            &mut self.inner
+        } else {
+            panic!(
+                ""only deref `DebugOnly` when `cfg(debug_assertions)` or \
+                 inside a `debug_assert!(..)`""
+            )
+        }
+    }",0,,
+"pub fn retrieve_less_version() -> Option<usize> {
+    let cmd = Command::new(""less"").arg(""--version"").output().ok()?;
+    parse_less_version(&cmd.stdout)
+}",1,"1,2","    let cmd = Command::new(""less"").arg(""--version"").output().ok()?;/~/    parse_less_version(&cmd.stdout)"
+"fn atou16_misc() {
+        assert_ok!(atou16(b""0""), 0);
+        assert_ok!(atou16(b""0010""), 10);
+        assert_ok!(atou16(b""9999""), 9999);
+        assert_err_pat!(atou16(b""""), Error::InvalidFormat(_));
+        assert_err_pat!(atou16(b""/""), Error::InvalidFormat(_));
+        assert_err_pat!(atou16(b"":""), Error::InvalidFormat(_));
+        assert_err_pat!(atou16(b""-1""), Error::InvalidFormat(_));
+    }",0,,
+"fn drop(&mut self) {
+        self.0.store(true, SeqCst);
+    }",0,,
+"fn calculate_multiplication_complexity(base_length: u64, mod_length: u64) -> u64 {
+		let max_length = max(base_length, mod_length);
+		let mut words = max_length / 8;
+		if max_length % 8 > 0 {
+			words += 1;
+		}
+
+		// TODO: prevent/handle overflow
+		words * words
+	}",1,7,		// TODO: prevent/handle overflow
+"	fn metadata(&self) -> &StackSubstateMetadata<'config> {
+		self.substate.metadata()
+	}
+
+	fn metadata_mut(&mut self) -> &mut StackSubstateMetadata<'config> {
+		self.substate.metadata_mut()
+	}",0,,
+"fn reference_type(wasm_ty: cranelift_wasm::WasmType, pointer_type: ir::Type) -> ir::Type {
+    match wasm_ty {
+        cranelift_wasm::WasmType::FuncRef => pointer_type,
+        cranelift_wasm::WasmType::ExternRef => match pointer_type {
+            ir::types::I32 => ir::types::R32,
+            ir::types::I64 => ir::types::R64,
+            _ => panic!(""unsupported pointer type""),
+        },
+        _ => panic!(""unsupported Wasm reference type""),
+    }
+}",0,,
+"fn test_list_syntax_themes_for_machines() {
+        let mut writer = Cursor::new(vec![0; 512]);
+        _list_syntax_themes_for_machines(&mut writer).unwrap();
+        let mut s = String::new();
+        writer.seek(SeekFrom::Start(0)).unwrap();
+        writer.read_to_string(&mut s).unwrap();
+        assert!(s.contains(""light	GitHub\n""));
+        assert!(s.contains(""dark	Dracula\n""));
+    }",0,,
+"    fn gen_spill(&self, to_slot: SpillSlot, from_reg: RealReg, _: Option<VirtualReg>) -> I {
+        self.abi.gen_spill(to_slot, from_reg)
+    }",0,,
+"fn table_drops_externref() -> anyhow::Result<()> {
+    test_engine(&Engine::default())?;
+
+    if !skip_pooling_allocator_tests() {
+        test_engine(&Engine::new(
+            Config::new().allocation_strategy(InstanceAllocationStrategy::pooling()),
+        )?)?;
+    }
+
+    return Ok(());
+
+    fn test_engine(engine: &Engine) -> anyhow::Result<()> {
+        let mut store = Store::new(&engine, ());
+        let flag = Arc::new(AtomicBool::new(false));
+        let externref = ExternRef::new(SetFlagOnDrop(flag.clone()));
+        Table::new(
+            &mut store,
+            TableType::new(ValType::ExternRef, 1, None),
+            externref.into(),
+        )?;
+        drop(store);
+        assert!(flag.load(SeqCst));
+
+        let mut store = Store::new(&engine, ());
+        let module = Module::new(
+            &engine,
+            r#""
+            (module
+                (table 1 externref)
+
+                (func (export ""run"") (param externref)
+                    i32.const 0
+                    local.get 0
+                    table.set 0
+                )
+            )
+        ""#,
+        )?;
+        let instance = Instance::new(&mut store, &module, &[])?;
+        let run = instance.get_typed_func::<Option<ExternRef>, (), _>(&mut store, ""run"")?;
+        let flag = Arc::new(AtomicBool::new(false));
+        let externref = ExternRef::new(SetFlagOnDrop(flag.clone()));
+        run.call(&mut store, Some(externref))?;
+        drop(store);
+        assert!(flag.load(SeqCst));
+        Ok(())
+    }
+}",0,,
+"fn test_err_syscall_string() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov64 r1, 0x0
+        syscall BpfSyscallString
+        mov64 r0, 0x0
+        exit"",
+        [72, 101, 108, 108, 111],
+        (
+            b""BpfSyscallString"" => syscalls::BpfSyscallString::init::<BpfSyscallContext, UserError>; syscalls::BpfSyscallString::call,
+        ),
+        0,
+        {
+            |_vm, res: Result| {
+                matches!(res.unwrap_err(),
+                    EbpfError::AccessViolation(pc, access_type, vm_addr, len, name)
+                    if access_type == AccessType::Load && pc == 0 && vm_addr == 0 && len == 0 && name == ""unknown""
+                )
+            }
+        },
+        2
+    );
+}",0,,
+"pub fn parse_slice(p: &[u8], format: Option<PublicKeyFormat>) -> Result<PublicKey, Error> {
+        let format = match (p.len(), format) {
+            (util::FULL_PUBLIC_KEY_SIZE, None) |
+            (util::FULL_PUBLIC_KEY_SIZE, Some(PublicKeyFormat::Full)) =>
+                PublicKeyFormat::Full,
+            (util::COMPRESSED_PUBLIC_KEY_SIZE, None) |
+            (util::COMPRESSED_PUBLIC_KEY_SIZE, Some(PublicKeyFormat::Compressed)) =>
+                PublicKeyFormat::Compressed,
+            (util::RAW_PUBLIC_KEY_SIZE, None) |
+            (util::RAW_PUBLIC_KEY_SIZE, Some(PublicKeyFormat::Raw)) =>
+                PublicKeyFormat::Raw,
+            _ => return Err(Error::InvalidInputLength),
+        };
+
+        match format {
+            PublicKeyFormat::Full => {
+                let mut a = [0; util::FULL_PUBLIC_KEY_SIZE];
+                a.copy_from_slice(p);
+                Self::parse(&a)
+            },
+            PublicKeyFormat::Raw => {
+                use util::TAG_PUBKEY_FULL;
+
+                let mut a = [0; util::FULL_PUBLIC_KEY_SIZE];
+                a[0] = TAG_PUBKEY_FULL;
+                a[1..].copy_from_slice(p);
+                Self::parse(&a)
+            },
+            PublicKeyFormat::Compressed => {
+                let mut a = [0; util::COMPRESSED_PUBLIC_KEY_SIZE];
+                a.copy_from_slice(p);
+                Self::parse_compressed(&a)
+            },
+        }
+    }",0,,
+"    fn gen_reload(
+        &self,
+        to_reg: Writable<RealReg>,
+        from_slot: SpillSlot,
+        _: Option<VirtualReg>,
+    ) -> I {
+        self.abi.gen_reload(to_reg, from_slot)
+    }",0,,
+"pub fn parse_module(modules_str: &str) -> Result<ast::ModuleDefinition> {
+    let stripped_string = &strip_comments(modules_str);
+    let parser = syntax::ModuleParser::new();
+    match parser.parse(stripped_string) {
+        Ok(module) => Ok(module),
+        Err(e) => handle_error(e, modules_str),
+    }
+}",1,"1,5","    let stripped_string = &strip_comments(modules_str);/~/        Err(e) => handle_error(e, modules_str),"
+"pub fn check_ptr<T>(user_ptr: *const T) -> Result<()> {
+        if !is_inside_user_space(user_ptr as *const u8, size_of::<T>()) {
+            return_errno!(EFAULT, ""pointer is not in the user space"");
+        }
+        Ok(())
+    }",0,,
+"fn c_class(&mut self, ranges: &[hir::ClassUnicodeRange]) -> ResultOrEmpty {
+        use std::mem::size_of;
+
+        assert!(!ranges.is_empty());
+        if self.compiled.uses_bytes() {
+            Ok(Some(CompileClass { c: self, ranges: ranges }.compile()?))
+        } else {
+            let ranges: Vec<(char, char)> =
+                ranges.iter().map(|r| (r.start(), r.end())).collect();
+            let hole = if ranges.len() == 1 && ranges[0].0 == ranges[0].1 {
+                self.push_hole(InstHole::Char { c: ranges[0].0 })
+            } else {
+                self.extra_inst_bytes +=
+                    ranges.len() * (size_of::<char>() * 2);
+                self.push_hole(InstHole::Ranges { ranges: ranges })
+            };
+            Ok(Some(Patch { hole: hole, entry: self.insts.len() - 1 }))
+        }
+    }",0,,
+"	pub fn service(_: &Option<Middleware>) -> Option<Arc<rpc_apis::DappsService>> {
+		None
+	}",0,,
+"fn test_err_non_terminate_capped() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov64 r6, 0x0
+        mov64 r1, 0x0
+        mov64 r2, 0x0
+        mov64 r3, 0x0
+        mov64 r4, 0x0
+        mov64 r5, r6
+        syscall BpfTracePrintf
+        add64 r6, 0x1
+        ja -0x8
+        exit"",
+        [],
+        (
+            b""BpfTracePrintf"" => syscalls::BpfTracePrintf::init::<BpfSyscallContext, UserError>; syscalls::BpfTracePrintf::call,
+        ),
+        0,
+        {
+            |_vm, res: Result| {
+                matches!(res.unwrap_err(),
+                    EbpfError::ExceededMaxInstructions(pc, initial_insn_count)
+                    if pc == 35 && initial_insn_count == 6
+                )
+            }
+        },
+        6
+    );
+    test_interpreter_and_jit_asm!(
+        ""
+        mov64 r6, 0x0
+        mov64 r1, 0x0
+        mov64 r2, 0x0
+        mov64 r3, 0x0
+        mov64 r4, 0x0
+        mov64 r5, r6
+        syscall BpfTracePrintf
+        add64 r6, 0x1
+        ja -0x8
+        exit"",
+        [],
+        (
+            b""BpfTracePrintf"" => syscalls::BpfTracePrintf::init::<BpfSyscallContext, UserError>; syscalls::BpfTracePrintf::call,
+        ),
+        0,
+        {
+            |_vm, res: Result| {
+                matches!(res.unwrap_err(),
+                    EbpfError::ExceededMaxInstructions(pc, initial_insn_count)
+                    if pc == 37 && initial_insn_count == 1000
+                )
+            }
+        },
+        1000
+    );
+}",0,,
+"fn test_sdiv32_imm() {
+    test_interpreter_and_jit_asm!(
+        ""
+        lddw r0, 0x10000000c
+        sdiv32 r0, 4
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x3 } },
+        3
+    );
+}",0,,
+"fn from(val: f32) -> Val {
+        Val::F32(val.to_bits())
+    }",0,,
+"fn test_stack_call_depth_tracking() {
+    for dynamic_stack_frames in [false, true] {
+        let config = Config {
+            dynamic_stack_frames,
+            max_call_depth: 2,
+            ..Config::default()
+        };
+
+        // Given max_call_depth=2, make sure that two sibling calls don't
+        // trigger CallDepthExceeded. In other words ensure that we correctly
+        // pop frames in the interpreter and decrement
+        // EnvironmentStackSlot::CallDepth on ebpf::EXIT in the jit.
+        test_interpreter_and_jit_asm!(
+            ""
+            call foo
+            call foo
+            exit
+            foo:
+            exit
+            "",
+            config,
+            [],
+            (),
+            0,
+            { |_vm, res: Result| { res.is_ok() } },
+            5
+        );
+
+        // two nested calls should trigger CallDepthExceeded instead
+        test_interpreter_and_jit_asm!(
+            ""
+            entrypoint:
+            call foo
+            exit
+            foo:
+            call bar
+            exit
+            bar:
+            exit
+            "",
+            config,
+            [],
+            (),
+            0,
+            {
+                |_vm, res: Result| {
+                    matches!(res.unwrap_err(),
+                        EbpfError::CallDepthExceeded(pc, depth)
+                        if pc == 29 + 2 && depth == config.max_call_depth
+                    )
+                }
+            },
+            2
+        );
+    }
+}",0,,
+"fn test_err_div32_by_zero_reg() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov32 r0, 1
+        mov32 r1, 0
+        div32 r0, r1
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| matches!(res.unwrap_err(), EbpfError::DivideByZero(pc) if pc == 31) },
+        3
+    );
+}",0,,
+"    pub fn end_bb(&mut self) {
+        let start_idx = self.block_start;
+        let end_idx = self.vcode.insts.len() as InsnIndex;
+        self.block_start = end_idx;
+        // Add the instruction index range to the list of blocks.
+        self.vcode.block_ranges.push((start_idx, end_idx));
+        // End the successors list.
+        let succ_end = self.vcode.block_succs.len();
+        self.vcode
+            .block_succ_range
+            .push((self.succ_start, succ_end));
+        self.succ_start = succ_end;
+    }",0,,
+"fn check_before(&mut self, reachable: bool) {
+        assert_eq!(reachable, self.reachability[self.before_idx].0);
+        self.before_idx += 1;
+    }",0,,
+"pub fn atou16(bytes: &[u8]) -> Result<u16, Error> {
+    if cfg!(debug_assertions) && bytes.len() >= 5 {
+        panic!(""atou16 accepts up to 4 bytes"");
+    }
+    if bytes.len() == 0 {
+        return Err(Error::InvalidFormat(""Not a number""));
+    }
+    let mut n = 0;
+    for &c in bytes {
+        if c < ASCII_0 || ASCII_9 < c {
+            return Err(Error::InvalidFormat(""Not a number""));
+        }
+        n = n * 10 + (c - ASCII_0) as u16;
+    }
+    Ok(n)
+}",0,,
+"pub(super) fn parse_code_point<'i, 'b>(input: Input<'i, 'b>) -> PResult<'i, 'b, (char, Span)> {
+    alt((
+        try_map(
+            Token::CodePoint,
+            |(s, span)| {
+                let hex = &s[2..];
+                if hex.len() > 6 {
+                    Err(ParseErrorKind::CodePoint(CodePointError::Invalid))
+                } else {
+                    u32::from_str_radix(hex, 16)
+                        .ok()
+                        .and_then(|n| char::try_from(n).ok())
+                        .map(|c| (c, span))
+                        .ok_or(ParseErrorKind::CodePoint(CodePointError::Invalid))
+                }
+            },
+            nom::Err::Failure,
+        ),
+        try_map(
+            Token::Identifier,
+            |(str, span)| {
+                if let Some(rest) = str.strip_prefix('U') {
+                    if let Ok(n) = u32::from_str_radix(rest, 16) {
+                        if let Ok(c) = char::try_from(n) {
+                            return Ok((c, span));
+                        } else {
+                            return Err(ParseErrorKind::CodePoint(CodePointError::Invalid));
+                        }
+                    }
+                }
+                Err(ParseErrorKind::ExpectedToken(Token::CodePoint))
+            },
+            nom::Err::Error,
+        ),
+    ))(input)
+}",0,,
+"fn drop(&mut self) {
+        let data = self.extern_data();
+
+        // Note that the memory orderings here also match the standard library
+        // itself. Documentation is more available in the implementation of
+        // `Arc`, but the general idea is that this is a special pattern allowed
+        // by the C standard with atomic orderings where we ""release"" for all
+        // the decrements and only the final decrementer performs an acquire
+        // fence. This properly ensures that the final thread, which actually
+        // destroys the data, sees all the updates from all other threads.
+        if data.ref_count.fetch_sub(1, Ordering::Release) != 1 {
+            return;
+        }
+        atomic::fence(Ordering::Acquire);
+
+        // Drop our live reference to `data` before we drop it itself.
+        drop(data);
+        unsafe {
+            VMExternData::drop_and_dealloc(self.0);
+        }
+    }",0,,
+"    fn from(e: ParseIntError) -> Self {
+        match e.kind() {
+            IntErrorKind::Empty => NumberError::Empty,
+            IntErrorKind::InvalidDigit => NumberError::InvalidDigit,
+            IntErrorKind::PosOverflow => NumberError::TooLarge,
+            IntErrorKind::NegOverflow => NumberError::TooSmall,
+            IntErrorKind::Zero => NumberError::Zero,
+            _ => unimplemented!(),
+        }
+    }",0,,
+"fn smoke_test_gc() -> anyhow::Result<()> {
+    let (mut store, module) = ref_types_module(
+        r#""
+            (module
+                (import """" """" (func $do_gc))
+                (func $recursive (export ""func"") (param i32 externref) (result externref)
+                    local.get 0
+                    i32.eqz
+                    if (result externref)
+                        call $do_gc
+                        local.get 1
+                    else
+                        local.get 0
+                        i32.const 1
+                        i32.sub
+                        local.get 1
+                        call $recursive
+                    end
+                )
+            )
+        ""#,
+    )?;
+
+    let do_gc = Func::wrap(&mut store, |mut caller: Caller<'_, _>| {
+        // Do a GC with `externref`s on the stack in Wasm frames.
+        caller.gc();
+    });
+    let instance = Instance::new(&mut store, &module, &[do_gc.into()])?;
+    let func = instance.get_func(&mut store, ""func"").unwrap();
+
+    let inner_dropped = Arc::new(AtomicBool::new(false));
+    let r = ExternRef::new(SetFlagOnDrop(inner_dropped.clone()));
+    {
+        let args = [Val::I32(5), Val::ExternRef(Some(r.clone()))];
+        func.call(&mut store, &args)?;
+    }
+
+    // Still held alive by the `VMExternRefActivationsTable` (potentially in
+    // multiple slots within the table) and by this `r` local.
+    assert!(r.strong_count() >= 2);
+
+    // Doing a GC should see that there aren't any `externref`s on the stack in
+    // Wasm frames anymore.
+    store.gc();
+    assert_eq!(r.strong_count(), 1);
+
+    // Dropping `r` should drop the inner `SetFlagOnDrop` value.
+    drop(r);
+    assert!(inner_dropped.load(SeqCst));
+
+    Ok(())
+}",0,,
+"fn calculate_gas_cost(
+	base_length: u64,
+	exp_length: u64,
+	mod_length: u64,
+	exponent: &BigUint,
+) -> u64 {
+	fn calculate_multiplication_complexity(base_length: u64, mod_length: u64) -> u64 {
+		let max_length = max(base_length, mod_length);
+		let mut words = max_length / 8;
+		if max_length % 8 > 0 {
+			words += 1;
+		}
+
+		// TODO: prevent/handle overflow
+		words * words
+	}
+
+	fn calculate_iteration_count(exp_length: u64, exponent: &BigUint) -> u64 {
+		let mut iteration_count: u64 = 0;
+
+		if exp_length <= 32 && exponent.is_zero() {
+			iteration_count = 0;
+		} else if exp_length <= 32 {
+			iteration_count = exponent.bits() - 1;
+		} else if exp_length > 32 {
+			// construct BigUint to represent (2^256) - 1
+			let bytes: [u8; 32] = [0xFF; 32];
+			let max_256_bit_uint = BigUint::from_bytes_be(&bytes);
+
+			iteration_count =
+				(8 * (exp_length - 32)) + ((exponent.bitand(max_256_bit_uint)).bits() - 1);
+		}
+
+		max(iteration_count, 1)
+	}
+
+	let multiplication_complexity = calculate_multiplication_complexity(base_length, mod_length);
+	let iteration_count = calculate_iteration_count(exp_length, exponent);
+	let gas = max(
+		MIN_GAS_COST,
+		multiplication_complexity * iteration_count / 3,
+	);
+
+	gas
+}",1,"13,30",// TODO: prevent/handle overflow/~/				(8 * (exp_length - 32)) + ((exponent.bitand(max_256_bit_uint)).bits() - 1);
+"    pub fn new(config: TargetFrontendConfig) -> Self {
+        Self {
+            config,
+            signatures: PrimaryMap::new(),
+            imported_funcs: Vec::new(),
+            imported_globals: Vec::new(),
+            imported_tables: Vec::new(),
+            imported_memories: Vec::new(),
+            functions: PrimaryMap::new(),
+            function_bodies: PrimaryMap::new(),
+            tables: PrimaryMap::new(),
+            memories: PrimaryMap::new(),
+            globals: PrimaryMap::new(),
+            start_func: None,
+        }
+    }",0,,
+"fn from(ty: WasmType) -> wasmparser::Type {
+        match ty {
+            WasmType::I32 => wasmparser::Type::I32,
+            WasmType::I64 => wasmparser::Type::I64,
+            WasmType::F32 => wasmparser::Type::F32,
+            WasmType::F64 => wasmparser::Type::F64,
+            WasmType::V128 => wasmparser::Type::V128,
+            WasmType::FuncRef => wasmparser::Type::FuncRef,
+            WasmType::ExternRef => wasmparser::Type::ExternRef,
+            WasmType::ExnRef => wasmparser::Type::ExnRef,
+        }
+    }",0,,
+"    fn entry_block(&self) -> BlockIx {
+        BlockIx::new(self.entry)
+    }",0,,
+"fn test_tight_infinite_recursion() {
+    test_interpreter_and_jit_asm!(
+        ""
+        entrypoint:
+        mov64 r3, 0x41414141
+        call entrypoint
+        exit"",
+        [],
+        (),
+        0,
+        {
+            |_vm, res: Result| {
+                matches!(res.unwrap_err(),
+                    EbpfError::ExceededMaxInstructions(pc, initial_insn_count)
+                    if pc == 31 && initial_insn_count == 4
+                )
+            }
+        },
+        4
+    );
+}",0,,
+"fn test_jset_imm() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov32 r0, 0
+        mov32 r1, 0x7
+        jset r1, 0x8, +4
+        mov32 r0, 1
+        mov32 r1, 0x9
+        jset r1, 0x8, +1
+        mov32 r0, 2
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x1 } },
+        7
+    );
+}",0,,
+"pub fn is_num(&self) -> bool {
+        match self {
+            ValType::I32 | ValType::I64 | ValType::F32 | ValType::F64 => true,
+            _ => false,
+        }
+    }",0,,
+"fn test_insufficient_input() -> std::result::Result<(), PrecompileFailure> {
+		let input = hex::decode(
+			""0000000000000000000000000000000000000000000000000000000000000001\
+			0000000000000000000000000000000000000000000000000000000000000001\
+			0000000000000000000000000000000000000000000000000000000000000001"",
+		)
+		.expect(""Decode failed"");
+
+		let cost: u64 = 1;
+
+		let context: Context = Context {
+			address: Default::default(),
+			caller: Default::default(),
+			apparent_value: From::from(0),
+		};
+
+		match Modexp::execute(&input, Some(cost), &context, false) {
+			Ok(_) => {
+				panic!(""Test not expected to pass"");
+			}
+			Err(e) => {
+				assert_eq!(
+					e,
+					PrecompileFailure::Error {
+						exit_status: ExitError::Other(""insufficient input size"".into())
+					}
+				);
+				Ok(())
+			}
+		}
+	}",0,,
+"pub fn dbtest(args: TokenStream, item: TokenStream) -> TokenStream {
+    parse_test_module(args, item)
+}",0,,
+"    fn from(val: Option<ExternRef>) -> Val {
+        Val::ExternRef(val)
+    }",0,,
+"	fn logs_bloom(logs: Vec<Log>, bloom: &mut Bloom) {
+		for log in logs {
+			bloom.accrue(BloomInput::Raw(&log.address[..]));
+			for topic in log.topics {
+				bloom.accrue(BloomInput::Raw(&topic[..]));
+			}
+		}
+	}",0,,
+"fn test_div32_high_divisor() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov r0, 12
+        lddw r1, 0x100000004
+        div32 r0, r1
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x3 } },
+        4
+    );
+}",0,,
+"fn test_tcp_port80_match() {
+    test_interpreter_and_jit_asm!(
+        PROG_TCP_PORT_80,
+        [
+            0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x00, 0x06, //
+            0x07, 0x08, 0x09, 0x0a, 0x08, 0x00, 0x45, 0x00, //
+            0x00, 0x56, 0x00, 0x01, 0x00, 0x00, 0x40, 0x06, //
+            0xf9, 0x4d, 0xc0, 0xa8, 0x00, 0x01, 0xc0, 0xa8, //
+            0x00, 0x02, 0x27, 0x10, 0x00, 0x50, 0x00, 0x00, //
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x50, 0x02, //
+            0x20, 0x00, 0xc5, 0x18, 0x00, 0x00, 0x44, 0x44, //
+            0x44, 0x44, 0x44, 0x44, 0x44, 0x44, 0x44, 0x44, //
+            0x44, 0x44, 0x44, 0x44, 0x44, 0x44, 0x44, 0x44, //
+            0x44, 0x44, 0x44, 0x44, 0x44, 0x44, 0x44, 0x44, //
+            0x44, 0x44, 0x44, 0x44, 0x44, 0x44, 0x44, 0x44, //
+            0x44, 0x44, 0x44, 0x44, 0x44, 0x44, 0x44, 0x44, //
+            0x44, 0x44, 0x44, 0x44, //
+        ],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x1 } },
+        17
+    );
+}",0,,
+"fn test_err_mem_access_out_of_bound() {
+    let mem = [0; 512];
+    let mut prog = [0; 32];
+    prog[0] = ebpf::LD_DW_IMM;
+    prog[16] = ebpf::ST_B_IMM;
+    prog[24] = ebpf::EXIT;
+    for address in [0x2u64, 0x8002u64, 0x80000002u64, 0x8000000000000002u64] {
+        LittleEndian::write_u32(&mut prog[4..], address as u32);
+        LittleEndian::write_u32(&mut prog[12..], (address >> 32) as u32);
+        let config = Config::default();
+        let mut bpf_functions = BTreeMap::new();
+        let syscall_registry = SyscallRegistry::default();
+        register_bpf_function(
+            &config,
+            &mut bpf_functions,
+            &syscall_registry,
+            0,
+            ""entrypoint"",
+        )
+        .unwrap();
+        #[allow(unused_mut)]
+        let mut executable = Executable::<UserError, TestInstructionMeter>::from_text_bytes(
+            &prog,
+            None,
+            config,
+            syscall_registry,
+            bpf_functions,
+        )
+        .unwrap();
+        test_interpreter_and_jit!(
+            executable,
+            mem,
+            0,
+            {
+                |_vm, res: Result| {
+                    matches!(res.unwrap_err(),
+                        EbpfError::AccessViolation(pc, access_type, vm_addr, len, name)
+                        if access_type == AccessType::Store && pc == 31 && vm_addr == address && len == 1 && name == ""unknown""
+                    )
+                }
+            },
+            2
+        );
+    }
+}",0,,
+"fn show_syntax_themes() -> std::io::Result<()> {
+    let mut opt = cli::Opt::from_args();
+    let assets = HighlightingAssets::new();
+    let mut output_type = OutputType::from_mode(
+        PagingMode::QuitIfOneScreen,
+        None,
+        &config::Config::from(cli::Opt::default()),
+    )
+    .unwrap();
+    let mut writer = output_type.handle().unwrap();
+    opt.computed.syntax_set = assets.syntax_set;
+
+    let stdin_data = if !atty::is(atty::Stream::Stdin) {
+        let mut buf = Vec::new();
+        io::stdin().lock().read_to_end(&mut buf)?;
+        if !buf.is_empty() {
+            Some(buf)
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
+    if !(opt.dark || opt.light) {
+        _show_syntax_themes(opt.clone(), false, &mut writer, stdin_data.as_ref())?;
+        _show_syntax_themes(opt, true, &mut writer, stdin_data.as_ref())?;
+    } else if opt.light {
+        _show_syntax_themes(opt, true, &mut writer, stdin_data.as_ref())?;
+    } else {
+        _show_syntax_themes(opt, false, &mut writer, stdin_data.as_ref())?
+    };
+    Ok(())
+}",0,,
+"pub async fn init(
+        db: &Corestore,
+        host: IpAddr,
+        port: u16,
+        semaphore: Arc<Semaphore>,
+        signal: broadcast::Sender<()>,
+    ) -> Result<Self, IoError> {
+        let (terminate_tx, terminate_rx) = mpsc::channel(1);
+        Ok(Self {
+            db: db.clone(),
+            listener: TcpListener::bind((host, port)).await?,
+            climit: semaphore,
+            signal,
+            terminate_tx,
+            terminate_rx,
+        })
+    }",0,,
+"fn run_app() -> std::io::Result<i32> {
+    let assets = HighlightingAssets::new();
+    let opt = cli::Opt::from_args_and_git_config(&mut git_config::GitConfig::try_create(), assets);
+
+    if opt.list_languages {
+        list_languages()?;
+        return Ok(0);
+    } else if opt.list_syntax_themes {
+        list_syntax_themes()?;
+        return Ok(0);
+    } else if opt.show_syntax_themes {
+        show_syntax_themes()?;
+        return Ok(0);
+    } else if opt.show_themes {
+        show_themes(opt.dark, opt.light, opt.computed.is_light_mode)?;
+        return Ok(0);
+    }
+
+    let _show_config = opt.show_config;
+    let config = config::Config::from(opt);
+
+    if _show_config {
+        let stdout = io::stdout();
+        let mut stdout = stdout.lock();
+        show_config(&config, &mut stdout)?;
+        return Ok(0);
+    }
+
+    let mut output_type =
+        OutputType::from_mode(config.paging_mode, config.pager.clone(), &config).unwrap();
+    let mut writer = output_type.handle().unwrap();
+
+    if atty::is(atty::Stream::Stdin) {
+        let exit_code = diff(
+            config.minus_file.as_ref(),
+            config.plus_file.as_ref(),
+            &config,
+            &mut writer,
+        );
+        return Ok(exit_code);
+    }
+
+    if let Err(error) = delta(io::stdin().lock().byte_lines(), &mut writer, &config) {
+        match error.kind() {
+            ErrorKind::BrokenPipe => return Ok(0),
+            _ => eprintln!(""{}"", error),
+        }
+    };
+    Ok(0)
+}",0,,
+"    fn close_back(&mut self) {
+        if self.back.is_some() {
+            let back = self.back.as_mut().unwrap();
+            back.shutdown(Shutdown::Both).unwrap();
+        }
+        self.back = None;
+    }",0,,
+"fn set_range(&mut self, start: u8, end: u8) {
+        debug_assert!(start <= end);
+        if start > 0 {
+            self.0[start as usize - 1] = true;
+        }
+        self.0[end as usize] = true;
+    }",0,,
+"fn test_err_fixed_stack_out_of_bound() {
+    let config = Config {
+        dynamic_stack_frames: false,
+        max_call_depth: 3,
+        ..Config::default()
+    };
+    test_interpreter_and_jit_asm!(
+        ""
+        stb [r10-0x4000], 0
+        exit"",
+        config,
+        [],
+        (),
+        0,
+        {
+            |_vm, res: Result| {
+                matches!(res.unwrap_err(),
+                    EbpfError::AccessViolation(pc, access_type, vm_addr, len, name)
+                    if access_type == AccessType::Store && pc == 29 && vm_addr == 0x1FFFFD000 && len == 1 && name == ""program""
+                )
+            }
+        },
+        1
+    );
+}",0,,
+"fn confirm_request_raw(&self, id: U256, bytes: Bytes) -> Result<ConfirmationResponse, Error> {
+		let id = id.into();
+
+		self.signer.peek(&id).map(|confirmation| {
+			let result = match confirmation.payload {
+				ConfirmationPayload::SendTransaction(request) => {
+					Self::verify_transaction(bytes, request, |pending_transaction| {
+						self.dispatcher.dispatch_transaction(pending_transaction)
+							.map(Into::into)
+							.map(ConfirmationResponse::SendTransaction)
+					})
+				},
+				ConfirmationPayload::SignTransaction(request) => {
+					Self::verify_transaction(bytes, request, |pending_transaction| {
+						Ok(ConfirmationResponse::SignTransaction(pending_transaction.transaction.into()))
+					})
+				},
+				ConfirmationPayload::EthSignMessage(address, data) => {
+					let expected_hash = eth_data_hash(data);
+					let signature = ethkey::Signature::from_electrum(&bytes.0);
+					match ethkey::verify_address(&address, &signature, &expected_hash) {
+						Ok(true) => Ok(ConfirmationResponse::Signature(bytes.0.as_slice().into())),
+						Ok(false) => Err(errors::invalid_params(""Sender address does not match the signature."", ())),
+						Err(err) => Err(errors::invalid_params(""Invalid signature received."", err)),
+					}
+				},
+				ConfirmationPayload::Decrypt(_address, _data) => {
+					// TODO [ToDr]: Decrypt can we verify if the answer is correct?
+					Ok(ConfirmationResponse::Decrypt(bytes))
+				},
+			};
+			if let Ok(ref response) = result {
+				self.signer.request_confirmed(id, Ok(response.clone()));
+			}
+			result
+		}).unwrap_or_else(|| Err(errors::invalid_params(""Unknown RequestID"", id)))
+	}",0,,
+"pub fn serialize(&self) -> [u8; util::SECRET_KEY_SIZE] {
+        self.0.b32()
+    }",0,,
+"    pub(crate) fn wasmtime_table(&self) -> &Table {
+        &self.ty
+    }",0,,
+"fn test_arsh32_imm() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov32 r0, 0xf8
+        lsh32 r0, 28
+        arsh32 r0, 16
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0xffff8000 } },
+        4
+    );
+}",0,,
+"fn test_jgt_imm() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov32 r0, 0
+        mov32 r1, 5
+        jgt r1, 6, +2
+        jgt r1, 5, +1
+        jgt r1, 4, +1
+        exit
+        mov32 r0, 1
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x1 } },
+        7
+    );
+}",0,,
+"    fn test_diff_same_empty_file() {
+        _do_diff_test(""/dev/null"", ""/dev/null"", false);
+    }",0,,
+"fn test_le16() {
+    test_interpreter_and_jit_asm!(
+        ""
+        ldxh r0, [r1]
+        le16 r0
+        exit"",
+        [0x22, 0x11],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x1122 } },
+        3
+    );
+}",0,,
+"	fn registrar(&self) -> Result<Address, String> {
+		self.client.additional_params().get(""registrar"")
+			 .ok_or_else(|| ""Registrar not defined."".into())
+			 .and_then(|registrar| {
+				 registrar.parse().map_err(|e| format!(""Invalid registrar address: {:?}"", e))
+			 })
+	}",0,,
+"	fn get_dispatch_info(&self) -> DispatchInfo {
+		self.function.get_dispatch_info()
+	}",0,,
+"fn drop(&mut self) {
+            self.0.store(true, SeqCst);
+        }",0,,
+"fn test_prime() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov r1, 67
+        mov r0, 0x1
+        mov r2, 0x2
+        jgt r1, 0x2, +4
+        ja +10
+        add r2, 0x1
+        mov r0, 0x1
+        jge r2, r1, +7
+        mov r3, r1
+        div r3, r2
+        mul r3, r2
+        mov r4, r1
+        sub r4, r3
+        mov r0, 0x0
+        jne r4, 0x0, -10
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x1 } },
+        655
+    );
+}",0,,
+"fn random_filename() -> String {
+	use ::rand::Rng;
+	let mut rng = ::rand::OsRng::new().unwrap();
+	rng.gen_ascii_chars().take(12).collect()
+}",0,,
+"fn test_stxb() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov32 r2, 0x11
+        stxb [r1+2], r2
+        ldxb r0, [r1+2]
+        exit"",
+        [
+            0xaa, 0xbb, 0xff, 0xcc, 0xdd, //
+        ],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x11 } },
+        4
+    );
+}",0,,
+"fn sock_send(command: &str) -> std::io::Result<()> {
+    let mut stream = UnixStream::connect(""/tmp/swhkd.sock"")?;
+    stream.write_all(command.as_bytes())?;
+    Ok(())
+}",1,1,"    let mut stream = UnixStream::connect(""/tmp/swhkd.sock"")?;"
+"fn table_growing(&mut self, current: u32, desired: u32, _maximum: Option<u32>) -> bool {
+        let delta = (desired - current) as usize * std::mem::size_of::<usize>();
+        self.alloc(delta)
+    }",0,,
+"pub fn data(&self) -> &Vec<u8> {
+		&self.data
+	}",0,,
+"fn test_ldxh_same_reg() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov r0, r1
+        sth [r0], 0x1234
+        ldxh r0, [r0]
+        exit"",
+        [0xff, 0xff],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x1234 } },
+        4
+    );
+}",0,,
+"fn into(self) -> Affine {
+        self.0
+    }",0,,
+"pub fn combine(keys: &[PublicKey]) -> Result<Self, Error> {
+        let mut qj = Jacobian::default();
+        qj.set_infinity();
+
+        for key in keys {
+            qj = qj.add_ge(&key.0);
+        }
+
+        if qj.is_infinity() {
+            return Err(Error::InvalidPublicKey);
+        }
+
+        let q = Affine::from_gej(&qj);
+        Ok(PublicKey(q))
+    }",0,,
+"fn test_lsh64_reg() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov r0, 0x1
+        mov r7, 4
+        lsh r0, r7
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x10 } },
+        4
+    );
+}",0,,
+"fn test_engine(engine: &Engine) -> anyhow::Result<()> {
+        let mut store = Store::new(&engine, ());
+        let flag = Arc::new(AtomicBool::new(false));
+        let externref = ExternRef::new(SetFlagOnDrop(flag.clone()));
+        Global::new(
+            &mut store,
+            GlobalType::new(ValType::ExternRef, Mutability::Const),
+            externref.into(),
+        )?;
+        drop(store);
+        assert!(flag.load(SeqCst));
+
+        let mut store = Store::new(&engine, ());
+        let module = Module::new(
+            &engine,
+            r#""
+                (module
+                    (global (mut externref) (ref.null extern))
+
+                    (func (export ""run"") (param externref)
+                        local.get 0
+                        global.set 0
+                    )
+                )
+            ""#,
+        )?;
+        let instance = Instance::new(&mut store, &module, &[])?;
+        let run = instance.get_typed_func::<Option<ExternRef>, (), _>(&mut store, ""run"")?;
+        let flag = Arc::new(AtomicBool::new(false));
+        let externref = ExternRef::new(SetFlagOnDrop(flag.clone()));
+        run.call(&mut store, Some(externref))?;
+        drop(store);
+        assert!(flag.load(SeqCst));
+        Ok(())
+    }",0,,
+"pub fn decode_config_slice<T: AsRef<[u8]>>(
+    input: T,
+    config: Config,
+    output: &mut [u8],
+) -> Result<usize, DecodeError> {
+    let input_bytes = input.as_ref();
+
+    decode_helper(input_bytes, num_chunks(input_bytes), config, output)
+}",0,,
+"fn test_alu32_arithmetic() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov32 r0, 0
+        mov32 r1, 1
+        mov32 r2, 2
+        mov32 r3, 3
+        mov32 r4, 4
+        mov32 r5, 5
+        mov32 r6, 6
+        mov32 r7, 7
+        mov32 r8, 8
+        mov32 r9, 9
+        add32 r0, 23
+        add32 r0, r7
+        sub32 r0, 13
+        sub32 r0, r1
+        mul32 r0, 7
+        mul32 r0, r3
+        div32 r0, 2
+        div32 r0, r4
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x2a } },
+        19
+    );
+}",0,,
+"fn test_jlt_imm() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov32 r0, 0
+        mov32 r1, 5
+        jlt r1, 4, +2
+        jlt r1, 5, +1
+        jlt r1, 6, +1
+        exit
+        mov32 r0, 1
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x1 } },
+        7
+    );
+}",0,,
+"fn _show_syntax_themes(
+    mut opt: cli::Opt,
+    is_light_mode: bool,
+    writer: &mut dyn Write,
+    stdin: Option<&Vec<u8>>,
+) -> std::io::Result<()> {
+    use bytelines::ByteLines;
+    use std::io::BufReader;
+    let input = match stdin {
+        Some(stdin_data) => &stdin_data[..],
+        None => {
+            b""\
+diff --git a/example.rs b/example.rs
+index f38589a..0f1bb83 100644
+--- a/example.rs
++++ b/example.rs
+@@ -1,5 +1,5 @@
+-// Output the square of a number.
+-fn print_square(num: f64) {
+-    let result = f64::powf(num, 2.0);
+-    println!(\""The square of {:.2} is {:.2}.\"", num, result);
++// Output the cube of a number.
++fn print_cube(num: f64) {
++    let result = f64::powf(num, 3.0);
++    println!(\""The cube of {:.2} is {:.2}.\"", num, result);
+""
+        }
+    };
+
+    opt.computed.is_light_mode = is_light_mode;
+    let mut config = config::Config::from(opt);
+    let title_style = ansi_term::Style::new().bold();
+    let assets = HighlightingAssets::new();
+
+    for syntax_theme in assets
+        .theme_set
+        .themes
+        .iter()
+        .filter(|(t, _)| is_light_syntax_theme(t) == is_light_mode)
+        .map(|(t, _)| t)
+    {
+        writeln!(writer, ""\n\nTheme: {}\n"", title_style.paint(syntax_theme))?;
+        config.syntax_theme = Some(assets.theme_set.themes[syntax_theme.as_str()].clone());
+        if let Err(error) = delta(ByteLines::new(BufReader::new(&input[0..])), writer, &config) {
+            match error.kind() {
+                ErrorKind::BrokenPipe => process::exit(0),
+                _ => eprintln!(""{}"", error),
+            }
+        };
+    }
+    Ok(())
+}",0,,
+"pub async fn call_async<T>(
+        &self,
+        mut store: impl AsContextMut<Data = T>,
+        params: &[Val],
+    ) -> Result<Box<[Val]>>
+    where
+        T: Send,
+    {
+        let mut store = store.as_context_mut();
+        assert!(
+            store.0.async_support(),
+            ""cannot use `call_async` without enabling async support in the config"",
+        );
+        let my_ty = self.ty(&store);
+        let result = store
+            .on_fiber(|store| self.call_impl(store, my_ty, params))
+            .await??;
+        Ok(result)
+    }",0,,
+"fn test_stack1() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov r1, 51
+        stdw [r10-16], 0xab
+        stdw [r10-8], 0xcd
+        and r1, 1
+        lsh r1, 3
+        mov r2, r10
+        add r2, r1
+        ldxdw r0, [r2-16]
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0xcd } },
+        9
+    );
+}",0,,
+"fn create(
+		source: H160,
+		init: Vec<u8>,
+		value: U256,
+		gas_limit: u64,
+		max_fee_per_gas: Option<U256>,
+		max_priority_fee_per_gas: Option<U256>,
+		nonce: Option<U256>,
+		access_list: Vec<(H160, Vec<H256>)>,
+		is_transactional: bool,
+		validate: bool,
+		config: &evm::Config,
+	) -> Result<CreateInfo, RunnerError<Self::Error>> {
+		if validate {
+			let _ = Self::validate(
+				source,
+				None,
+				init.clone(),
+				value,
+				gas_limit,
+				max_fee_per_gas,
+				max_priority_fee_per_gas,
+				nonce,
+				access_list.clone(),
+				is_transactional,
+				config,
+			)?;
+		}
+		let precompiles = T::PrecompilesValue::get();
+		Self::execute(
+			source,
+			value,
+			gas_limit,
+			max_fee_per_gas,
+			max_priority_fee_per_gas,
+			config,
+			&precompiles,
+			is_transactional,
+			|executor| {
+				let address = executor.create_address(evm::CreateScheme::Legacy { caller: source });
+				let (reason, _) =
+					executor.transact_create(source, value, init, gas_limit, access_list);
+				(reason, address)
+			},
+		)
+	}",0,,
+"    fn take(&self, count: usize) -> Self {
+        let tokens = &self.tokens[..count];
+
+        Input { source: self.source, tokens }
+    }",1,3,"        Input { source: self.source, tokens }"
+"fn confirm_request(&self, id: U256, modification: TransactionModification, pass: String)
+		-> BoxFuture<ConfirmationResponse, Error>
+	{
+		self.confirm_internal(id, modification, move |dis, accounts, payload| {
+			dispatch::execute(dis, accounts, payload, dispatch::SignWith::Password(pass))
+		}).map(|v| v.into_value()).boxed()
+	}",0,,
+"fn test_ldindb() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov64 r1, 0x5
+        ldindb r1, 0x3
+        exit"",
+        [
+            0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, //
+            0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, //
+        ],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x88 } },
+        3
+    );
+}",0,,
+"pub fn check_device_is_keyboard(device: &Device) -> bool {
+    if device.supported_keys().map_or(false, |keys| keys.contains(Key::KEY_ENTER)) {
+        if device.name() == Some(""swhkd virtual output"") {
+            return false;
+        }
+        log::debug!(""Keyboard: {}"", device.name().unwrap(),);
+        true
+    } else {
+        log::trace!(""Other: {}"", device.name().unwrap(),);
+        false
+    }
+}",0,,
+"    fn func_liveouts(&self) -> RegallocSet<RealReg> {
+        self.liveouts.clone()
+    }",0,,
+"pub fn wrap<T, Params, Results>(
+        mut store: impl AsContextMut<Data = T>,
+        func: impl IntoFunc<T, Params, Results>,
+    ) -> Func {
+        let store = store.as_context_mut().0;
+        // part of this unsafety is about matching the `T` to a `Store<T>`,
+        // which is done through the `AsContextMut` bound above.
+        unsafe {
+            let host = HostFunc::wrap(store.engine(), func);
+            host.into_func(store)
+        }
+    }",0,,
+"fn test_ldindw() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov64 r1, 0x4
+        ldindw r1, 0x1
+        exit"",
+        [
+            0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, //
+            0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, //
+        ],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x88776655 } },
+        3
+    );
+}",0,,
+"fn new_chunk(size: usize) -> Box<[UnsafeCell<Option<VMExternRef>>]> {
+        assert!(size >= Self::CHUNK_SIZE);
+        (0..size).map(|_| UnsafeCell::new(None)).collect()
+    }",0,,
+"pub fn replace_insns_from_regalloc(&mut self, result: RegAllocResult<Self>) {
+        // Record the spillslot count and clobbered registers for the ABI/stack
+        // setup code.
+        self.abi.set_num_spillslots(result.num_spill_slots as usize);
+        self.abi
+            .set_clobbered(result.clobbered_registers.map(|r| Writable::from_reg(*r)));
+
+        let mut final_insns = vec![];
+        let mut final_block_ranges = vec![(0, 0); self.num_blocks()];
+        let mut final_srclocs = vec![];
+        let mut final_safepoint_insns = vec![];
+        let mut safept_idx = 0;
+
+        assert!(result.target_map.elems().len() == self.num_blocks());
+        for block in 0..self.num_blocks() {
+            let start = result.target_map.elems()[block].get() as usize;
+            let end = if block == self.num_blocks() - 1 {
+                result.insns.len()
+            } else {
+                result.target_map.elems()[block + 1].get() as usize
+            };
+            let block = block as BlockIndex;
+            let final_start = final_insns.len() as InsnIndex;
+
+            if block == self.entry {
+                // Start with the prologue.
+                let prologue = self.abi.gen_prologue();
+                let len = prologue.len();
+                final_insns.extend(prologue.into_iter());
+                final_srclocs.extend(iter::repeat(SourceLoc::default()).take(len));
+            }
+
+            for i in start..end {
+                let insn = &result.insns[i];
+
+                // Elide redundant moves at this point (we only know what is
+                // redundant once registers are allocated).
+                if is_redundant_move(insn) {
+                    continue;
+                }
+
+                // Is there a srcloc associated with this insn? Look it up based on original
+                // instruction index (if new insn corresponds to some original insn, i.e., is not
+                // an inserted load/spill/move).
+                let orig_iix = result.orig_insn_map[InstIx::new(i as u32)];
+                let srcloc = if orig_iix.is_invalid() {
+                    SourceLoc::default()
+                } else {
+                    self.srclocs[orig_iix.get() as usize]
+                };
+
+                // Whenever encountering a return instruction, replace it
+                // with the epilogue.
+                let is_ret = insn.is_term() == MachTerminator::Ret;
+                if is_ret {
+                    let epilogue = self.abi.gen_epilogue();
+                    let len = epilogue.len();
+                    final_insns.extend(epilogue.into_iter());
+                    final_srclocs.extend(iter::repeat(srcloc).take(len));
+                } else {
+                    final_insns.push(insn.clone());
+                    final_srclocs.push(srcloc);
+                }
+
+                // Was this instruction a safepoint instruction? Add its final
+                // index to the safepoint insn-index list if so.
+                if safept_idx < result.new_safepoint_insns.len()
+                    && (result.new_safepoint_insns[safept_idx].get() as usize) == i
+                {
+                    let idx = final_insns.len() - 1;
+                    final_safepoint_insns.push(idx as InsnIndex);
+                    safept_idx += 1;
+                }
+            }
+
+            let final_end = final_insns.len() as InsnIndex;
+            final_block_ranges[block as usize] = (final_start, final_end);
+        }
+
+        debug_assert!(final_insns.len() == final_srclocs.len());
+
+        self.insts = final_insns;
+        self.srclocs = final_srclocs;
+        self.block_ranges = final_block_ranges;
+        self.safepoint_insns = final_safepoint_insns;
+
+        // Save safepoint slot-lists. These will be passed to the `EmitState`
+        // for the machine backend during emission so that it can do
+        // target-specific translations of slot numbers to stack offsets.
+        self.safepoint_slots = result.stackmaps;
+    }",0,,
+"fn validate_transaction_in_pool(
+		origin: H160,
+		transaction: &Transaction,
+	) -> TransactionValidity {
+		let transaction_data: TransactionData = transaction.into();
+		let transaction_nonce = transaction_data.nonce;
+
+		let (base_fee, _) = T::FeeCalculator::min_gas_price();
+		let (who, _) = pallet_evm::Pallet::<T>::account_basic(&origin);
+
+		let _ = CheckEvmTransaction::<InvalidTransactionWrapper>::new(
+			CheckEvmTransactionConfig {
+				evm_config: T::config(),
+				block_gas_limit: T::BlockGasLimit::get(),
+				base_fee,
+				chain_id: T::ChainId::get(),
+				is_transactional: true,
+			},
+			transaction_data.clone().into(),
+		)
+		.validate_in_pool_for(&who)
+		.and_then(|v| v.with_chain_id())
+		.and_then(|v| v.with_base_fee())
+		.and_then(|v| v.with_balance_for(&who))
+		.map_err(|e| e.0)?;
+
+		let priority = match (
+			transaction_data.gas_price,
+			transaction_data.max_fee_per_gas,
+			transaction_data.max_priority_fee_per_gas,
+		) {
+			// Legacy or EIP-2930 transaction.
+			// Handle priority here. On legacy transaction everything in gas_price except
+			// the current base_fee is considered a tip to the miner and thus the priority.
+			(Some(gas_price), None, None) => {
+				gas_price.saturating_sub(base_fee).unique_saturated_into()
+			}
+			// EIP-1559 transaction without tip.
+			(None, Some(_), None) => 0,
+			// EIP-1559 transaction with tip.
+			(None, Some(max_fee_per_gas), Some(max_priority_fee_per_gas)) => max_fee_per_gas
+				.saturating_sub(base_fee)
+				.min(max_priority_fee_per_gas)
+				.unique_saturated_into(),
+			// Unreachable because already validated. Gracefully handle.
+			_ => return Err(InvalidTransaction::Payment.into()),
+		};
+
+		// The tag provides and requires must be filled correctly according to the nonce.
+		let mut builder = ValidTransactionBuilder::default()
+			.and_provides((origin, transaction_nonce))
+			.priority(priority);
+
+		// In the context of the pool, a transaction with
+		// too high a nonce is still considered valid
+		if transaction_nonce > who.nonce {
+			if let Some(prev_nonce) = transaction_nonce.checked_sub(1.into()) {
+				builder = builder.and_requires((origin, prev_nonce))
+			}
+		}
+
+		builder.build()
+	}",0,,
+"fn test_lldxdw() {
+    test_interpreter_and_jit_asm!(
+        ""
+        ldxdw r0, [r1+2]
+        exit"",
+        [
+            0xaa, 0xbb, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, //
+            0x77, 0x88, 0xcc, 0xdd, //
+        ],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x8877665544332211 } },
+        2
+    );
+}",0,,
+"    fn get_num_vregs(&self) -> usize {
+        self.vreg_types.len()
+    }",0,,
+"    fn from(ty: ModuleType) -> ExternType {
+        ExternType::Module(ty)
+    }",0,,
+"pub fn try_insert(&mut self, externref: VMExternRef) -> Result<(), VMExternRef> {
+        unsafe {
+            let next = *self.alloc.next.get();
+            if next == self.alloc.end {
+                return Err(externref);
+            }
+
+            debug_assert!(
+                (*next.as_ref().get()).is_none(),
+                ""slots >= the `next` bump finger are always `None`""
+            );
+            ptr::write(next.as_ptr(), UnsafeCell::new(Some(externref)));
+
+            let next = NonNull::new_unchecked(next.as_ptr().add(1));
+            debug_assert!(next <= self.alloc.end);
+            *self.alloc.next.get() = next;
+
+            Ok(())
+        }
+    }",0,,
+"pub fn maximum(&self) -> Option<u32> {
+        self.ty.maximum
+    }",0,,
+"pub fn heap_u32_mut(&mut self) -> &mut [u32] {
+        unsafe { self.alloc.heap_u32_mut() }
+    }",0,,
+"fn apply_validated_transaction(
+		source: H160,
+		transaction: Transaction,
+	) -> DispatchResultWithPostInfo {
+		let (to, _, info) = Self::execute(source, &transaction, None)?;
+
+		let pending = Pending::<T>::get();
+		let transaction_hash = transaction.hash();
+		let transaction_index = pending.len() as u32;
+
+		let (reason, status, used_gas, dest) = match info {
+			CallOrCreateInfo::Call(info) => (
+				info.exit_reason,
+				TransactionStatus {
+					transaction_hash,
+					transaction_index,
+					from: source,
+					to,
+					contract_address: None,
+					logs: info.logs.clone(),
+					logs_bloom: {
+						let mut bloom: Bloom = Bloom::default();
+						Self::logs_bloom(info.logs, &mut bloom);
+						bloom
+					},
+				},
+				info.used_gas,
+				to,
+			),
+			CallOrCreateInfo::Create(info) => (
+				info.exit_reason,
+				TransactionStatus {
+					transaction_hash,
+					transaction_index,
+					from: source,
+					to,
+					contract_address: Some(info.value),
+					logs: info.logs.clone(),
+					logs_bloom: {
+						let mut bloom: Bloom = Bloom::default();
+						Self::logs_bloom(info.logs, &mut bloom);
+						bloom
+					},
+				},
+				info.used_gas,
+				Some(info.value),
+			),
+		};
+
+		let receipt = {
+			let status_code: u8 = match reason {
+				ExitReason::Succeed(_) => 1,
+				_ => 0,
+			};
+			let logs_bloom = status.logs_bloom;
+			let logs = status.clone().logs;
+			let cumulative_gas_used = if let Some((_, _, receipt)) = pending.last() {
+				match receipt {
+					Receipt::Legacy(d) | Receipt::EIP2930(d) | Receipt::EIP1559(d) => {
+						d.used_gas.saturating_add(used_gas)
+					}
+				}
+			} else {
+				used_gas
+			};
+			match &transaction {
+				Transaction::Legacy(_) => Receipt::Legacy(ethereum::EIP658ReceiptData {
+					status_code,
+					used_gas: cumulative_gas_used,
+					logs_bloom,
+					logs,
+				}),
+				Transaction::EIP2930(_) => Receipt::EIP2930(ethereum::EIP2930ReceiptData {
+					status_code,
+					used_gas: cumulative_gas_used,
+					logs_bloom,
+					logs,
+				}),
+				Transaction::EIP1559(_) => Receipt::EIP1559(ethereum::EIP2930ReceiptData {
+					status_code,
+					used_gas: cumulative_gas_used,
+					logs_bloom,
+					logs,
+				}),
+			}
+		};
+
+		Pending::<T>::append((transaction, status, receipt));
+
+		Self::deposit_event(Event::Executed(
+			source,
+			dest.unwrap_or_default(),
+			transaction_hash,
+			reason,
+		));
+
+		Ok(PostDispatchInfo {
+			actual_weight: Some(T::GasWeightMapping::gas_to_weight(
+				used_gas.unique_saturated_into(),
+			)),
+			pays_fee: Pays::No,
+		})
+	}",0,,
+"fn reject_request(&self, id: U256) -> Result<bool, Error> {
+		let res = self.signer.request_rejected(id.into());
+		Ok(res.is_some())
+	}",0,,
+"pub fn parse_slice(p: &[u8]) -> Result<SecretKey, Error> {
+        if p.len() != util::SECRET_KEY_SIZE {
+            return Err(Error::InvalidInputLength);
+        }
+
+        let mut a = [0; 32];
+        a.copy_from_slice(p);
+        Self::parse(&a)
+    }",0,,
+"fn drop_externref_via_table_set() -> anyhow::Result<()> {
+    let (mut store, module) = ref_types_module(
+        r#""
+            (module
+                (table $t 1 externref)
+
+                (func (export ""table-set"") (param externref)
+                  (table.set $t (i32.const 0) (local.get 0))
+                )
+            )
+        ""#,
+    )?;
+
+    let instance = Instance::new(&mut store, &module, &[])?;
+    let table_set = instance.get_func(&mut store, ""table-set"").unwrap();
+
+    let foo_is_dropped = Arc::new(AtomicBool::new(false));
+    let bar_is_dropped = Arc::new(AtomicBool::new(false));
+
+    let foo = ExternRef::new(SetFlagOnDrop(foo_is_dropped.clone()));
+    let bar = ExternRef::new(SetFlagOnDrop(bar_is_dropped.clone()));
+
+    {
+        let args = vec![Val::ExternRef(Some(foo))];
+        table_set.call(&mut store, &args)?;
+    }
+    store.gc();
+    assert!(!foo_is_dropped.load(SeqCst));
+    assert!(!bar_is_dropped.load(SeqCst));
+
+    {
+        let args = vec![Val::ExternRef(Some(bar))];
+        table_set.call(&mut store, &args)?;
+    }
+    store.gc();
+    assert!(foo_is_dropped.load(SeqCst));
+    assert!(!bar_is_dropped.load(SeqCst));
+
+    table_set.call(&mut store, &[Val::ExternRef(None)])?;
+    assert!(foo_is_dropped.load(SeqCst));
+    assert!(bar_is_dropped.load(SeqCst));
+
+    Ok(())
+}",0,,
+"    pub const fn is_termination_signal(&self) -> bool {
+        self.terminate
+    }",0,,
+"pub fn address(&self, address: Option<(String, u16)>) -> Option<(String, u16)> {
+		match self.enabled {
+			true => address,
+			false => None,
+		}
+	}",0,,
+"	pub fn current_transaction_statuses() -> Option<Vec<TransactionStatus>> {
+		CurrentTransactionStatuses::<T>::get()
+	}",0,,
+"fn new() -> Self {
+        ByteClassSet([false; 256])
+    }",0,,
+"fn test_jset_reg() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov32 r0, 0
+        mov32 r1, 0x7
+        mov32 r2, 0x8
+        jset r1, r2, +4
+        mov32 r0, 1
+        mov32 r1, 0x9
+        jset r1, r2, +1
+        mov32 r0, 2
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x1 } },
+        8
+    );
+}",0,,
+"    pub async fn receive_signal(&mut self) {
+        // The server may have already been terminated
+        // In that event, just return
+        if self.terminate {
+            return;
+        }
+        let _ = self.signal.recv().await;
+        self.terminate = true;
+    }",0,,
+"fn test_ldxb_all() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov r0, r1
+        ldxb r9, [r0+0]
+        lsh r9, 0
+        ldxb r8, [r0+1]
+        lsh r8, 4
+        ldxb r7, [r0+2]
+        lsh r7, 8
+        ldxb r6, [r0+3]
+        lsh r6, 12
+        ldxb r5, [r0+4]
+        lsh r5, 16
+        ldxb r4, [r0+5]
+        lsh r4, 20
+        ldxb r3, [r0+6]
+        lsh r3, 24
+        ldxb r2, [r0+7]
+        lsh r2, 28
+        ldxb r1, [r0+8]
+        lsh r1, 32
+        ldxb r0, [r0+9]
+        lsh r0, 36
+        or r0, r1
+        or r0, r2
+        or r0, r3
+        or r0, r4
+        or r0, r5
+        or r0, r6
+        or r0, r7
+        or r0, r8
+        or r0, r9
+        exit"",
+        [
+            0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, //
+            0x08, 0x09, //
+        ],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x9876543210 } },
+        31
+    );
+}",0,,
+"fn test_stxb_all() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov r0, 0xf0
+        mov r2, 0xf2
+        mov r3, 0xf3
+        mov r4, 0xf4
+        mov r5, 0xf5
+        mov r6, 0xf6
+        mov r7, 0xf7
+        mov r8, 0xf8
+        stxb [r1], r0
+        stxb [r1+1], r2
+        stxb [r1+2], r3
+        stxb [r1+3], r4
+        stxb [r1+4], r5
+        stxb [r1+5], r6
+        stxb [r1+6], r7
+        stxb [r1+7], r8
+        ldxdw r0, [r1]
+        be64 r0
+        exit"",
+        [
+            0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, //
+        ],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0xf0f2f3f4f5f6f7f8 } },
+        19
+    );
+}",0,,
+"    fn drop(&mut self) {
+        if self.needs_inst_drop {
+            unsafe {
+                let inst = self.inst.as_mut();
+
+                // Grab a handle to the region to ensure it outlives `inst`.
+                //
+                // This ensures that the region won't be dropped by `inst` being
+                // dropped, which could result in `inst` being unmapped by the
+                // Region *during* drop of the Instance's fields.
+                let region: Arc<dyn RegionInternal> = inst.alloc().region.clone();
+
+                // drop the actual instance
+                std::ptr::drop_in_place(inst);
+
+                // and now we can drop what may be the last Arc<Region>. If it is
+                // it can safely do what it needs with memory; we're not running
+                // destructors on it anymore.
+                mem::drop(region);
+            }
+        }
+    }",1,"5,7,8,9,10,15,16,17,18","                // Grab a handle to the region to ensure it outlives `inst`./~/                // This ensures that the region won't be dropped by `inst` being/~/                // dropped, which could result in `inst` being unmapped by the/~/                // Region *during* drop of the Instance's fields./~/                let region: Arc<dyn RegionInternal> = inst.alloc().region.clone();/~/                // and now we can drop what may be the last Arc<Region>. If it is/~/                // it can safely do what it needs with memory; we're not running/~/                // destructors on it anymore./~/                mem::drop(region);"
+"pub fn new(engine: &Engine, data: T) -> Self {
+        let functions = &Default::default();
+        // Wasmtime uses the callee argument to host functions to learn about
+        // the original pointer to the `Store` itself, allowing it to
+        // reconstruct a `StoreContextMut<T>`. When we initially call a `Func`,
+        // however, there's no ""callee"" to provide. To fix this we allocate a
+        // single ""default callee"" for the entire `Store`. This is then used as
+        // part of `Func::call` to guarantee that the `callee: *mut VMContext`
+        // is never null.
+        let default_callee = unsafe {
+            OnDemandInstanceAllocator::default()
+                .allocate(InstanceAllocationRequest {
+                    host_state: Box::new(()),
+                    image_base: 0,
+                    functions,
+                    shared_signatures: None.into(),
+                    imports: Default::default(),
+                    module: Arc::new(wasmtime_environ::Module::default()),
+                    store: None,
+                    wasm_data: &[],
+                })
+                .expect(""failed to allocate default callee"")
+        };
+        let mut inner = Box::new(StoreInner {
+            inner: StoreOpaque {
+                _marker: marker::PhantomPinned,
+                engine: engine.clone(),
+                interrupts: Default::default(),
+                instances: Vec::new(),
+                signal_handler: None,
+                externref_activations_table: VMExternRefActivationsTable::new(),
+                modules: ModuleRegistry::default(),
+                host_trampolines: HashMap::default(),
+                instance_count: 0,
+                instance_limit: wasmtime_runtime::DEFAULT_INSTANCE_LIMIT,
+                memory_count: 0,
+                memory_limit: wasmtime_runtime::DEFAULT_MEMORY_LIMIT,
+                table_count: 0,
+                table_limit: wasmtime_runtime::DEFAULT_TABLE_LIMIT,
+                fuel_adj: 0,
+                #[cfg(feature = ""async"")]
+                async_state: AsyncState {
+                    current_suspend: UnsafeCell::new(ptr::null()),
+                    current_poll_cx: UnsafeCell::new(ptr::null_mut()),
+                },
+                out_of_gas_behavior: OutOfGas::Trap,
+                store_data: StoreData::new(),
+                default_callee,
+                hostcall_val_storage: Vec::new(),
+            },
+            limiter: None,
+            call_hook: None,
+            data: ManuallyDrop::new(data),
+        });
+
+        // Once we've actually allocated the store itself we can configure the
+        // trait object pointer of the default callee. Note the erasure of the
+        // lifetime here into `'static`, so in general usage of this trait
+        // object must be strictly bounded to the `Store` itself, and is a
+        // variant that we have to maintain throughout Wasmtime.
+        unsafe {
+            let traitobj = std::mem::transmute::<
+                *mut (dyn wasmtime_runtime::Store + '_),
+                *mut (dyn wasmtime_runtime::Store + 'static),
+            >(&mut *inner);
+            inner.default_callee.set_store(traitobj);
+        }
+
+        Self {
+            inner: ManuallyDrop::new(inner),
+        }
+    }",0,,
+"fn byte_classes(&self) -> Vec<u8> {
+        // N.B. If you're debugging the DFA, it's useful to simply return
+        // `(0..256).collect()`, which effectively removes the byte classes
+        // and makes the transitions easier to read.
+        // (0usize..256).map(|x| x as u8).collect()
+        let mut byte_classes = vec![0; 256];
+        let mut class = 0u8;
+        let mut i = 0;
+        loop {
+            byte_classes[i] = class as u8;
+            if i >= 255 {
+                break;
+            }
+            if self.0[i] {
+                class = class.checked_add(1).unwrap();
+            }
+            i += 1;
+        }
+        byte_classes
+    }",0,,
+"fn increment_ref_count(&self) {
+        // This is only using during cloning operations, and like the standard
+        // library we use `Relaxed` here. The rationale is better documented in
+        // libstd's implementation of `Arc`, but the general gist is that we're
+        // creating a new pointer for our own thread, so there's no need to have
+        // any synchronization with orderings. The synchronization with other
+        // threads with respect to orderings happens when the pointer is sent to
+        // another thread.
+        self.ref_count.fetch_add(1, Ordering::Relaxed);
+    }",0,,
+"    pub async fn run(&mut self) -> TResult<()> {
+        loop {
+            // Take the permit first, but we won't use it right now
+            // that's why we will forget it
+            self.base.climit.acquire().await.unwrap().forget();
+            let stream = self.accept().await?;
+            let mut chandle = ConnectionHandler::new(
+                self.base.db.clone(),
+                Connection::new(stream),
+                self.base.climit.clone(),
+                Terminator::new(self.base.signal.subscribe()),
+                self.base.terminate_tx.clone(),
+            );
+            tokio::spawn(async move {
+                if let Err(e) = chandle.run().await {
+                    log::error!(""Error: {}"", e);
+                }
+            });
+        }
+    }",1,5,            let stream = self.accept().await?;
+"    pub fn sqr(&self) -> Scalar {
+        let mut ret = Scalar::default();
+        ret.sqr_in_place(self);
+        ret
+    }",0,,
+"fn default() -> SecretKey {
+        let mut elem = Scalar::default();
+        let overflowed = elem.set_b32(
+            &[0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+		      0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+              0x00,0x00,0x00,0x00,0x00,0x01]
+        );
+        debug_assert!(!overflowed);
+        debug_assert!(!elem.is_zero());
+        SecretKey(elem)
+    }",0,,
+"fn test_err_dynamic_stack_ptr_overflow() {
+    let config = Config {
+        dynamic_stack_frames: true,
+        ..Config::default()
+    };
+
+    // See the comment in CallFrames::resize_stack() for the reason why it's
+    // safe to let the stack pointer overflow
+
+    // stack_ptr -= stack_ptr + 1
+    test_interpreter_and_jit_asm!(
+        ""
+        sub r11, 0x7FFFFFFF
+        sub r11, 0x7FFFFFFF
+        sub r11, 0x7FFFFFFF
+        sub r11, 0x7FFFFFFF
+        sub r11, 0x14005
+        call foo
+        exit
+        foo:
+        stb [r10], 0
+        exit"",
+        config,
+        [],
+        (),
+        0,
+        {
+            |_vm, res: Result| {
+                matches!(res.unwrap_err(),
+                    EbpfError::AccessViolation(pc, access_type, vm_addr, len, region)
+                    if access_type == AccessType::Store && pc == 29 + 7 && vm_addr == u64::MAX && len == 1 && region == ""unknown""
+                )
+            }
+        },
+        7
+    );
+}",0,,
+"	fn subscribe_pending(&self, _meta: Self::Metadata, sub: Subscriber<Vec<ConfirmationRequest>>) {
+		self.subscribers.lock().push(sub)
+	}",0,,
+"    pub(crate) fn new(isa: Box<dyn TargetIsa>, linkopts: LinkOptions) -> Compiler {
+        Compiler {
+            translators: Default::default(),
+            isa,
+            linkopts,
+        }
+    }",0,,
+"fn validate(
+		source: H160,
+		target: Option<H160>,
+		input: Vec<u8>,
+		value: U256,
+		gas_limit: u64,
+		max_fee_per_gas: Option<U256>,
+		max_priority_fee_per_gas: Option<U256>,
+		nonce: Option<U256>,
+		access_list: Vec<(H160, Vec<H256>)>,
+		is_transactional: bool,
+		evm_config: &evm::Config,
+	) -> Result<(), RunnerError<Self::Error>> {
+		let (base_fee, mut weight) = T::FeeCalculator::min_gas_price();
+		let (source_account, inner_weight) = Pallet::<T>::account_basic(&source);
+		weight = weight.saturating_add(inner_weight);
+
+		let _ = fp_evm::CheckEvmTransaction::<Self::Error>::new(
+			fp_evm::CheckEvmTransactionConfig {
+				evm_config,
+				block_gas_limit: T::BlockGasLimit::get(),
+				base_fee,
+				chain_id: T::ChainId::get(),
+				is_transactional,
+			},
+			fp_evm::CheckEvmTransactionInput {
+				chain_id: Some(T::ChainId::get()),
+				to: target,
+				input,
+				nonce: nonce.unwrap_or(source_account.nonce),
+				gas_limit: gas_limit.into(),
+				gas_price: None,
+				max_fee_per_gas,
+				max_priority_fee_per_gas,
+				value,
+				access_list,
+			},
+		)
+		.validate_in_block_for(&source_account)
+		.and_then(|v| v.with_base_fee())
+		.and_then(|v| v.with_balance_for(&source_account))
+		.map_err(|error| RunnerError { error, weight })?;
+		Ok(())
+	}",0,,
+"	fn registrar(&self) -> Result<Address, String> {
+		self.client.engine().additional_params().get(""registrar"")
+			 .ok_or_else(|| ""Registrar not defined."".into())
+			 .and_then(|registrar| {
+				 registrar.parse().map_err(|e| format!(""Invalid registrar address: {:?}"", e))
+			 })
+	}",0,,
+"fn test_div64_imm() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov r0, 0xc
+        lsh r0, 32
+        div r0, 4
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x300000000 } },
+        4
+    );
+}",0,,
+"fn test_load_elf_rodata() {
+    // checks that the program loads the correct rodata offset with both
+    // borrowed and owned rodata
+    for optimize_rodata in [false, true] {
+        let config = Config {
+            optimize_rodata,
+            ..Config::default()
+        };
+        test_interpreter_and_jit_elf!(
+            ""tests/elfs/rodata.so"",
+            config,
+            [],
+            (),
+            0,
+            { |_vm, res: Result| { res.unwrap() == 42 } },
+            3
+        );
+    }
+}",0,,
+"    pub fn call(&self, mut store: impl AsContextMut, params: &[Val]) -> Result<Box<[Val]>> {
+        assert!(
+            !store.as_context().async_support(),
+            ""must use `call_async` when async support is enabled on the config"",
+        );
+        let my_ty = self.ty(&store);
+        self.call_impl(&mut store.as_context_mut(), my_ty, params)
+    }",0,,
+"	fn generate_token(&self) -> Result<String, Error> {
+		self.signer.generate_token()
+			.map_err(|e| errors::token(e))
+	}",0,,
+"    pub(crate) fn from_wasmtime_memory(memory: &Memory) -> MemoryType {
+        MemoryType { ty: memory.clone() }
+    }",0,,
+"    pub const fn is_termination_signal(&self) -> bool {
+        self.terminate
+    }",0,,
+"fn reset_balance(&mut self, _address: H160) {
+		// Do nothing on reset balance in Substrate.
+		//
+		// This function exists in EVM because a design issue
+		// (arguably a bug) in SELFDESTRUCT that can cause total
+		// issurance to be reduced. We do not need to replicate this.
+	}",0,,
+"    pub fn module_name(&self) -> Option<&str> {
+        self.module_name.as_deref()
+    }",0,,
+"fn test_frame_info() -> Result<(), anyhow::Error> {
+    use crate::*;
+    let mut store = Store::<()>::default();
+    let module = Module::new(
+        store.engine(),
+        r#""
+            (module
+                (func (export ""add"") (param $x i32) (param $y i32) (result i32) (i32.add (local.get $x) (local.get $y)))
+                (func (export ""sub"") (param $x i32) (param $y i32) (result i32) (i32.sub (local.get $x) (local.get $y)))
+                (func (export ""mul"") (param $x i32) (param $y i32) (result i32) (i32.mul (local.get $x) (local.get $y)))
+                (func (export ""div_s"") (param $x i32) (param $y i32) (result i32) (i32.div_s (local.get $x) (local.get $y)))
+                (func (export ""div_u"") (param $x i32) (param $y i32) (result i32) (i32.div_u (local.get $x) (local.get $y)))
+                (func (export ""rem_s"") (param $x i32) (param $y i32) (result i32) (i32.rem_s (local.get $x) (local.get $y)))
+                (func (export ""rem_u"") (param $x i32) (param $y i32) (result i32) (i32.rem_u (local.get $x) (local.get $y)))
+            )
+         ""#,
+    )?;
+    // Create an instance to ensure the frame information is registered.
+    Instance::new(&mut store, &module, &[])?;
+
+    GlobalModuleRegistry::with(|modules| {
+        for (i, alloc) in module.compiled_module().finished_functions() {
+            let (start, end) = unsafe {
+                let ptr = (*alloc).as_ptr();
+                let len = (*alloc).len();
+                (ptr as usize, ptr as usize + len)
+            };
+            for pc in start..end {
+                let (frame, _, _) = modules.lookup_frame_info(pc).unwrap();
+                assert!(
+                    frame.func_index() == i.as_u32(),
+                    ""lookup of {:#x} returned {}, expected {}"",
+                    pc,
+                    frame.func_index(),
+                    i.as_u32()
+                );
+            }
+        }
+    });
+    Ok(())
+}",0,,
+"fn sock_send(command: &str) -> std::io::Result<()> {
+    let sock_file_path =
+        String::from(format!(""/run/user/{}/swhkd.sock"", env::var(""PKEXEC_UID"").unwrap()));
+    let mut stream = UnixStream::connect(sock_file_path)?;
+    stream.write_all(command.as_bytes())?;
+    Ok(())
+}",0,,
+"    pub fn lookup_trampoline(&self, anyfunc: &VMCallerCheckedAnyfunc) -> Option<VMTrampoline> {
+        let module = self.module(anyfunc.func_ptr.as_ptr() as usize)?;
+        module.signatures.trampoline(anyfunc.type_index)
+    }",0,,
+"pub(crate) fn ref_types_module(
+    source: &str,
+) -> anyhow::Result<(wasmtime::Store<()>, wasmtime::Module)> {
+    use wasmtime::*;
+
+    let _ = env_logger::try_init();
+
+    let mut config = Config::new();
+    config.wasm_reference_types(true);
+
+    let engine = Engine::new(&config)?;
+    let store = Store::new(&engine, ());
+
+    let module = Module::new(&engine, source)?;
+
+    Ok((store, module))
+}",1,11,"    let store = Store::new(&engine, ());"
+"    fn try_plain_read(&mut self) {
+        // Read and process all available plaintext.
+        let mut buf = Vec::new();
+
+        let rc = self.tls_session.read_to_end(&mut buf);
+        if rc.is_err() {
+            error!(""plaintext read failed: {:?}"", rc);
+            self.closing = true;
+            return;
+        }
+
+        if !buf.is_empty() {
+            debug!(""plaintext read {:?}"", buf.len());
+            self.incoming_plaintext(&buf);
+        }
+    }",0,,
+"    pub fn globals_mut(&mut self) -> &mut [GlobalValue] {
+        unsafe { self.alloc.globals_mut() }
+    }",0,,
+"    fn pop_split_hole(&mut self) -> ResultOrEmpty {
+        self.insts.pop();
+        Ok(None)
+    }",0,,
+"fn test_stxdw() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov r2, -2005440939
+        lsh r2, 32
+        or r2, 0x44332211
+        stxdw [r1+2], r2
+        ldxdw r0, [r1+2]
+        exit"",
+        [
+            0xaa, 0xbb, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, //
+            0xff, 0xff, 0xcc, 0xdd, //
+        ],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x8877665544332211 } },
+        6
+    );
+}",0,,
+"    fn get(&mut self, key: SuffixCacheKey, pc: InstPtr) -> Option<InstPtr> {
+        let hash = self.hash(&key);
+        let pos = &mut self.sparse[hash];
+        if let Some(entry) = self.dense.get(*pos) {
+            if entry.key == key {
+                return Some(entry.pc);
+            }
+        }
+        *pos = self.dense.len();
+        self.dense.push(SuffixCacheEntry { key: key, pc: pc });
+        None
+    }",0,,
+"fn new(live_refs: Arc<AtomicUsize>) -> Self {
+            live_refs.fetch_add(1, SeqCst);
+            Self { live_refs }
+        }",0,,
+"fn test_mov32_imm_large() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov32 r0, -1
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0xffffffff } },
+        2
+    );
+}",0,,
+"fn test_stb() {
+    test_interpreter_and_jit_asm!(
+        ""
+        stb [r1+2], 0x11
+        ldxb r0, [r1+2]
+        exit"",
+        [0xaa, 0xbb, 0xff, 0xcc, 0xdd],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x11 } },
+        3
+    );
+}",0,,
+"fn special_endpoints(content_fetcher: Arc<apps::fetcher::Fetcher>) -> HashMap<router::SpecialEndpoint, Option<Box<endpoint::Endpoint>>> {
+	let mut special = HashMap::new();
+	special.insert(router::SpecialEndpoint::Rpc, None);
+	special.insert(router::SpecialEndpoint::Utils, Some(apps::utils()));
+	special.insert(router::SpecialEndpoint::Api, Some(api::RestApi::new(content_fetcher)));
+	special
+}",0,,
+"pub fn is_high(&self) -> bool {
+        let mut yes: bool = false;
+        let mut no: bool = false;
+        no = no || (self.0[7] < SECP256K1_N_H_7);
+        yes = yes || ((self.0[7] > SECP256K1_N_H_7) & !no);
+        no = no || ((self.0[6] < SECP256K1_N_H_6) & !yes); /* No need for a > check. */
+        no = no || ((self.0[5] < SECP256K1_N_H_5) & !yes); /* No need for a > check. */
+        no = no || ((self.0[4] < SECP256K1_N_H_4) & !yes); /* No need for a > check. */
+        no = no || ((self.0[3] < SECP256K1_N_H_3) & !yes);
+        yes = yes || ((self.0[3] > SECP256K1_N_H_3) && !no);
+        no = no || ((self.0[2] < SECP256K1_N_H_2) && !yes);
+        yes = yes || ((self.0[2] > SECP256K1_N_H_2) && !no);
+        no = no || ((self.0[1] < SECP256K1_N_H_1) && !yes);
+        yes = yes || ((self.0[1] > SECP256K1_N_H_1) && !no);
+        yes = yes || ((self.0[0] >= SECP256K1_N_H_0) && !no);
+        return yes;
+    }",0,,
+"fn test_ldxb() {
+    test_interpreter_and_jit_asm!(
+        ""
+        ldxb r0, [r1+2]
+        exit"",
+        [0xaa, 0xbb, 0x11, 0xcc, 0xdd],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x11 } },
+        2
+    );
+}",0,,
+"    fn new(socket: TcpStream,
+           token: mio::Token,
+           mode: ServerMode,
+           tls_session: rustls::ServerSession)
+           -> Connection {
+        let back = open_back(&mode);
+        Connection {
+            socket,
+            token,
+            closing: false,
+            closed: false,
+            mode,
+            tls_session,
+            back,
+            sent_http_response: false,
+        }
+    }",0,,
+"fn test_reloc_64_relative_data_pre_sbfv2() {
+    // Before https://github.com/solana-labs/llvm-project/pull/35, we used to
+    // generate invalid R_BPF_64_RELATIVE relocations in sections other than
+    // .text.
+    //
+    // This test checks that the old behaviour is maintained for backwards
+    // compatibility when dealing with non-sbfv2 files. See also Elf::relocate().
+    //
+    // The program returns the address of the first .rodata byte.
+    // [ 1] .text             PROGBITS        00000000000000e8 0000e8 000020 00  AX  0   0  8
+    // [ 2] .rodata           PROGBITS        0000000000000108 000108 000019 01 AMS  0   0  1
+    //
+    // 00000000000001f8 <FILE>:
+    // 63:       00 00 00 00 08 01 00 00
+    test_interpreter_and_jit_elf!(
+        ""tests/elfs/reloc_64_relative_data_pre_sbfv2.so"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == ebpf::MM_PROGRAM_START + 0x108 } },
+        3
+    );
+}",0,,
+"fn reset_storage(&mut self, address: H160) {
+		let _ = <AccountStorages<T>>::remove_prefix(address, None);
+	}",0,,
+"fn test_neg64() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov32 r0, 2
+        neg r0
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0xfffffffffffffffe } },
+        3
+    );
+}",0,,
+"    pub fn diagnostic(self, source_code: &str) -> Diagnostic {
+        Diagnostic::from_parse_error(self, source_code)
+    }",0,,
+"pub fn execute(&mut self, action: Vec<u8>) {
+            self.sender.send(WhatToDo::NewJob(action)).unwrap();
+        }",0,,
+"fn new<E: UserDefinedError>(pc: usize, code_size: usize) -> Result<Self, EbpfError<E>> {
+        #[cfg(target_os = ""windows"")]
+        {
+            Ok(Self {
+                page_size: 0,
+                pc_section: &mut [],
+                text_section: &mut [],
+            })
+        }
+        #[cfg(not(target_os = ""windows""))]
+        unsafe {
+            let page_size = libc::sysconf(libc::_SC_PAGESIZE) as usize;
+            let pc_loc_table_size = round_to_page_size(pc * 8, page_size);
+            let over_allocated_code_size = round_to_page_size(code_size, page_size);
+            let mut raw: *mut libc::c_void = std::ptr::null_mut();
+            libc_error_guard!(mmap, &mut raw, pc_loc_table_size + over_allocated_code_size, libc::PROT_READ | libc::PROT_WRITE, libc::MAP_ANONYMOUS | libc::MAP_PRIVATE, 0, 0);
+            Ok(Self {
+                page_size,
+                pc_section: std::slice::from_raw_parts_mut(raw as *mut u64, pc),
+                text_section: std::slice::from_raw_parts_mut(raw.add(pc_loc_table_size) as *mut u8, over_allocated_code_size),
+            })
+        }
+    }",0,,
+"pub fn serialize(&self) -> [u8; util::MESSAGE_SIZE] {
+        self.0.b32()
+    }",0,,
+"pub unsafe fn from_raw(ptr: *mut u8) -> Self {
+        debug_assert!(!ptr.is_null());
+        VMExternRef(NonNull::new_unchecked(ptr).cast())
+    }",0,,
+"    fn block_succs(&self, block: BlockIx) -> Cow<[BlockIx]> {
+        let (start, end) = self.block_succ_range[block.get() as usize];
+        Cow::Borrowed(&self.block_succs[start..end])
+    }",0,,
+"	fn to_async_handler(&self, path: EndpointPath, control: hyper::Control) -> Box<Handler> {
+		Box::new(WebHandler {
+			control: control,
+			state: State::Initial,
+			path: path,
+			remote: self.remote.clone(),
+			fetch: self.fetch.clone(),
+			web_proxy_tokens: self.web_proxy_tokens.clone(),
+			embeddable_on: self.embeddable_on.clone(),
+		})
+	}",0,,
+"pub(crate) fn to_wasm_type(&self) -> WasmType {
+        match self {
+            Self::I32 => WasmType::I32,
+            Self::I64 => WasmType::I64,
+            Self::F32 => WasmType::F32,
+            Self::F64 => WasmType::F64,
+            Self::V128 => WasmType::V128,
+            Self::FuncRef => WasmType::FuncRef,
+            Self::ExternRef => WasmType::ExternRef,
+        }
+    }",0,,
+"    fn alloc(&mut self, amt: usize) -> bool {
+        match self.remaining_memory.checked_sub(amt) {
+            Some(mem) => {
+                self.remaining_memory = mem;
+                true
+            }
+            None => {
+                self.oom = true;
+                false
+            }
+        }
+    }",0,,
+"fn drop(&mut self) {
+        // Make sure that the permit is returned to the semaphore
+        // in the case that there is a panic inside
+        self.climit.add_permits(1);
+    }",0,,
+"fn test_err_exit_capped() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov64 r1, 0x1
+        lsh64 r1, 0x20
+        or64 r1, 0x20
+        callx r1
+        exit
+        "",
+        [],
+        (),
+        0,
+        {
+            |_vm, res: Result| {
+                matches!(res.unwrap_err(),
+                    EbpfError::ExceededMaxInstructions(pc, initial_insn_count) if pc == 34 && initial_insn_count == 5
+                )
+            }
+        },
+        5
+    );
+    test_interpreter_and_jit_asm!(
+        ""
+        mov64 r1, 0x1
+        lsh64 r1, 0x20
+        or64 r1, 0x20
+        callx r1
+        mov r0, r0
+        exit
+        "",
+        [],
+        (),
+        0,
+        {
+            |_vm, res: Result| {
+                matches!(res.unwrap_err(),
+                    EbpfError::ExceededMaxInstructions(pc, initial_insn_count) if pc == 35 && initial_insn_count == 6
+                )
+            }
+        },
+        6
+    );
+    test_interpreter_and_jit_asm!(
+        ""
+        call 0
+        mov r0, r0
+        exit
+        "",
+        [],
+        (),
+        0,
+        {
+            |_vm, res: Result| {
+                matches!(res.unwrap_err(),
+                    EbpfError::ExceededMaxInstructions(pc, initial_insn_count) if pc == 32 && initial_insn_count == 3
+                )
+            }
+        },
+        3
+    );
+}",0,,
+"    pub fn params(&self) -> impl ExactSizeIterator<Item = ValType> + '_ {
+        self.sig.params.iter().map(ValType::from_wasm_type)
+    }
+
+    /// Returns the list of result types for this function.
+    pub fn results(&self) -> impl ExactSizeIterator<Item = ValType> + '_ {
+        self.sig.returns.iter().map(ValType::from_wasm_type)
+    }",1,"1,6",        self.sig.params.iter().map(ValType::from_wasm_type)/~/        self.sig.returns.iter().map(ValType::from_wasm_type)
+"fn block_hash(number: u32) -> H256 {
+		BlockHash::<T>::get(U256::from(number))
+	}",0,,
+"    fn from(ty: MemoryType) -> ExternType {
+        ExternType::Memory(ty)
+    }",0,,
+"pub(crate) unsafe fn drop_and_dealloc(mut data: NonNull<VMExternData>) {
+        // Note: we introduce a block scope so that we drop the live
+        // reference to the data before we free the heap allocation it
+        // resides within after this block.
+        let (alloc_ptr, layout) = {
+            let data = data.as_mut();
+            debug_assert_eq!(data.ref_count.load(Ordering::SeqCst), 0);
+
+            // Same thing, but for the dropping the reference to `value` before
+            // we drop it itself.
+            let (layout, _) = {
+                let value = data.value_ptr.as_ref();
+                Self::layout_for(mem::size_of_val(value), mem::align_of_val(value))
+            };
+
+            ptr::drop_in_place(data.value_ptr.as_ptr());
+            let alloc_ptr = data.value_ptr.cast::<u8>();
+
+            (alloc_ptr, layout)
+        };
+
+        ptr::drop_in_place(data.as_ptr());
+        std::alloc::dealloc(alloc_ptr.as_ptr(), layout);
+    }",0,,
+"fn test_err_ldindb_nomem() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov64 r1, 0x5
+        ldindb r1, 0x33
+        exit"",
+        [],
+        (),
+        0,
+        {
+            |_vm, res: Result| {
+                matches!(res.unwrap_err(),
+                    EbpfError::AccessViolation(pc, access_type, vm_addr, len, name)
+                    if access_type == AccessType::Load && pc == 30 && vm_addr == 0x400000038 && len == 1 && name == ""input""
+                )
+            }
+        },
+        2
+    );
+}",0,,
+"pub fn execute(
+		from: H160,
+		input: Vec<u8>,
+		value: U256,
+		gas_limit: U256,
+		gas_price: Option<U256>,
+		nonce: Option<U256>,
+		action: TransactionAction,
+		config: Option<evm::Config>,
+	) -> Result<(Option<H160>, Option<H160>, CallOrCreateInfo), DispatchError> {
+		match action {
+			ethereum::TransactionAction::Call(target) => {
+				let res = T::Runner::call(
+					from,
+					target,
+					input.clone(),
+					value,
+					gas_limit.low_u64(),
+					gas_price,
+					nonce,
+					config.as_ref().unwrap_or(T::config()),
+				)
+				.map_err(Into::into)?;
+
+				Ok((Some(target), None, CallOrCreateInfo::Call(res)))
+			}
+			ethereum::TransactionAction::Create => {
+				let res = T::Runner::create(
+					from,
+					input.clone(),
+					value,
+					gas_limit.low_u64(),
+					gas_price,
+					nonce,
+					config.as_ref().unwrap_or(T::config()),
+				)
+				.map_err(Into::into)?;
+
+				Ok((None, Some(res.value), CallOrCreateInfo::Create(res)))
+			}
+		}
+	}",0,,
+"pub fn resize_offset(&mut self, offset: U256, len: U256) -> Result<(), ExitError> {
+		if len == U256::zero() {
+			return Ok(())
+		}
+
+		if let Some(end) = offset.checked_add(len) {
+			self.resize_end(end)
+		} else {
+			Err(ExitError::InvalidRange)
+		}
+	}",0,,
+"    fn clone(&self) -> TypedFunc<Params, Results> {
+        *self
+    }",0,,
+"    pub fn ensure_signal_handler_installed(&mut self, ensure: bool) {
+        self.ensure_signal_handler_installed = ensure;
+    }",0,,

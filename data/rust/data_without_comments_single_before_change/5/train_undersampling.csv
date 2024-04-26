@@ -1,0 +1,2598 @@
+processed_func,target,flaw_line_index,flaw_line
+"    fn c_repeat_one_or_more(
+        &mut self,
+        expr: &Hir,
+        greedy: bool,
+    ) -> ResultOrEmpty {
+        let Patch { hole: hole_rep, entry: entry_rep } = match self.c(expr)? {
+            Some(p) => p,
+            None => return Ok(None),
+        };
+        self.fill_to_next(hole_rep);
+        let split = self.push_split_hole();
+
+        let split_hole = if greedy {
+            self.fill_split(split, Some(entry_rep), None)
+        } else {
+            self.fill_split(split, None, Some(entry_rep))
+        };
+        Ok(Some(Patch { hole: split_hole, entry: entry_rep }))
+    }",0,,
+"pub fn serialize_der(&self) -> der::SignatureArray {
+        fn fill_scalar_with_leading_zero(scalar: &Scalar) -> [u8; 33] {
+            let mut ret = [0u8; 33];
+            scalar.fill_b32(array_mut_ref!(ret, 1, 32));
+            ret
+        }
+
+        let r_full = fill_scalar_with_leading_zero(&self.r);
+        let s_full = fill_scalar_with_leading_zero(&self.s);
+
+        fn integer_slice(full: &[u8; 33]) -> &[u8] {
+            let mut len = 33;
+            while len > 1 &&
+                full[full.len() - len] == 0 &&
+                full[full.len() - len + 1] < 0x80
+            {
+                len -= 1;
+            }
+            &full[(full.len() - len)..]
+        }
+
+        let r = integer_slice(&r_full);
+        let s = integer_slice(&s_full);
+
+        let mut ret = der::SignatureArray::new(6 + r.len() + s.len());
+        {
+            let l = ret.as_mut();
+            l[0] = 0x30;
+            l[1] = 4 + r.len() as u8 + s.len() as u8;
+            l[2] = 0x02;
+            l[3] = r.len() as u8;
+            l[4..(4 + r.len())].copy_from_slice(r);
+            l[4 + r.len()] = 0x02;
+            l[5 + r.len()] = s.len() as u8;
+            l[(6 + r.len())..(6 + r.len() + s.len())].copy_from_slice(s);
+        }
+
+        ret
+    }",0,,
+"pub fn set_int(&mut self, v: u32) {
+        self.0 = [v, 0, 0, 0, 0, 0, 0, 0];
+    }",0,,
+"    fn c_repeat_zero_or_more(
+        &mut self,
+        expr: &Hir,
+        greedy: bool,
+    ) -> ResultOrEmpty {
+        let split_entry = self.insts.len();
+        let split = self.push_split_hole();
+        let Patch { hole: hole_rep, entry: entry_rep } = match self.c(expr)? {
+            Some(p) => p,
+            None => return self.pop_split_hole(),
+        };
+
+        self.fill(hole_rep, split_entry);
+        let split_hole = if greedy {
+            self.fill_split(split, Some(entry_rep), None)
+        } else {
+            self.fill_split(split, None, Some(entry_rep))
+        };
+        Ok(Some(Patch { hole: split_hole, entry: split_entry }))
+    }",0,,
+"    pub fn new(
+        params: impl IntoIterator<Item = ValType>,
+        results: impl IntoIterator<Item = ValType>,
+    ) -> FuncType {
+        FuncType {
+            sig: WasmFuncType {
+                params: params.into_iter().map(|t| t.to_wasm_type()).collect(),
+                returns: results.into_iter().map(|t| t.to_wasm_type()).collect(),
+            },
+        }
+    }",1,"5,6,7,8","            sig: WasmFuncType {/~/                params: params.into_iter().map(|t| t.to_wasm_type()).collect(),/~/                returns: results.into_iter().map(|t| t.to_wasm_type()).collect(),/~/            },"
+"async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let args = set_command_line_args().get_matches();
+    env::set_var(""RUST_LOG"", ""swhkd=warn"");
+
+    if args.is_present(""debug"") {
+        env::set_var(""RUST_LOG"", ""swhkd=trace"");
+    }
+
+    env_logger::init();
+    log::trace!(""Logger initialized."");
+
+    let pidfile: String = String::from(""/tmp/swhkd.pid"");
+    if Path::new(&pidfile).exists() {
+        log::trace!(""Reading {} file and checking for running instances."", pidfile);
+        let swhkd_pid = match fs::read_to_string(&pidfile) {
+            Ok(swhkd_pid) => swhkd_pid,
+            Err(e) => {
+                log::error!(""Unable to read {} to check all running instances"", e);
+                exit(1);
+            }
+        };
+        log::debug!(""Previous PID: {}"", swhkd_pid);
+
+        let mut sys = System::new_all();
+        sys.refresh_all();
+        for (pid, process) in sys.processes() {
+            if pid.to_string() == swhkd_pid && process.exe() == env::current_exe().unwrap() {
+                log::error!(""Swhkd is already running!"");
+                log::error!(""pid of existing swhkd process: {}"", pid.to_string());
+                log::error!(""To close the existing swhkd process, run `sudo killall swhkd`"");
+                exit(1);
+            }
+        }
+    }
+
+    match fs::write(&pidfile, id().to_string()) {
+        Ok(_) => {}
+        Err(e) => {
+            log::error!(""Unable to write to {}: {}"", pidfile, e);
+            exit(1);
+        }
+    }
+
+    if check_user_permissions().is_err() {
+        exit(1);
+    }
+
+    let load_config = || {
+        seteuid(env::var(""PKEXEC_UID"").unwrap().parse::<u32>().unwrap()); 
+        let config_file_path: std::path::PathBuf = if args.is_present(""config"") {
+            Path::new(args.value_of(""config"").unwrap()).to_path_buf()
+        } else {
+            fetch_xdg_config_path()
+        };
+
+        log::debug!(""Using config file path: {:#?}"", config_file_path);
+
+        let hotkeys = match config::load(&config_file_path) {
+            Err(e) => {
+                log::error!(""Config Error: {}"", e);
+                exit(1);
+            }
+            Ok(out) => out,
+        };
+
+        for hotkey in &hotkeys {
+            log::debug!(""hotkey: {:#?}"", hotkey);
+        }
+
+        hotkeys
+    };
+
+    let mut hotkeys = load_config();
+    seteuid(0); 
+    log::trace!(""Attempting to find all keyboard file descriptors."");
+    let keyboard_devices: Vec<Device> =
+        evdev::enumerate().filter(check_device_is_keyboard).collect();
+
+    let mut uinput_device = match uinput::create_uinput_device() {
+        Ok(dev) => dev,
+        Err(e) => {
+            log::error!(""Err: {:#?}"", e);
+            exit(1);
+        }
+    };
+
+    if keyboard_devices.is_empty() {
+        log::error!(""No valid keyboard device was detected!"");
+        exit(1);
+    }
+    log::debug!(""{} Keyboard device(s) detected."", keyboard_devices.len());
+
+    let modifiers_map: HashMap<Key, config::Modifier> = HashMap::from([
+        (Key::KEY_LEFTMETA, config::Modifier::Super),
+        (Key::KEY_RIGHTMETA, config::Modifier::Super),
+        (Key::KEY_LEFTMETA, config::Modifier::Super),
+        (Key::KEY_RIGHTMETA, config::Modifier::Super),
+        (Key::KEY_LEFTALT, config::Modifier::Alt),
+        (Key::KEY_RIGHTALT, config::Modifier::Alt),
+        (Key::KEY_LEFTCTRL, config::Modifier::Control),
+        (Key::KEY_RIGHTCTRL, config::Modifier::Control),
+        (Key::KEY_LEFTSHIFT, config::Modifier::Shift),
+        (Key::KEY_RIGHTSHIFT, config::Modifier::Shift),
+    ]);
+
+    let repeat_cooldown_duration: u64 = if args.is_present(""cooldown"") {
+        args.value_of(""cooldown"").unwrap().parse::<u64>().unwrap()
+    } else {
+        250
+    };
+
+    let mut signals = Signals::new(&[
+        SIGUSR1, SIGUSR2, SIGHUP, SIGABRT, SIGBUS, SIGCHLD, SIGCONT, SIGINT, SIGPIPE, SIGQUIT,
+        SIGSYS, SIGTERM, SIGTRAP, SIGTSTP, SIGVTALRM, SIGXCPU, SIGXFSZ,
+    ])?;
+
+    let mut execution_is_paused = false;
+    let mut last_hotkey: Option<config::Hotkey> = None;
+    let mut pending_release: bool = false;
+    let mut keyboard_states: Vec<KeyboardState> = Vec::new();
+    let mut keyboard_stream_map = StreamMap::new();
+
+    for (i, mut device) in keyboard_devices.into_iter().enumerate() {
+        let _ = device.grab();
+        keyboard_stream_map.insert(i, device.into_event_stream()?);
+        keyboard_states.push(KeyboardState::new());
+    }
+
+    
+    let hotkey_repeat_timer = sleep(Duration::from_millis(0));
+    tokio::pin!(hotkey_repeat_timer);
+
+    loop {
+        select! {
+            _ = &mut hotkey_repeat_timer, if &last_hotkey.is_some() => {
+                let hotkey = last_hotkey.clone().unwrap();
+                if hotkey.keybinding.on_release {
+                    continue;
+                }
+                send_command(hotkey.clone());
+                hotkey_repeat_timer.as_mut().reset(Instant::now() + Duration::from_millis(repeat_cooldown_duration));
+            }
+
+            Some(signal) = signals.next() => {
+                match signal {
+                    SIGUSR1 => {
+                        execution_is_paused = true;
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.ungrab();
+                        }
+                    }
+
+                    SIGUSR2 => {
+                        execution_is_paused = false;
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.grab();
+                        }
+                    }
+
+                    SIGHUP => {
+                        hotkeys = load_config();
+                    }
+
+                    SIGINT => {
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.ungrab();
+                        }
+                        log::warn!(""Received SIGINT signal, exiting..."");
+                        exit(1);
+                    }
+
+                    _ => {
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.ungrab();
+                        }
+
+                        log::warn!(""Received signal: {:#?}"", signal);
+                        log::warn!(""Exiting..."");
+                        exit(1);
+                    }
+                }
+            }
+
+            Some((i, Ok(event))) = keyboard_stream_map.next() => {
+                let keyboard_state = &mut keyboard_states[i];
+
+                let key = match event.kind() {
+                    InputEventKind::Key(keycode) => keycode,
+                    _ => continue
+                };
+
+                match event.value() {
+                    
+                    1 => {
+                        if let Some(modifier) = modifiers_map.get(&key) {
+                            keyboard_state.state_modifiers.insert(*modifier);
+                        } else {
+                            keyboard_state.state_keysyms.insert(key);
+                        }
+                    }
+
+                    
+                    0 => {
+                        if last_hotkey.is_some() && pending_release {
+                            pending_release = false;
+                            send_command(last_hotkey.clone().unwrap());
+                            last_hotkey = None;
+                        }
+                        if let Some(modifier) = modifiers_map.get(&key) {
+                            if let Some(hotkey) = &last_hotkey {
+                                if hotkey.modifiers().contains(modifier) {
+                                    last_hotkey = None;
+                                }
+                            }
+                            keyboard_state.state_modifiers.remove(modifier);
+                        } else if keyboard_state.state_keysyms.contains(key) {
+                            if let Some(hotkey) = &last_hotkey {
+                                if key == hotkey.keysym() {
+                                    last_hotkey = None;
+                                }
+                            }
+                            keyboard_state.state_keysyms.remove(key);
+                        }
+                    }
+
+                    _ => {}
+                }
+
+                let possible_hotkeys: Vec<&config::Hotkey> = hotkeys.iter()
+                    .filter(|hotkey| hotkey.modifiers().len() == keyboard_state.state_modifiers.len())
+                    .collect();
+
+                let event_in_hotkeys = hotkeys.iter().any(|hotkey| {
+                    hotkey.keysym().code() == event.code() &&
+                    keyboard_state.state_modifiers
+                        .iter()
+                        .all(|x| hotkey.modifiers().contains(x)) &&
+                    keyboard_state.state_modifiers.len() == hotkey.modifiers().len()
+                    && !hotkey.is_send()
+                        });
+
+                
+                if !event_in_hotkeys {
+                    uinput_device.emit(&[event]).unwrap();
+                }
+
+                if execution_is_paused || possible_hotkeys.is_empty() || last_hotkey.is_some() {
+                    continue;
+                }
+
+                log::debug!(""state_modifiers: {:#?}"", keyboard_state.state_modifiers);
+                log::debug!(""state_keysyms: {:#?}"", keyboard_state.state_keysyms);
+                log::debug!(""hotkey: {:#?}"", possible_hotkeys);
+
+                for hotkey in possible_hotkeys {
+                    
+                    if keyboard_state.state_modifiers.iter().all(|x| hotkey.modifiers().contains(x))
+                        && keyboard_state.state_modifiers.len() == hotkey.modifiers().len()
+                        && keyboard_state.state_keysyms.contains(hotkey.keysym())
+                    {
+                        last_hotkey = Some(hotkey.clone());
+                        if pending_release { break; }
+                        if hotkey.is_on_release() {
+                            pending_release = true;
+                            break;
+                        }
+                        send_command(hotkey.clone());
+                        hotkey_repeat_timer.as_mut().reset(Instant::now() + Duration::from_millis(repeat_cooldown_duration));
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}",1,"11,48","let pidfile: String = String::from(""/tmp/swhkd.pid"");/~/        seteuid(env::var(""PKEXEC_UID"").unwrap().parse::<u32>().unwrap()); // Dropping privileges to invoking user."
+"	fn is_web_proxy_token_valid(&self, token: &str) -> bool;
+}
+
+impl<F> WebProxyTokens for F where F: Fn(String) -> bool + Send + Sync {
+	fn is_web_proxy_token_valid(&self, token: &str) -> bool { self(token.to_owned()) }
+}",1,"0,3,4","	fn is_web_proxy_token_valid(&self, token: &str) -> bool;/~/impl<F> WebProxyTokens for F where F: Fn(String) -> bool + Send + Sync {/~/	fn is_web_proxy_token_valid(&self, token: &str) -> bool { self(token.to_owned()) }"
+"pub fn to_wasm_binary(&self) -> Vec<u8> {
+        let mut module = Module::new();
+
+        
+        let mut imports = ImportSection::new();
+        imports.import("""", Some(""gc""), EntityType::Function(0));
+
+        
+        let mut tables = TableSection::new();
+        tables.table(TableType {
+            element_type: ValType::ExternRef,
+            minimum: self.table_size(),
+            maximum: None,
+        });
+
+        
+        let mut types = TypeSection::new();
+        types.function(vec![], vec![]); 
+        let mut params: Vec<ValType> = Vec::with_capacity(self.num_params() as usize);
+        for _i in 0..self.num_params() {
+            params.push(ValType::ExternRef);
+        }
+        let results = vec![];
+        types.function(params, results); 
+
+        
+        let mut functions = FunctionSection::new();
+        functions.function(1);
+
+        let mut exports = ExportSection::new();
+        exports.export(""run"", Export::Function(1));
+
+        let mut params: Vec<(u32, ValType)> = Vec::with_capacity(self.num_params() as usize);
+        for _i in 0..self.num_params() {
+            params.push((0, ValType::ExternRef));
+        }
+        let mut func = Function::new(params);
+
+        for op in self.ops.iter().take(MAX_OPS) {
+            op.insert(&mut func);
+        }
+
+        let mut code = CodeSection::new();
+        code.function(&func);
+
+        module
+            .section(&types)
+            .section(&imports)
+            .section(&functions)
+            .section(&tables)
+            .section(&exports)
+            .section(&code);
+
+        module.finish()
+    }",1,"15,16,17,18,19,20,21,22,23,24,30,32,33,34,35,36,39","// Encode the types for all functions that we are using./~/        let mut types = TypeSection::new();/~/        types.function(vec![], vec![]); // 0: ""gc""/~/        let mut params: Vec<ValType> = Vec::with_capacity(self.num_params() as usize);/~/        for _i in 0..self.num_params() {/~/            params.push(ValType::ExternRef);/~/        }/~/        let results = vec![];/~/        types.function(params, results); // 1: ""run""/~//~/        exports.export(""run"", Export::Function(1));/~/        let mut params: Vec<(u32, ValType)> = Vec::with_capacity(self.num_params() as usize);/~/        for _i in 0..self.num_params() {/~/            params.push((0, ValType::ExternRef));/~/        }/~/        let mut func = Function::new(params);/~/            op.insert(&mut func);"
+"fn calculate_multiplication_complexity(base_length: u64, mod_length: u64) -> u64 {
+		let max_length = max(base_length, mod_length);
+		let mut words = max_length / 8;
+		if max_length % 8 > 0 {
+			words += 1;
+		}
+
+		
+		words * words
+	}",1,7,		// TODO: prevent/handle overflow
+"    pub(crate) fn span(&self) -> Span {
+        self.tokens
+            .first()
+            .map(|&(_, span)| span)
+            .unwrap_or_else(|| (self.source.len()..self.source.len()).into())
+    }",0,,
+"pub async fn mksnap(handle: &CoreDB, con: &mut Connection, act: ActionGroup) -> TResult<()> {
+    let howmany = act.howmany();
+    if howmany == 0 {
+        if !handle.is_snapshot_enabled() {
+            
+            
+            let error = ""err-snapshot-disabled"";
+            con.write_response(GroupBegin(1)).await?;
+            let error = RespCodes::OtherError(Some(error.to_string()));
+            return con.write_response(error).await;
+        }
+        
+        let mut was_engine_error = false;
+        let mut snap_result = None;
+        let mut engine_was_busy = false;
+        {
+            let snaphandle = handle.snapcfg.clone();
+            let snapstatus = (*snaphandle)
+                .as_ref()
+                .unwrap_or_else(|| unsafe { unreachable_unchecked() });
+            let snapengine = SnapshotEngine::new(snapstatus.max, &handle, None);
+            if snapengine.is_err() {
+                was_engine_error = true;
+            } else {
+                if snapstatus.is_busy() {
+                    engine_was_busy = true;
+                } else {
+                    let mut snapengine =
+                        snapengine.unwrap_or_else(|_| unsafe { unreachable_unchecked() });
+
+                    snap_result = snapengine.mksnap();
+                }
+            }
+        }
+        if was_engine_error {
+            return con
+                .write_response(responses::fresp::R_SERVER_ERR.to_owned())
+                .await;
+        }
+        if engine_was_busy {
+            con.write_response(GroupBegin(1)).await?;
+            let error = RespCodes::OtherError(Some(""err-snapshot-busy"".to_owned()));
+            return con.write_response(error).await;
+        }
+        if let Some(succeeded) = snap_result {
+            if succeeded {
+                
+                return con
+                    .write_response(responses::fresp::R_OKAY.to_owned())
+                    .await;
+            } else {
+                
+                
+                return con
+                    .write_response(responses::fresp::R_SERVER_ERR.to_owned())
+                    .await;
+            }
+        } else {
+            
+            
+            con.write_response(GroupBegin(1)).await?;
+            let error = RespCodes::OtherError(Some(""err-access-after-termsig"".to_owned()));
+            return con.write_response(error).await;
+        }
+    } else {
+        if howmany == 1 {
+            
+            let snapname = act
+                .get_ref()
+                .get(1)
+                .unwrap_or_else(|| unsafe { unreachable_unchecked() });
+            let mut path = PathBuf::from(DIR_SNAPSHOT);
+            path.push(""remote"");
+            path.push(snapname.to_owned() + "".snapshot"");
+            let failed;
+            {
+                match diskstore::flush_data(&path, &handle.acquire_read().get_ref()) {
+                    Ok(_) => failed = false,
+                    Err(e) => {
+                        log::error!(""Error while creating snapshot: {}"", e);
+                        failed = true;
+                    }
+                }
+            }
+            if failed {
+                return con
+                    .write_response(responses::fresp::R_SERVER_ERR.to_owned())
+                    .await;
+            } else {
+                return con
+                    .write_response(responses::fresp::R_OKAY.to_owned())
+                    .await;
+            }
+        } else {
+            return con
+                .write_response(responses::fresp::R_ACTION_ERR.to_owned())
+                .await;
+        }
+    }
+}",1,99,}
+"fn correct_and_deposit_fee(
+		who: &H160,
+		corrected_fee: U256,
+		base_fee: U256,
+		already_withdrawn: Self::LiquidityInfo,
+	) -> Self::LiquidityInfo {
+		if let Some(paid) = already_withdrawn {
+			let account_id = T::AddressMapping::into_account_id(*who);
+
+			
+			let refund_amount = paid
+				.peek()
+				.saturating_sub(corrected_fee.low_u128().unique_saturated_into());
+			
+			
+			
+			let refund_imbalance = C::deposit_into_existing(&account_id, refund_amount)
+				.unwrap_or_else(|_| C::PositiveImbalance::zero());
+
+			
+			
+			
+			
+			let refund_imbalance = if C::minimum_balance().is_zero()
+				&& refund_amount > C::Balance::zero()
+				&& C::total_balance(&account_id).is_zero()
+			{
+				
+				
+				match C::make_free_balance_be(&account_id, refund_amount) {
+					SignedImbalance::Positive(p) => p,
+					_ => C::PositiveImbalance::zero(),
+				}
+			} else {
+				refund_imbalance
+			};
+
+			
+			let adjusted_paid = paid
+				.offset(refund_imbalance)
+				.same()
+				.unwrap_or_else(|_| C::NegativeImbalance::zero());
+
+			let (base_fee, tip) = adjusted_paid.split(base_fee.low_u128().unique_saturated_into());
+			
+			OU::on_unbalanced(base_fee);
+			return Some(tip);
+		}
+		None
+	}",1,"12,43",".saturating_sub(corrected_fee.low_u128().unique_saturated_into());/~/			let (base_fee, tip) = adjusted_paid.split(base_fee.low_u128().unique_saturated_into());"
+"pub fn ty(&self, store: impl AsContext) -> FuncType {
+        
+        
+        let store = store.as_context();
+        let sig_index = unsafe { store[self.0].export().anyfunc.as_ref().type_index };
+        FuncType::from_wasm_func_type(
+            store
+                .engine()
+                .signatures()
+                .lookup_type(sig_index)
+                .expect(""signature should be registered""),
+        )
+    }",0,,
+"fn test_err_dynamic_jmp_lddw() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov64 r8, 0x1
+        lsh64 r8, 0x20
+        or64 r8, 0x28
+        callx r8
+        lddw r0, 0x1122334455667788
+        exit"",
+        [],
+        (),
+        0,
+        {
+            |_vm, res: Result| {
+                matches!(res.unwrap_err(),
+                    EbpfError::UnsupportedInstruction(pc) if pc == 34
+                )
+            }
+        },
+        5
+    );
+    test_interpreter_and_jit_asm!(
+        ""
+        mov64 r1, 0x1
+        lsh64 r1, 0x20
+        or64 r1, 0x38
+        callx r1
+        mov r0, r0
+        mov r0, r0
+        lddw r0, 0x1122334455667788
+        exit
+        "",
+        [],
+        (),
+        0,
+        {
+            |_vm, res: Result| {
+                matches!(res.unwrap_err(),
+                    EbpfError::UnsupportedInstruction(pc) if pc == 36
+                )
+            }
+        },
+        5
+    );
+    test_interpreter_and_jit_asm!(
+        ""
+        lddw r1, 0x100000038
+        callx r1
+        mov r0, r0
+        mov r0, r0
+        exit
+        lddw r0, 0x1122334455667788
+        exit
+        "",
+        [],
+        (),
+        0,
+        {
+            |_vm, res: Result| {
+                matches!(res.unwrap_err(),
+                    EbpfError::UnsupportedInstruction(pc) if pc == 36
+                )
+            }
+        },
+        3
+    );
+}",0,,
+"pub fn clone_cstring_safely(out_ptr: *const c_char) -> Result<CString> {
+        if out_ptr.is_null() {
+            return_errno!(EINVAL, ""NULL address is invalid"");
+        }
+
+        let cstr = unsafe { CStr::from_ptr(out_ptr) };
+        let cstring = CString::from(cstr);
+        if !is_inside_user_space(out_ptr as *const u8, cstring.as_bytes().len()) {
+            return_errno!(EFAULT, ""the whole buffer is not in the user space"");
+        }
+        Ok(cstring)
+    }",1,7,"if !is_inside_user_space(out_ptr as *const u8, cstring.as_bytes().len()) {"
+"pub fn clear(&mut self) {
+        unsafe {
+            core::ptr::write_volatile(&mut self.0, [0u32; 8]);
+        }
+    }",0,,
+"fn test_ldxw() {
+    test_interpreter_and_jit_asm!(
+        ""
+        ldxw r0, [r1+2]
+        exit"",
+        [
+            0xaa, 0xbb, 0x11, 0x22, 0x33, 0x44, 0xcc, 0xdd, 
+        ],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x44332211 } },
+        2
+    );
+}",0,,
+"fn assert_same_export_func_result(
+        lhs: &Result<Box<[Val]>, Trap>,
+        rhs: &Result<Box<[Val]>, Trap>,
+        func_name: &str,
+    ) {
+        let fail = || {
+            panic!(
+                ""differential fuzzing failed: exported func {} returned two \
+                 different results: {:?} != {:?}"",
+                func_name, lhs, rhs
+            )
+        };
+
+        match (lhs, rhs) {
+            (Err(_), Err(_)) => {}
+            (Ok(lhs), Ok(rhs)) => {
+                if lhs.len() != rhs.len() {
+                    fail();
+                }
+                for (lhs, rhs) in lhs.iter().zip(rhs.iter()) {
+                    match (lhs, rhs) {
+                        (Val::I32(lhs), Val::I32(rhs)) if lhs == rhs => continue,
+                        (Val::I64(lhs), Val::I64(rhs)) if lhs == rhs => continue,
+                        (Val::V128(lhs), Val::V128(rhs)) if lhs == rhs => continue,
+                        (Val::F32(lhs), Val::F32(rhs)) if f32_equal(*lhs, *rhs) => continue,
+                        (Val::F64(lhs), Val::F64(rhs)) if f64_equal(*lhs, *rhs) => continue,
+                        (Val::ExternRef(_), Val::ExternRef(_))
+                        | (Val::FuncRef(_), Val::FuncRef(_)) => continue,
+                        _ => fail(),
+                    }
+                }
+            }
+            _ => fail(),
+        }
+    }",0,,
+"fn test_mov_large() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov32 r1, -1
+        mov32 r0, r1
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0xffffffff } },
+        3
+    );
+}",0,,
+"    pub fn resume(&mut self) -> Result<RunResult, Error> {
+        self.resume_with_val(EmptyYieldVal)
+    }",0,,
+"fn test_symbol_relocation() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov64 r1, r10
+        sub64 r1, 0x1
+        mov64 r2, 0x1
+        syscall BpfSyscallString
+        mov64 r0, 0x0
+        exit"",
+        [72, 101, 108, 108, 111],
+        (
+            b""BpfSyscallString"" => syscalls::BpfSyscallString::init::<BpfSyscallContext, UserError>; syscalls::BpfSyscallString::call
+        ),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0 } },
+        6
+    );
+}",0,,
+"    fn take_split(&self, count: usize) -> (Self, Self) {
+        let (left, right) = self.tokens.split_at(count);
+
+        (Input { source: self.source, tokens: left }, Input { source: self.source, tokens: right })
+    }",1,3,"        (Input { source: self.source, tokens: left }, Input { source: self.source, tokens: right })"
+"    pub async fn run(&mut self) -> TResult<()> {
+        loop {
+            
+            
+            self.base.climit.acquire().await.unwrap().forget();
+            let stream = self.accept().await?;
+            let mut chandle = ConnectionHandler::new(
+                self.base.db.clone(),
+                Connection::new(stream),
+                self.base.climit.clone(),
+                Terminator::new(self.base.signal.subscribe()),
+                self.base.terminate_tx.clone(),
+            );
+            tokio::spawn(async move {
+                if let Err(e) = chandle.run().await {
+                    log::error!(""Error: {}"", e);
+                }
+            });
+        }
+    }",1,5,            let stream = self.accept().await?;
+"pub fn inv(&self) -> Self {
+        SecretKey(self.0.inv())
+    }",0,,
+"pub fn seteuid(uid: u32) {
+    let uid = nix::unistd::Uid::from_raw(uid);
+    match nix::unistd::seteuid(uid) {
+        Ok(_) => log::debug!(""Dropping privileges...""),
+        Err(e) => {
+            log::error!(""Failed to set UID: {:#?}"", e);
+            exit(1);
+        }
+    }
+}",1,"1,5","    let uid = nix::unistd::Uid::from_raw(uid);/~/            log::error!(""Failed to set UID: {:#?}"", e);"
+"fn main() {
+    benchtool::runner();
+}",1,2,}
+"pub fn set_command_line_args() -> Command<'static> {
+    let app = Command::new(""swhkd"")
+        .version(env!(""CARGO_PKG_VERSION""))
+        .author(env!(""CARGO_PKG_AUTHORS""))
+        .about(""Simple Wayland HotKey Daemon"")
+        .arg(
+            arg!(-c --config <CONFIG_FILE_PATH>)
+                .required(false)
+                .takes_value(true)
+                .help(""Set a custom config file path.""),
+        )
+        .arg(
+            arg!(-C --cooldown <COOLDOWN_IN_MS>)
+                .required(false)
+                .takes_value(true)
+                .help(""Set a custom repeat cooldown duration. Default is 250ms.""),
+        )
+        .arg(arg!(-d - -debug).required(false).help(""Enable debug mode.""));
+    app
+}",0,,
+"fn test_tight_infinite_loop_conditional() {
+    test_interpreter_and_jit_asm!(
+        ""
+        jsge r0, r0, -1
+        exit"",
+        [],
+        (),
+        0,
+        {
+            |_vm, res: Result| {
+                matches!(res.unwrap_err(),
+                    EbpfError::ExceededMaxInstructions(pc, initial_insn_count)
+                    if pc == 30 && initial_insn_count == 4
+                )
+            }
+        },
+        4
+    );
+}",0,,
+"pub fn parse_script(script_str: &str) -> Result<ast::Script> {
+    let stripped_string = &strip_comments(script_str);
+    let parser = syntax::ScriptParser::new();
+    match parser.parse(stripped_string) {
+        Ok(script) => Ok(script),
+        Err(e) => handle_error(e, script_str),
+    }
+}",1,"1,5","    let stripped_string = &strip_comments(script_str);/~/        Err(e) => handle_error(e, script_str),"
+"fn do_transact(source: H160, transaction: Transaction) -> DispatchResultWithPostInfo {
+		let transaction_hash =
+			H256::from_slice(Keccak256::digest(&rlp::encode(&transaction)).as_slice());
+		let transaction_index = Pending::<T>::get().len() as u32;
+
+		let (to, _, info) = Self::execute(
+			source,
+			transaction.input.clone(),
+			transaction.value,
+			transaction.gas_limit,
+			Some(transaction.gas_price),
+			Some(transaction.nonce),
+			transaction.action,
+			None,
+		)?;
+
+		let (reason, status, used_gas, dest) = match info {
+			CallOrCreateInfo::Call(info) => (
+				info.exit_reason,
+				TransactionStatus {
+					transaction_hash,
+					transaction_index,
+					from: source,
+					to,
+					contract_address: None,
+					logs: info.logs.clone(),
+					logs_bloom: {
+						let mut bloom: Bloom = Bloom::default();
+						Self::logs_bloom(info.logs, &mut bloom);
+						bloom
+					},
+				},
+				info.used_gas,
+				to,
+			),
+			CallOrCreateInfo::Create(info) => (
+				info.exit_reason,
+				TransactionStatus {
+					transaction_hash,
+					transaction_index,
+					from: source,
+					to,
+					contract_address: Some(info.value),
+					logs: info.logs.clone(),
+					logs_bloom: {
+						let mut bloom: Bloom = Bloom::default();
+						Self::logs_bloom(info.logs, &mut bloom);
+						bloom
+					},
+				},
+				info.used_gas,
+				Some(info.value),
+			),
+		};
+
+		let receipt = ethereum::Receipt {
+			state_root: match reason {
+				ExitReason::Succeed(_) => H256::from_low_u64_be(1),
+				ExitReason::Error(_) => H256::from_low_u64_le(0),
+				ExitReason::Revert(_) => H256::from_low_u64_le(0),
+				ExitReason::Fatal(_) => H256::from_low_u64_le(0),
+			},
+			used_gas,
+			logs_bloom: status.clone().logs_bloom,
+			logs: status.clone().logs,
+		};
+
+		Pending::<T>::append((transaction, status, receipt));
+
+		Self::deposit_event(Event::Executed(
+			source,
+			dest.unwrap_or_default(),
+			transaction_hash,
+			reason,
+		));
+		Ok(PostDispatchInfo {
+			actual_weight: Some(T::GasWeightMapping::gas_to_weight(
+				used_gas.unique_saturated_into(),
+			)),
+			pays_fee: Pays::No,
+		})
+		.into()
+	}",1,0,"fn do_transact(source: H160, transaction: Transaction) -> DispatchResultWithPostInfo {"
+"    fn try_from(ty: wasmparser::FuncType) -> Result<Self, Self::Error> {
+        Ok(Self {
+            params: ty
+                .params
+                .into_vec()
+                .into_iter()
+                .map(WasmType::try_from)
+                .collect::<Result<_, Self::Error>>()?,
+            returns: ty
+                .returns
+                .into_vec()
+                .into_iter()
+                .map(WasmType::try_from)
+                .collect::<Result<_, Self::Error>>()?,
+        })
+    }",1,"1,2,3,4,5,6,7,8,9,10,11,12,13,14","        Ok(Self {/~/            params: ty/~/                .params/~/                .into_vec()/~/                .into_iter()/~/                .map(WasmType::try_from)/~/                .collect::<Result<_, Self::Error>>()?,/~/            returns: ty/~/                .returns/~/                .into_vec()/~/                .into_iter()/~/                .map(WasmType::try_from)/~/                .collect::<Result<_, Self::Error>>()?,/~/        })"
+"fn calculate_iteration_count(exp_length: u64, exponent: &BigUint) -> u64 {
+		let mut iteration_count: u64 = 0;
+
+		if exp_length <= 32 && exponent.is_zero() {
+			iteration_count = 0;
+		} else if exp_length <= 32 {
+			iteration_count = exponent.bits() - 1;
+		} else if exp_length > 32 {
+			
+			let bytes: [u8; 32] = [0xFF; 32];
+			let max_256_bit_uint = BigUint::from_bytes_be(&bytes);
+
+			iteration_count =
+				(8 * (exp_length - 32)) + ((exponent.bitand(max_256_bit_uint)).bits() - 1);
+		}
+
+		max(iteration_count, 1)
+	}",1,13,(8 * (exp_length - 32)) + ((exponent.bitand(max_256_bit_uint)).bits() - 1);
+"fn extract_target_url(&self, url: Option<Url>) -> Result<String, State<F>> {
+		let token_and_url = self.path.app_params.get(0)
+			.map(|encoded| encoded.replace('.', """"))
+			.and_then(|encoded| base32::decode(base32::Alphabet::Crockford, &encoded.to_uppercase()))
+			.and_then(|data| String::from_utf8(data).ok())
+			.ok_or_else(|| State::Error(ContentHandler::error(
+				StatusCode::BadRequest,
+				""Invalid parameter"",
+				""Couldn't parse given parameter:"",
+				self.path.app_params.get(0).map(String::as_str),
+				self.embeddable_on.clone()
+			)))?;
+
+		let mut token_it = token_and_url.split('+');
+		let token = token_it.next();
+		let target_url = token_it.next();
+
+		
+		match token {
+			Some(token) if self.web_proxy_tokens.is_web_proxy_token_valid(token) => {},
+			_ => {
+				return Err(State::Error(ContentHandler::error(
+					StatusCode::BadRequest, ""Invalid Access Token"", ""Invalid or old web proxy access token supplied."", Some(""Try refreshing the page.""), self.embeddable_on.clone()
+				)));
+			}
+		}
+
+		
+		let mut target_url = match target_url {
+			Some(url) if url.starts_with(""http://"") || url.starts_with(""https://"") => url.to_owned(),
+			_ => {
+				return Err(State::Error(ContentHandler::error(
+					StatusCode::BadRequest, ""Invalid Protocol"", ""Invalid protocol used."", None, self.embeddable_on.clone()
+				)));
+			}
+		};
+
+		if !target_url.ends_with(""/"") {
+			target_url = format!(""{}/"", target_url);
+		}
+
+		
+		let (path, query) = match (&url, self.path.using_dapps_domains) {
+			(&Some(ref url), true) => (&url.path[..], &url.query),
+			(&Some(ref url), false) => (&url.path[2..], &url.query),
+			_ => {
+				return Err(State::Error(ContentHandler::error(
+					StatusCode::BadRequest, ""Invalid URL"", ""Couldn't parse URL"", None, self.embeddable_on.clone()
+				)));
+			}
+		};
+
+		let query = match *query {
+			Some(ref query) => format!(""?{}"", query),
+			None => """".into(),
+		};
+
+		Ok(format!(""{}{}{}"", target_url, path.join(""/""), query))
+	}",1,"18,19,25","		match token {/~/			Some(token) if self.web_proxy_tokens.is_web_proxy_token_valid(token) => {},/~/		}"
+"fn from(ty: WasmType) -> wasmparser::Type {
+        match ty {
+            WasmType::I32 => wasmparser::Type::I32,
+            WasmType::I64 => wasmparser::Type::I64,
+            WasmType::F32 => wasmparser::Type::F32,
+            WasmType::F64 => wasmparser::Type::F64,
+            WasmType::V128 => wasmparser::Type::V128,
+            WasmType::FuncRef => wasmparser::Type::FuncRef,
+            WasmType::ExternRef => wasmparser::Type::ExternRef,
+            WasmType::ExnRef => wasmparser::Type::ExnRef,
+        }
+    }",0,,
+"fn try_pager(
+        single_screen_action: SingleScreenAction,
+        wrapping_mode: WrappingMode,
+        pager_from_config: Option<&str>,
+    ) -> Result<Self> {
+        use crate::pager::{self, PagerKind, PagerSource};
+        use std::process::{Command, Stdio};
+
+        let pager_opt =
+            pager::get_pager(pager_from_config).chain_err(|| ""Could not parse pager command."")?;
+
+        let pager = match pager_opt {
+            Some(pager) => pager,
+            None => return Ok(OutputType::stdout()),
+        };
+
+        if pager.kind == PagerKind::Bat {
+            return Err(ErrorKind::InvalidPagerValueBat.into());
+        }
+
+        let mut p = Command::new(&pager.bin);
+        let args = pager.args;
+
+        if pager.kind == PagerKind::Less {
+            
+            
+            
+            
+            
+            
+            let replace_arguments_to_less = pager.source == PagerSource::EnvVarPager;
+
+            if args.is_empty() || replace_arguments_to_less {
+                p.arg(""--RAW-CONTROL-CHARS"");
+                if single_screen_action == SingleScreenAction::Quit {
+                    p.arg(""--quit-if-one-screen"");
+                }
+
+                if wrapping_mode == WrappingMode::NoWrapping(true) {
+                    p.arg(""--chop-long-lines"");
+                }
+
+                
+                
+                
+                
+                
+                
+                
+                match retrieve_less_version(&pager.bin) {
+                    None => {
+                        p.arg(""--no-init"");
+                    }
+                    Some(version) if (version < 530 || (cfg!(windows) && version < 558)) => {
+                        p.arg(""--no-init"");
+                    }
+                    _ => {}
+                }
+            } else {
+                p.args(args);
+            }
+            p.env(""LESSCHARSET"", ""UTF-8"");
+        } else {
+            p.args(args);
+        };
+
+        Ok(p.stdin(Stdio::piped())
+            .spawn()
+            .map(OutputType::Pager)
+            .unwrap_or_else(|_| OutputType::stdout()))
+    }",1,20,        let mut p = Command::new(&pager.bin);
+"fn test_jsgt_imm() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov32 r0, 0
+        mov r1, -2
+        jsgt r1, -1, +4
+        mov32 r0, 1
+        mov32 r1, 0
+        jsgt r1, -1, +1
+        mov32 r0, 2
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x1 } },
+        7
+    );
+}",0,,
+"    fn take(&self, count: usize) -> Self {
+        let tokens = &self.tokens[..count];
+
+        Input { source: self.source, tokens }
+    }",1,3,"        Input { source: self.source, tokens }"
+"fn table_end_is_at_correct_offset() {
+        let table = VMExternRefActivationsTable::new();
+
+        let table_ptr = &table as *const _;
+        let end_ptr = &table.alloc.end as *const _;
+
+        let actual_offset = (end_ptr as usize) - (table_ptr as usize);
+
+        let offsets = wasmtime_environ::VMOffsets::from(wasmtime_environ::VMOffsetsFields {
+            ptr: 8,
+            num_signature_ids: 0,
+            num_imported_functions: 0,
+            num_imported_tables: 0,
+            num_imported_memories: 0,
+            num_imported_globals: 0,
+            num_defined_functions: 0,
+            num_defined_tables: 0,
+            num_defined_memories: 0,
+            num_defined_globals: 0,
+        });
+        assert_eq!(
+            offsets.vm_extern_ref_activation_table_end() as usize,
+            actual_offset
+        );
+    }",0,,
+"	pub fn dapps_middleware(
+		deps: Dependencies,
+		dapps_path: PathBuf,
+		extra_dapps: Vec<PathBuf>,
+		dapps_domain: String,
+	) -> Result<Middleware, String> {
+		let signer = deps.signer;
+		let parity_remote = parity_reactor::Remote::new(deps.remote.clone());
+		let web_proxy_tokens = Arc::new(move |token| signer.is_valid_web_proxy_access_token(&token));
+
+		Ok(parity_dapps::Middleware::dapps(
+			parity_remote,
+			deps.ui_address,
+			dapps_path,
+			extra_dapps,
+			dapps_domain,
+			deps.contract_client,
+			deps.sync_status,
+			web_proxy_tokens,
+			deps.fetch,
+		))
+	}",1,8,		let web_proxy_tokens = Arc::new(move |token| signer.is_valid_web_proxy_access_token(&token));
+"fn show_syntax_themes() -> std::io::Result<()> {
+    let mut opt = cli::Opt::from_args();
+    let assets = HighlightingAssets::new();
+    let mut output_type = OutputType::from_mode(
+        PagingMode::QuitIfOneScreen,
+        None,
+        &config::Config::from(cli::Opt::default()),
+    )
+    .unwrap();
+    let mut writer = output_type.handle().unwrap();
+    opt.computed.syntax_set = assets.syntax_set;
+
+    let stdin_data = if !atty::is(atty::Stream::Stdin) {
+        let mut buf = Vec::new();
+        io::stdin().lock().read_to_end(&mut buf)?;
+        if !buf.is_empty() {
+            Some(buf)
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
+    if !(opt.dark || opt.light) {
+        _show_syntax_themes(opt.clone(), false, &mut writer, stdin_data.as_ref())?;
+        _show_syntax_themes(opt, true, &mut writer, stdin_data.as_ref())?;
+    } else if opt.light {
+        _show_syntax_themes(opt, true, &mut writer, stdin_data.as_ref())?;
+    } else {
+        _show_syntax_themes(opt, false, &mut writer, stdin_data.as_ref())?
+    };
+    Ok(())
+}",0,,
+"pub fn recover(message: &Message, signature: &Signature, recovery_id: &RecoveryId) -> Result<PublicKey, Error> {
+    ECMULT_CONTEXT.recover_raw(&signature.r, &signature.s, recovery_id.0, &message.0).map(|v| PublicKey(v))
+}",0,,
+"fn transfer(&mut self, transfer: Transfer) -> Result<(), ExitError> {
+		let source = T::AddressMapping::into_account_id(transfer.source);
+		let target = T::AddressMapping::into_account_id(transfer.target);
+
+		T::Currency::transfer(
+			&source,
+			&target,
+			transfer.value.low_u128().unique_saturated_into(),
+			ExistenceRequirement::AllowDeath,
+		)
+		.map_err(|_| ExitError::OutOfFund)
+	}",1,7,"transfer.value.low_u128().unique_saturated_into(),"
+"fn drop(&mut self) {
+            self.0.store(true, SeqCst);
+        }",0,,
+"fn try_pager(
+        quit_if_one_screen: bool,
+        pager_from_config: Option<String>,
+        config: &config::Config,
+    ) -> Result<Self> {
+        let mut replace_arguments_to_less = false;
+
+        let pager_from_env = match (
+            env::var(""DELTA_PAGER""),
+            env::var(""BAT_PAGER""),
+            env::var(""PAGER""),
+        ) {
+            (Ok(delta_pager), _, _) => Some(delta_pager),
+            (_, Ok(bat_pager), _) => Some(bat_pager),
+            (_, _, Ok(pager)) => {
+                
+                
+                
+                
+                replace_arguments_to_less = true;
+                Some(pager)
+            }
+            _ => None,
+        };
+
+        if pager_from_config.is_some() {
+            replace_arguments_to_less = false;
+        }
+
+        let pager = pager_from_config
+            .or(pager_from_env)
+            .unwrap_or_else(|| String::from(""less""));
+
+        let pagerflags =
+            shell_words::split(&pager).chain_err(|| ""Could not parse pager command."")?;
+
+        match pagerflags.split_first() {
+            Some((pager_name, args)) => {
+                let pager_path = PathBuf::from(pager_name);
+
+                let is_less = pager_path.file_stem() == Some(&OsString::from(""less""));
+
+                let mut process = if is_less {
+                    let mut p = Command::new(&pager_path);
+                    if args.is_empty() || replace_arguments_to_less {
+                        p.args(vec![""--RAW-CONTROL-CHARS""]);
+
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        match retrieve_less_version() {
+                            None => {
+                                p.arg(""--no-init"");
+                            }
+                            Some(version)
+                                if (version < 530 || (cfg!(windows) && version < 558)) =>
+                            {
+                                p.arg(""--no-init"");
+                            }
+                            _ => {}
+                        }
+
+                        if quit_if_one_screen {
+                            p.arg(""--quit-if-one-screen"");
+                        }
+                    } else {
+                        p.args(args);
+                    }
+                    p.env(""LESSCHARSET"", ""UTF-8"");
+                    p
+                } else {
+                    if pager_path.file_stem() == Some(&OsString::from(""delta"")) {
+                        eprintln!(
+                            ""\
+It looks like you have set delta as the value of $PAGER. \
+This would result in a non-terminating recursion. \
+delta is not an appropriate value for $PAGER \
+(but it is an appropriate value for $GIT_PAGER).""
+                        );
+                        std::process::exit(1);
+                    }
+                    let mut p = Command::new(&pager_path);
+                    p.args(args);
+                    p
+                };
+                if is_less && config.navigate {
+                    if let Ok(hist_file) =
+                        navigate::copy_less_hist_file_and_append_navigate_regexp(config)
+                    {
+                        process.env(""LESSHISTFILE"", hist_file);
+                        if config.show_themes {
+                            process.arg(""+n"");
+                        }
+                    }
+                }
+                Ok(process
+                    .env(""LESSANSIENDCHARS"", ""mK"")
+                    .stdin(Stdio::piped())
+                    .spawn()
+                    .map(OutputType::Pager)
+                    .unwrap_or_else(|_| OutputType::stdout()))
+            }
+            None => Ok(OutputType::stdout()),
+        }
+    }",1,"36,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,75,76,77,78,79,80,81,82,83,84,85,86,87,89,90,91,92,93,94,95,96,97,99,100,101,102,103,104,106,107","match pagerflags.split_first() {/~/                let mut process = if is_less {/~/                    let mut p = Command::new(&pager_path);/~/                    if args.is_empty() || replace_arguments_to_less {/~/                        p.args(vec![""--RAW-CONTROL-CHARS""]);/~//~/                        // Passing '--no-init' fixes a bug with '--quit-if-one-screen' in older/~/                        // versions of 'less'. Unfortunately, it also breaks mouse-wheel support./~/                        ///~/                        // See: http://www.greenwoodsoftware.com/less/news.530.html/~/                        ///~/                        // For newer versions (530 or 558 on Windows), we omit '--no-init' as it/~/                        // is not needed anymore./~/                        match retrieve_less_version() {/~/                            None => {/~/                                p.arg(""--no-init"");/~/                            }/~/                            Some(version)/~/                                if (version < 530 || (cfg!(windows) && version < 558)) =>/~/                            {/~/                                p.arg(""--no-init"");/~/                            }/~/                            _ => {}/~/                        }/~//~/                        if quit_if_one_screen {/~/                            p.arg(""--quit-if-one-screen"");/~/                        }/~/                    } else {/~/                        p.args(args);/~/                    }/~/                    p.env(""LESSCHARSET"", ""UTF-8"");/~/                    p/~/                    if pager_path.file_stem() == Some(&OsString::from(""delta"")) {/~/                        eprintln!(/~/                            ""\/~/It looks like you have set delta as the value of $PAGER. \/~/This would result in a non-terminating recursion. \/~/delta is not an appropriate value for $PAGER \/~/(but it is an appropriate value for $GIT_PAGER).""/~/                        );/~/                        std::process::exit(1);/~/                    }/~/                    let mut p = Command::new(&pager_path);/~/                    p.args(args);/~/                    p/~/                if is_less && config.navigate {/~/                    if let Ok(hist_file) =/~/                        navigate::copy_less_hist_file_and_append_navigate_regexp(config)/~/                    {/~/                        process.env(""LESSHISTFILE"", hist_file);/~/                        if config.show_themes {/~/                            process.arg(""+n"");/~/                        }/~/                    }/~/                Ok(process/~/                    .env(""LESSANSIENDCHARS"", ""mK"")/~/                    .stdin(Stdio::piped())/~/                    .spawn()/~/                    .map(OutputType::Pager)/~/                    .unwrap_or_else(|_| OutputType::stdout()))/~/            None => Ok(OutputType::stdout()),/~/        }"
+"fn test_jlt_reg() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov r0, 0
+        mov r1, 5
+        mov r2, 4
+        mov r3, 6
+        jlt r1, r2, +2
+        jlt r1, r1, +1
+        jlt r1, r3, +1
+        exit
+        mov r0, 1
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x1 } },
+        9
+    );
+}",0,,
+"pub fn pre_migrate_block_v2() -> Result<(), &'static str> {
+		let item = b""CurrentBlock"";
+		let block_v0 = frame_support::storage::migration::get_storage_value::<ethereum::BlockV0>(
+			Self::name().as_bytes(),
+			item,
+			&[],
+		);
+		if let Some(block_v0) = block_v0 {
+			Self::set_temp_storage(block_v0.header.number, ""number"");
+			Self::set_temp_storage(block_v0.header.parent_hash, ""parent_hash"");
+			Self::set_temp_storage(block_v0.transactions.len() as u64, ""transaction_len"");
+		}
+		Ok(())
+	}
+
+	#[cfg(feature = ""try-runtime"")]
+	pub fn post_migrate_block_v2() -> Result<(), &'static str> {
+		let v0_number =
+			Self::get_temp_storage(""number"").expect(""We stored a number; it should be there; qed"");
+		let v0_parent_hash = Self::get_temp_storage(""parent_hash"")
+			.expect(""We stored a parent hash; it should be there; qed"");
+		let v0_transaction_len: u64 = Self::get_temp_storage(""transaction_len"")
+			.expect(""We stored a transaction count; it should be there; qed"");
+
+		let item = b""CurrentBlock"";
+		let block_v2 = frame_support::storage::migration::get_storage_value::<ethereum::BlockV2>(
+			Self::name().as_bytes(),
+			item,
+			&[],
+		);
+
+		assert!(block_v2.is_some());
+
+		let block_v2 = block_v2.unwrap();
+		assert_eq!(block_v2.header.number, v0_number);
+		assert_eq!(block_v2.header.parent_hash, v0_parent_hash);
+		assert_eq!(block_v2.transactions.len() as u64, v0_transaction_len);
+		Ok(())
+	}",0,,
+"async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let args = set_command_line_args().get_matches();
+    env::set_var(""RUST_LOG"", ""swhkd=warn"");
+
+    if args.is_present(""debug"") {
+        env::set_var(""RUST_LOG"", ""swhkd=trace"");
+    }
+
+    env_logger::init();
+    log::trace!(""Logger initialized."");
+
+    let pidfile: String = String::from(""/tmp/swhkd.pid"");
+    if Path::new(&pidfile).exists() {
+        log::trace!(""Reading {} file and checking for running instances."", pidfile);
+        let swhkd_pid = match fs::read_to_string(&pidfile) {
+            Ok(swhkd_pid) => swhkd_pid,
+            Err(e) => {
+                log::error!(""Unable to read {} to check all running instances"", e);
+                exit(1);
+            }
+        };
+        log::debug!(""Previous PID: {}"", swhkd_pid);
+
+        let mut sys = System::new_all();
+        sys.refresh_all();
+        for (pid, process) in sys.processes() {
+            if pid.to_string() == swhkd_pid && process.exe() == env::current_exe().unwrap() {
+                log::error!(""Swhkd is already running!"");
+                log::error!(""pid of existing swhkd process: {}"", pid.to_string());
+                log::error!(""To close the existing swhkd process, run `sudo killall swhkd`"");
+                exit(1);
+            }
+        }
+    }
+
+    match fs::write(&pidfile, id().to_string()) {
+        Ok(_) => {}
+        Err(e) => {
+            log::error!(""Unable to write to {}: {}"", pidfile, e);
+            exit(1);
+        }
+    }
+
+    if check_user_permissions().is_err() {
+        exit(1);
+    }
+
+    let load_config = || {
+        seteuid(env::var(""PKEXEC_UID"").unwrap().parse::<u32>().unwrap()); 
+        let config_file_path: std::path::PathBuf = if args.is_present(""config"") {
+            Path::new(args.value_of(""config"").unwrap()).to_path_buf()
+        } else {
+            fetch_xdg_config_path()
+        };
+
+        log::debug!(""Using config file path: {:#?}"", config_file_path);
+
+        if !config_file_path.exists() {
+            log::error!(""{:#?} doesn't exist"", config_file_path);
+            exit(1);
+        }
+
+        let hotkeys = match config::load(&config_file_path) {
+            Err(e) => {
+                log::error!(""Config Error: {}"", e);
+                exit(1);
+            }
+            Ok(out) => out,
+        };
+
+        for hotkey in &hotkeys {
+            log::debug!(""hotkey: {:#?}"", hotkey);
+        }
+
+        hotkeys
+    };
+
+    let mut hotkeys = load_config();
+    seteuid(0); 
+    log::trace!(""Attempting to find all keyboard file descriptors."");
+    let keyboard_devices: Vec<Device> =
+        evdev::enumerate().filter(check_device_is_keyboard).collect();
+
+    let mut uinput_device = match uinput::create_uinput_device() {
+        Ok(dev) => dev,
+        Err(e) => {
+            log::error!(""Err: {:#?}"", e);
+            exit(1);
+        }
+    };
+
+    if keyboard_devices.is_empty() {
+        log::error!(""No valid keyboard device was detected!"");
+        exit(1);
+    }
+    log::debug!(""{} Keyboard device(s) detected."", keyboard_devices.len());
+
+    let modifiers_map: HashMap<Key, config::Modifier> = HashMap::from([
+        (Key::KEY_LEFTMETA, config::Modifier::Super),
+        (Key::KEY_RIGHTMETA, config::Modifier::Super),
+        (Key::KEY_LEFTMETA, config::Modifier::Super),
+        (Key::KEY_RIGHTMETA, config::Modifier::Super),
+        (Key::KEY_LEFTALT, config::Modifier::Alt),
+        (Key::KEY_RIGHTALT, config::Modifier::Alt),
+        (Key::KEY_LEFTCTRL, config::Modifier::Control),
+        (Key::KEY_RIGHTCTRL, config::Modifier::Control),
+        (Key::KEY_LEFTSHIFT, config::Modifier::Shift),
+        (Key::KEY_RIGHTSHIFT, config::Modifier::Shift),
+    ]);
+
+    let repeat_cooldown_duration: u64 = if args.is_present(""cooldown"") {
+        args.value_of(""cooldown"").unwrap().parse::<u64>().unwrap()
+    } else {
+        250
+    };
+
+    let mut signals = Signals::new(&[
+        SIGUSR1, SIGUSR2, SIGHUP, SIGABRT, SIGBUS, SIGCHLD, SIGCONT, SIGINT, SIGPIPE, SIGQUIT,
+        SIGSYS, SIGTERM, SIGTRAP, SIGTSTP, SIGVTALRM, SIGXCPU, SIGXFSZ,
+    ])?;
+
+    let mut execution_is_paused = false;
+    let mut last_hotkey: Option<config::Hotkey> = None;
+    let mut pending_release: bool = false;
+    let mut keyboard_states: Vec<KeyboardState> = Vec::new();
+    let mut keyboard_stream_map = StreamMap::new();
+
+    for (i, mut device) in keyboard_devices.into_iter().enumerate() {
+        let _ = device.grab();
+        keyboard_stream_map.insert(i, device.into_event_stream()?);
+        keyboard_states.push(KeyboardState::new());
+    }
+
+    
+    let hotkey_repeat_timer = sleep(Duration::from_millis(0));
+    tokio::pin!(hotkey_repeat_timer);
+
+    loop {
+        select! {
+            _ = &mut hotkey_repeat_timer, if &last_hotkey.is_some() => {
+                let hotkey = last_hotkey.clone().unwrap();
+                if hotkey.keybinding.on_release {
+                    continue;
+                }
+                send_command(hotkey.clone());
+                hotkey_repeat_timer.as_mut().reset(Instant::now() + Duration::from_millis(repeat_cooldown_duration));
+            }
+
+            Some(signal) = signals.next() => {
+                match signal {
+                    SIGUSR1 => {
+                        execution_is_paused = true;
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.ungrab();
+                        }
+                    }
+
+                    SIGUSR2 => {
+                        execution_is_paused = false;
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.grab();
+                        }
+                    }
+
+                    SIGHUP => {
+                        hotkeys = load_config();
+                    }
+
+                    SIGINT => {
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.ungrab();
+                        }
+                        log::warn!(""Received SIGINT signal, exiting..."");
+                        exit(1);
+                    }
+
+                    _ => {
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.ungrab();
+                        }
+
+                        log::warn!(""Received signal: {:#?}"", signal);
+                        log::warn!(""Exiting..."");
+                        exit(1);
+                    }
+                }
+            }
+
+            Some((i, Ok(event))) = keyboard_stream_map.next() => {
+                let keyboard_state = &mut keyboard_states[i];
+
+                let key = match event.kind() {
+                    InputEventKind::Key(keycode) => keycode,
+                    _ => continue
+                };
+
+                match event.value() {
+                    
+                    1 => {
+                        if let Some(modifier) = modifiers_map.get(&key) {
+                            keyboard_state.state_modifiers.insert(*modifier);
+                        } else {
+                            keyboard_state.state_keysyms.insert(key);
+                        }
+                    }
+
+                    
+                    0 => {
+                        if last_hotkey.is_some() && pending_release {
+                            pending_release = false;
+                            send_command(last_hotkey.clone().unwrap());
+                            last_hotkey = None;
+                        }
+                        if let Some(modifier) = modifiers_map.get(&key) {
+                            if let Some(hotkey) = &last_hotkey {
+                                if hotkey.modifiers().contains(modifier) {
+                                    last_hotkey = None;
+                                }
+                            }
+                            keyboard_state.state_modifiers.remove(modifier);
+                        } else if keyboard_state.state_keysyms.contains(key) {
+                            if let Some(hotkey) = &last_hotkey {
+                                if key == hotkey.keysym() {
+                                    last_hotkey = None;
+                                }
+                            }
+                            keyboard_state.state_keysyms.remove(key);
+                        }
+                    }
+
+                    _ => {}
+                }
+
+                let possible_hotkeys: Vec<&config::Hotkey> = hotkeys.iter()
+                    .filter(|hotkey| hotkey.modifiers().len() == keyboard_state.state_modifiers.len())
+                    .collect();
+
+                let event_in_hotkeys = hotkeys.iter().any(|hotkey| {
+                    hotkey.keysym().code() == event.code() &&
+                    keyboard_state.state_modifiers
+                        .iter()
+                        .all(|x| hotkey.modifiers().contains(x)) &&
+                    keyboard_state.state_modifiers.len() == hotkey.modifiers().len()
+                    && !hotkey.is_send()
+                        });
+
+                
+                if !event_in_hotkeys {
+                    uinput_device.emit(&[event]).unwrap();
+                }
+
+                if execution_is_paused || possible_hotkeys.is_empty() || last_hotkey.is_some() {
+                    continue;
+                }
+
+                log::debug!(""state_modifiers: {:#?}"", keyboard_state.state_modifiers);
+                log::debug!(""state_keysyms: {:#?}"", keyboard_state.state_keysyms);
+                log::debug!(""hotkey: {:#?}"", possible_hotkeys);
+
+                for hotkey in possible_hotkeys {
+                    
+                    if keyboard_state.state_modifiers.iter().all(|x| hotkey.modifiers().contains(x))
+                        && keyboard_state.state_modifiers.len() == hotkey.modifiers().len()
+                        && keyboard_state.state_keysyms.contains(hotkey.keysym())
+                    {
+                        last_hotkey = Some(hotkey.clone());
+                        if pending_release { break; }
+                        if hotkey.is_on_release() {
+                            pending_release = true;
+                            break;
+                        }
+                        send_command(hotkey.clone());
+                        hotkey_repeat_timer.as_mut().reset(Instant::now() + Duration::from_millis(repeat_cooldown_duration));
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}",1,"57,58,59,60,61","if !config_file_path.exists() {/~/            log::error!(""{:#?} doesn't exist"", config_file_path);/~/            exit(1);/~/        }/~/"
+"async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let args = set_command_line_args().get_matches();
+    env::set_var(""RUST_LOG"", ""swhkd=warn"");
+
+    if args.is_present(""debug"") {
+        env::set_var(""RUST_LOG"", ""swhkd=trace"");
+    }
+
+    env_logger::init();
+    log::trace!(""Logger initialized."");
+
+    let pidfile: String = String::from(""/tmp/swhkd.pid"");
+    if Path::new(&pidfile).exists() {
+        log::trace!(""Reading {} file and checking for running instances."", pidfile);
+        let swhkd_pid = match fs::read_to_string(&pidfile) {
+            Ok(swhkd_pid) => swhkd_pid,
+            Err(e) => {
+                log::error!(""Unable to read {} to check all running instances"", e);
+                exit(1);
+            }
+        };
+        log::debug!(""Previous PID: {}"", swhkd_pid);
+
+        let mut sys = System::new_all();
+        sys.refresh_all();
+        for (pid, process) in sys.processes() {
+            if pid.to_string() == swhkd_pid && process.exe() == env::current_exe().unwrap() {
+                log::error!(""Swhkd is already running!"");
+                log::error!(""pid of existing swhkd process: {}"", pid.to_string());
+                log::error!(""To close the existing swhkd process, run `sudo killall swhkd`"");
+                exit(1);
+            }
+        }
+    }
+
+    match fs::write(&pidfile, id().to_string()) {
+        Ok(_) => {}
+        Err(e) => {
+            log::error!(""Unable to write to {}: {}"", pidfile, e);
+            exit(1);
+        }
+    }
+
+    if check_user_permissions().is_err() {
+        exit(1);
+    }
+
+    let load_config = || {
+        let config_file_path: std::path::PathBuf = if args.is_present(""config"") {
+            Path::new(args.value_of(""config"").unwrap()).to_path_buf()
+        } else {
+            fetch_xdg_config_path()
+        };
+
+        log::debug!(""Using config file path: {:#?}"", config_file_path);
+
+        if !config_file_path.exists() {
+            log::error!(""{:#?} doesn't exist"", config_file_path);
+            exit(1);
+        }
+
+        let hotkeys = match config::load(&config_file_path) {
+            Err(e) => {
+                log::error!(""Config Error: {}"", e);
+                exit(1);
+            }
+            Ok(out) => out,
+        };
+
+        for hotkey in &hotkeys {
+            log::debug!(""hotkey: {:#?}"", hotkey);
+        }
+
+        hotkeys
+    };
+
+    let mut hotkeys = load_config();
+
+    log::trace!(""Attempting to find all keyboard file descriptors."");
+    let keyboard_devices: Vec<Device> =
+        evdev::enumerate().filter(check_device_is_keyboard).collect();
+
+    let mut uinput_device = match uinput::create_uinput_device() {
+        Ok(dev) => dev,
+        Err(e) => {
+            log::error!(""Err: {:#?}"", e);
+            exit(1);
+        }
+    };
+
+    if keyboard_devices.is_empty() {
+        log::error!(""No valid keyboard device was detected!"");
+        exit(1);
+    }
+    log::debug!(""{} Keyboard device(s) detected."", keyboard_devices.len());
+
+    let modifiers_map: HashMap<Key, config::Modifier> = HashMap::from([
+        (Key::KEY_LEFTMETA, config::Modifier::Super),
+        (Key::KEY_RIGHTMETA, config::Modifier::Super),
+        (Key::KEY_LEFTMETA, config::Modifier::Super),
+        (Key::KEY_RIGHTMETA, config::Modifier::Super),
+        (Key::KEY_LEFTALT, config::Modifier::Alt),
+        (Key::KEY_RIGHTALT, config::Modifier::Alt),
+        (Key::KEY_LEFTCTRL, config::Modifier::Control),
+        (Key::KEY_RIGHTCTRL, config::Modifier::Control),
+        (Key::KEY_LEFTSHIFT, config::Modifier::Shift),
+        (Key::KEY_RIGHTSHIFT, config::Modifier::Shift),
+    ]);
+
+    let repeat_cooldown_duration: u64 = if args.is_present(""cooldown"") {
+        args.value_of(""cooldown"").unwrap().parse::<u64>().unwrap()
+    } else {
+        250
+    };
+
+    let mut signals = Signals::new(&[
+        SIGUSR1, SIGUSR2, SIGHUP, SIGABRT, SIGBUS, SIGCHLD, SIGCONT, SIGINT, SIGPIPE, SIGQUIT,
+        SIGSYS, SIGTERM, SIGTRAP, SIGTSTP, SIGVTALRM, SIGXCPU, SIGXFSZ,
+    ])?;
+
+    let mut execution_is_paused = false;
+    let mut last_hotkey: Option<config::Hotkey> = None;
+    let mut pending_release: bool = false;
+    let mut keyboard_states: Vec<KeyboardState> = Vec::new();
+    let mut keyboard_stream_map = StreamMap::new();
+
+    for (i, mut device) in keyboard_devices.into_iter().enumerate() {
+        let _ = device.grab();
+        keyboard_stream_map.insert(i, device.into_event_stream()?);
+        keyboard_states.push(KeyboardState::new());
+    }
+
+    
+    let hotkey_repeat_timer = sleep(Duration::from_millis(0));
+    tokio::pin!(hotkey_repeat_timer);
+
+    loop {
+        select! {
+            _ = &mut hotkey_repeat_timer, if &last_hotkey.is_some() => {
+                let hotkey = last_hotkey.clone().unwrap();
+                if hotkey.keybinding.on_release {
+                    continue;
+                }
+                send_command(hotkey.clone());
+                hotkey_repeat_timer.as_mut().reset(Instant::now() + Duration::from_millis(repeat_cooldown_duration));
+            }
+
+            Some(signal) = signals.next() => {
+                match signal {
+                    SIGUSR1 => {
+                        execution_is_paused = true;
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.ungrab();
+                        }
+                    }
+
+                    SIGUSR2 => {
+                        execution_is_paused = false;
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.grab();
+                        }
+                    }
+
+                    SIGHUP => {
+                        hotkeys = load_config();
+                    }
+
+                    SIGINT => {
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.ungrab();
+                        }
+                        log::warn!(""Received SIGINT signal, exiting..."");
+                        exit(1);
+                    }
+
+                    _ => {
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.ungrab();
+                        }
+
+                        log::warn!(""Received signal: {:#?}"", signal);
+                        log::warn!(""Exiting..."");
+                        exit(1);
+                    }
+                }
+            }
+
+            Some((i, Ok(event))) = keyboard_stream_map.next() => {
+                let keyboard_state = &mut keyboard_states[i];
+
+                let key = match event.kind() {
+                    InputEventKind::Key(keycode) => keycode,
+                    _ => continue
+                };
+
+                match event.value() {
+                    
+                    1 => {
+                        if let Some(modifier) = modifiers_map.get(&key) {
+                            keyboard_state.state_modifiers.insert(*modifier);
+                        } else {
+                            keyboard_state.state_keysyms.insert(key);
+                        }
+                    }
+
+                    
+                    0 => {
+                        if last_hotkey.is_some() && pending_release {
+                            pending_release = false;
+                            send_command(last_hotkey.clone().unwrap());
+                            last_hotkey = None;
+                        }
+                        if let Some(modifier) = modifiers_map.get(&key) {
+                            if let Some(hotkey) = &last_hotkey {
+                                if hotkey.modifiers().contains(modifier) {
+                                    last_hotkey = None;
+                                }
+                            }
+                            keyboard_state.state_modifiers.remove(modifier);
+                        } else if keyboard_state.state_keysyms.contains(key) {
+                            if let Some(hotkey) = &last_hotkey {
+                                if key == hotkey.keysym() {
+                                    last_hotkey = None;
+                                }
+                            }
+                            keyboard_state.state_keysyms.remove(key);
+                        }
+                    }
+
+                    _ => {}
+                }
+
+                let possible_hotkeys: Vec<&config::Hotkey> = hotkeys.iter()
+                    .filter(|hotkey| hotkey.modifiers().len() == keyboard_state.state_modifiers.len())
+                    .collect();
+
+                let event_in_hotkeys = hotkeys.iter().any(|hotkey| {
+                    hotkey.keysym().code() == event.code() &&
+                    keyboard_state.state_modifiers
+                        .iter()
+                        .all(|x| hotkey.modifiers().contains(x)) &&
+                    keyboard_state.state_modifiers.len() == hotkey.modifiers().len()
+                    && !hotkey.is_send()
+                        });
+
+                
+                if !event_in_hotkeys {
+                    uinput_device.emit(&[event]).unwrap();
+                }
+
+                if execution_is_paused || possible_hotkeys.is_empty() || last_hotkey.is_some() {
+                    continue;
+                }
+
+                log::debug!(""state_modifiers: {:#?}"", keyboard_state.state_modifiers);
+                log::debug!(""state_keysyms: {:#?}"", keyboard_state.state_keysyms);
+                log::debug!(""hotkey: {:#?}"", possible_hotkeys);
+
+                for hotkey in possible_hotkeys {
+                    
+                    if keyboard_state.state_modifiers.iter().all(|x| hotkey.modifiers().contains(x))
+                        && keyboard_state.state_modifiers.len() == hotkey.modifiers().len()
+                        && keyboard_state.state_keysyms.contains(hotkey.keysym())
+                    {
+                        last_hotkey = Some(hotkey.clone());
+                        if pending_release { break; }
+                        if hotkey.is_on_release() {
+                            pending_release = true;
+                            break;
+                        }
+                        send_command(hotkey.clone());
+                        hotkey_repeat_timer.as_mut().reset(Instant::now() + Duration::from_millis(repeat_cooldown_duration));
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}",1,77,
+"fn execute(
+		input: &[u8],
+		target_gas: Option<u64>,
+		_context: &Context,
+		_is_static: bool,
+	) -> PrecompileResult {
+		if input.len() < 96 {
+			return Err(PrecompileFailure::Error {
+				exit_status: ExitError::Other(""input must contain at least 96 bytes"".into()),
+			});
+		};
+
+		
+		let max_size_big = BigUint::from_u32(1024).expect(""can't create BigUint"");
+
+		let mut buf = [0; 32];
+		buf.copy_from_slice(&input[0..32]);
+		let base_len_big = BigUint::from_bytes_be(&buf);
+		if base_len_big > max_size_big {
+			return Err(PrecompileFailure::Error {
+				exit_status: ExitError::Other(""unreasonably large base length"".into()),
+			});
+		}
+
+		buf.copy_from_slice(&input[32..64]);
+		let exp_len_big = BigUint::from_bytes_be(&buf);
+		if exp_len_big > max_size_big {
+			return Err(PrecompileFailure::Error {
+				exit_status: ExitError::Other(""unreasonably large exponent length"".into()),
+			});
+		}
+
+		buf.copy_from_slice(&input[64..96]);
+		let mod_len_big = BigUint::from_bytes_be(&buf);
+		if mod_len_big > max_size_big {
+			return Err(PrecompileFailure::Error {
+				exit_status: ExitError::Other(""unreasonably large exponent length"".into()),
+			});
+		}
+
+		
+		let base_len = base_len_big.to_usize().expect(""base_len out of bounds"");
+		let exp_len = exp_len_big.to_usize().expect(""exp_len out of bounds"");
+		let mod_len = mod_len_big.to_usize().expect(""mod_len out of bounds"");
+
+		
+		let total_len = base_len + exp_len + mod_len + 96;
+		if input.len() < total_len {
+			return Err(PrecompileFailure::Error {
+				exit_status: ExitError::Other(""insufficient input size"".into()),
+			});
+		}
+
+		
+		let (r, gas_cost) = if base_len == 0 && mod_len == 0 {
+			(BigUint::zero(), MIN_GAS_COST)
+		} else {
+			
+			let base_start = 96; 
+			let base = BigUint::from_bytes_be(&input[base_start..base_start + base_len]);
+
+			let exp_start = base_start + base_len;
+			let exponent = BigUint::from_bytes_be(&input[exp_start..exp_start + exp_len]);
+
+			
+			
+			let gas_cost =
+				calculate_gas_cost(base_len as u64, exp_len as u64, mod_len as u64, &exponent);
+			if let Some(gas_left) = target_gas {
+				if gas_left < gas_cost {
+					return Err(PrecompileFailure::Error {
+						exit_status: ExitError::OutOfGas,
+					});
+				}
+			};
+
+			let mod_start = exp_start + exp_len;
+			let modulus = BigUint::from_bytes_be(&input[mod_start..mod_start + mod_len]);
+
+			if modulus.is_zero() || modulus.is_one() {
+				(BigUint::zero(), gas_cost)
+			} else {
+				(base.modpow(&exponent, &modulus), gas_cost)
+			}
+		};
+
+		
+		let bytes = r.to_bytes_be();
+
+		
+		
+		if bytes.len() == mod_len {
+			Ok(PrecompileOutput {
+				exit_status: ExitSucceed::Returned,
+				cost: gas_cost,
+				output: bytes.to_vec(),
+				logs: Default::default(),
+			})
+		} else if bytes.len() < mod_len {
+			let mut ret = Vec::with_capacity(mod_len);
+			ret.extend(core::iter::repeat(0).take(mod_len - bytes.len()));
+			ret.extend_from_slice(&bytes[..]);
+			Ok(PrecompileOutput {
+				exit_status: ExitSucceed::Returned,
+				cost: gas_cost,
+				output: ret.to_vec(),
+				logs: Default::default(),
+			})
+		} else {
+			Err(PrecompileFailure::Error {
+				exit_status: ExitError::Other(""failed"".into()),
+			})
+		}
+	}",1,"36,65","				exit_status: ExitError::Other(""unreasonably large exponent length"".into()),/~/			// TODO: we could technically avoid reading base first..."
+"pub fn parse_cmd(cmd_str: &str, _sender_address: AccountAddress) -> Result<ast::Cmd> {
+    let stripped_string = &strip_comments(cmd_str);
+    let parser = syntax::CmdParser::new();
+    match parser.parse(stripped_string) {
+        Ok(cmd) => Ok(cmd),
+        Err(e) => handle_error(e, cmd_str),
+    }
+}",1,"1,5","    let stripped_string = &strip_comments(cmd_str);/~/        Err(e) => handle_error(e, cmd_str),"
+"fn test_mul32_reg() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov r0, 3
+        mov r1, 4
+        mul32 r0, r1
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0xc } },
+        4
+    );
+}",0,,
+"pub fn parse(p: &[u8; util::SIGNATURE_SIZE]) -> Signature {
+        let mut r = Scalar::default();
+        let mut s = Scalar::default();
+
+        
+        let _ = r.set_b32(array_ref!(p, 0, 32));
+        let _ = s.set_b32(array_ref!(p, 32, 32));
+
+        Signature { r, s }
+    }",0,,
+"fn insert(&self, func: &mut Function) {
+        match self {
+            Self::Gc => {
+                func.instruction(Instruction::Call(0));
+            }
+            Self::Get(x) => {
+                func.instruction(Instruction::I32Const(*x));
+                func.instruction(Instruction::TableGet { table: 0 });
+                func.instruction(Instruction::Drop);
+            }
+            Self::SetFromParam(x, y) => {
+                func.instruction(Instruction::I32Const(*x));
+                func.instruction(Instruction::LocalGet(*y));
+                func.instruction(Instruction::TableSet { table: 0 });
+            }
+            Self::SetFromGet(x, y) => {
+                func.instruction(Instruction::I32Const(*x));
+                func.instruction(Instruction::I32Const(*y));
+                func.instruction(Instruction::TableGet { table: 0 });
+                func.instruction(Instruction::TableSet { table: 0 });
+            }
+        }
+    }",1,"0,6,11,12,16,17","fn insert(&self, func: &mut Function) {/~/                func.instruction(Instruction::I32Const(*x));/~/                func.instruction(Instruction::I32Const(*x));/~/                func.instruction(Instruction::LocalGet(*y));/~/                func.instruction(Instruction::I32Const(*x));/~/                func.instruction(Instruction::I32Const(*y));"
+"fn call(
+        &mut self,
+        depth: u64,
+        throw: u64,
+        _arg3: u64,
+        _arg4: u64,
+        _arg5: u64,
+        _memory_mapping: &MemoryMapping,
+        result: &mut Result,
+    ) {
+        #[allow(unused_mut)]
+        if depth > 0 {
+            let mut syscall_registry = SyscallRegistry::default();
+            syscall_registry
+                .register_syscall_by_name(
+                    b""NestedVmSyscall"",
+                    NestedVmSyscall::init::<UserContext, UserError>,
+                    NestedVmSyscall::call,
+                )
+                .unwrap();
+            let mem = [depth as u8 - 1, throw as u8];
+            let mut executable = assemble::<UserError, TestInstructionMeter>(
+                ""
+                ldabsb 0
+                mov64 r1, r0
+                ldabsb 1
+                mov64 r2, r0
+                syscall NestedVmSyscall
+                exit"",
+                None,
+                Config::default(),
+                syscall_registry,
+            )
+            .unwrap();
+            test_interpreter_and_jit!(
+                executable,
+                mem,
+                0,
+                {
+                    |_vm, res: Result| {
+                        *result = res;
+                        true
+                    }
+                },
+                if throw == 0 { 6 } else { 5 }
+            );
+        } else {
+            *result = if throw == 0 {
+                Ok(42)
+            } else {
+                Err(EbpfError::CallDepthExceeded(33, 0))
+            };
+        }
+    }",0,,
+"fn strip_comments(string: &str) -> String {
+    
+    let line_comments = Regex::new(r""(?m)//.*$"").unwrap();
+    line_comments.replace_all(string, ""$1"").into_owned()
+}",1,"0,1,2,3","fn strip_comments(string: &str) -> String {/~/    // Remove line comments/~/    let line_comments = Regex::new(r""(?m)//.*$"").unwrap();/~/    line_comments.replace_all(string, ""$1"").into_owned()"
+"pub fn execute(&mut self, action: Vec<u8>) {
+            self.sender.send(WhatToDo::NewJob(action)).unwrap();
+        }",0,,
+"fn on_initialize(_: T::BlockNumber) -> Weight {
+			Pending::<T>::kill();
+
+			
+			
+			if let Ok(log) = fp_consensus::find_pre_log(&frame_system::Pallet::<T>::digest()) {
+				let PreLog::Block(block) = log;
+
+				for transaction in block.transactions {
+					let source = Self::recover_signer(&transaction).expect(
+						""pre-block transaction signature invalid; the block cannot be built"",
+					);
+
+					Self::do_transact(source, transaction).expect(
+						""pre-block transaction verification failed; the block cannot be built"",
+					);
+				}
+			}
+
+			0
+		}",1,13,"					Self::do_transact(source, transaction).expect("
+"    fn ready(&mut self, poll: &mut mio::Poll, ev: &mio::Event) {
+        
+        
+        
+        if ev.readiness().is_readable() {
+            self.do_tls_read();
+            self.try_plain_read();
+            self.try_back_read();
+        }
+
+        if ev.readiness().is_writable() {
+            self.do_tls_write_and_handle_error();
+        }
+
+        if self.closing && !self.tls_session.wants_write() {
+            let _ = self.socket.shutdown(Shutdown::Both);
+            self.close_back();
+            self.closed = true;
+        } else {
+            self.reregister(poll);
+        }
+    }",1,14,        if self.closing && !self.tls_session.wants_write() {
+"    pub async fn run(&mut self) -> TResult<()> {
+        loop {
+            
+            
+            self.base.climit.acquire().await.unwrap().forget();
+            let stream = self.accept().await?;
+            let mut sslhandle = ConnectionHandler::new(
+                self.base.db.clone(),
+                Connection::new(stream),
+                self.base.climit.clone(),
+                Terminator::new(self.base.signal.subscribe()),
+                self.base.terminate_tx.clone(),
+            );
+            tokio::spawn(async move {
+                if let Err(e) = sslhandle.run().await {
+                    log::error!(""Error: {}"", e);
+                }
+            });
+        }
+    }",1,5,            let stream = self.accept().await?;
+"fn sock_send(command: &str) -> std::io::Result<()> {
+    let mut stream = UnixStream::connect(""/tmp/swhkd.sock"")?;
+    stream.write_all(command.as_bytes())?;
+    Ok(())
+}",0,,
+"    pub fn returned_ref(&self) -> Result<&UntypedRetVal, Error> {
+        match self {
+            RunResult::Returned(rv) => Ok(rv),
+            RunResult::Yielded(_) => Err(Error::InstanceNotReturned),
+        }
+    }",0,,
+"pub fn retrieve_less_version() -> Option<usize> {
+    let cmd = Command::new(""less"").arg(""--version"").output().ok()?;
+    parse_less_version(&cmd.stdout)
+}",1,"1,2","    let cmd = Command::new(""less"").arg(""--version"").output().ok()?;/~/    parse_less_version(&cmd.stdout)"
+"		pub fn transact(
+			origin: OriginFor<T>,
+			transaction: Transaction,
+		) -> DispatchResultWithPostInfo {
+			let source = ensure_ethereum_transaction(origin)?;
+			
+			ensure!(
+				fp_consensus::find_pre_log(&frame_system::Pallet::<T>::digest()).is_err(),
+				Error::<T>::PreLogExists,
+			);
+
+			Self::do_transact(source, transaction)
+		}",1,11,"			Self::do_transact(source, transaction)"
+"fn parse_test_module(args: TokenStream, item: TokenStream) -> TokenStream {
+    let input = syn::parse_macro_input!(item as syn::ItemMod);
+    let content = match input.content {
+        Some((_, c)) => c,
+        None => {
+            return syn::Error::new_spanned(&input, ""Couldn't get the module content"")
+                .to_compile_error()
+                .into()
+        }
+    };
+    let args = syn::parse_macro_input!(args as syn::AttributeArgs);
+    let mut skips = Vec::new();
+    for arg in args {
+        match arg {
+            syn::NestedMeta::Meta(syn::Meta::NameValue(namevalue)) => {
+                let ident = namevalue.path.get_ident();
+                if ident.is_none() {
+                    let msg = ""Must have specified ident"";
+                    return syn::Error::new_spanned(namevalue, msg)
+                        .to_compile_error()
+                        .into();
+                }
+                match ident.unwrap().to_string().to_lowercase().as_str() {
+                    ""skip"" => {
+                        let skip_lit = namevalue.lit.clone();
+                        let span = skip_lit.span();
+                        skips = match parse_string(skip_lit, span, ""skip"") {
+                            Ok(s) => s,
+                            Err(_) => {
+                                return syn::Error::new_spanned(
+                                    namevalue,
+                                    ""Expected a value for argument `skip`"",
+                                )
+                                .to_compile_error()
+                                .into();
+                            }
+                        }
+                        .split_whitespace()
+                        .map(|val| val.to_string())
+                        .collect();
+                    }
+                    x => {
+                        let msg = format!(""Unknown attribute {} is specified; expected `skip`"", x);
+                        return syn::Error::new_spanned(namevalue, msg)
+                            .to_compile_error()
+                            .into();
+                    }
+                }
+            }
+            _ => (),
+        }
+    }
+    let modname = &input.ident;
+    if modname.to_string() != ""__private"" {
+        return syn::Error::new_spanned(
+            modname,
+            ""By convention, all the modules using the `dbtest` macro have to be called `__private`"",
+        )
+        .to_compile_error()
+        .into();
+    }
+    let mut rng = thread_rng();
+    let mut in_set = HashSet::<u16>::new();
+
+    let mut result = quote! {};
+    for item in content {
+        
+
+
+
+
+
+
+        let mut rand: u16 = rng.gen_range(1025, 65535);
+        #[cfg(not(target_os = ""windows""))]
+        {
+            while in_set.contains(&rand) {
+                rand = rng.gen_range(1025, 65535);
+            }
+        }
+        #[cfg(target_os = ""windows"")]
+        {
+            in_set.insert(5357);
+            in_set.insert(7680);
+            while in_set.contains(&rand) || (rand >= 49670 && rand <= 50293) {
+                rand = rng.gen_range(1025, 65535);
+            }
+        }
+        in_set.insert(rand);
+        match item {
+            
+            
+            syn::Item::Fn(function) => {
+                if skips.contains(&function.sig.ident.to_string()) {
+                    result = quote! {
+                        #result
+                        #function
+                    };
+                    continue;
+                }
+                let inp = parse_test_sig(function, rand);
+                let __tok: syn::ItemFn = syn::parse_macro_input!(inp as syn::ItemFn);
+                let tok = quote! {
+                    #__tok
+                };
+                result = quote! {
+                    #result
+                    #tok
+                };
+            }
+            token => {
+                result = quote! {
+                    #result
+                    #token
+                };
+            }
+        }
+    }
+    result.into()
+}",1,"73,77,85","let mut rand: u16 = rng.gen_range(1025, 65535);/~/                rand = rng.gen_range(1025, 65535);/~/                rand = rng.gen_range(1025, 65535);"
+"fn test_parse_less_version_wrong_program() {
+    let output = b""more from util-linux 2.34"";
+
+    assert_eq!(None, parse_less_version(output));
+}",0,,
+"    pub fn remove_embed_ctx<T: Any>(&mut self) -> Option<T> {
+        self.embed_ctx.remove::<T>()
+    }",0,,
+"fn test_mod32_imm() {
+    test_interpreter_and_jit_asm!(
+        ""
+        lddw r0, 0x100000003
+        mod32 r0, 3
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x0 } },
+        3
+    );
+}",0,,
+"fn main() -> std::io::Result<()> {
+    env::set_var(""RUST_LOG"", ""swhks=trace"");
+    env_logger::init();
+
+    let pid_file_path = String::from(""/tmp/swhks.pid"");
+    let sock_file_path = String::from(""/tmp/swhkd.sock"");
+
+    if Path::new(&pid_file_path).exists() {
+        log::trace!(""Reading {} file and checking for running instances."", pid_file_path);
+        let swhkd_pid = match fs::read_to_string(&pid_file_path) {
+            Ok(swhkd_pid) => swhkd_pid,
+            Err(e) => {
+                log::error!(""Unable to read {} to check all running instances"", e);
+                exit(1);
+            }
+        };
+        log::debug!(""Previous PID: {}"", swhkd_pid);
+
+        let mut sys = System::new_all();
+        sys.refresh_all();
+        for (pid, process) in sys.processes() {
+            if pid.to_string() == swhkd_pid && process.exe() == env::current_exe().unwrap() {
+                log::error!(""Server is already running!"");
+                exit(1);
+            }
+        }
+    }
+
+    if Path::new(&sock_file_path).exists() {
+        log::trace!(""Sockfile exists, attempting to remove it."");
+        match fs::remove_file(&sock_file_path) {
+            Ok(_) => {
+                log::debug!(""Removed old socket file"");
+            }
+            Err(e) => {
+                log::error!(""Error removing the socket file!: {}"", e);
+                log::error!(""You can manually remove the socket file: {}"", sock_file_path);
+                exit(1);
+            }
+        };
+    }
+
+    match fs::write(&pid_file_path, id().to_string()) {
+        Ok(_) => {}
+        Err(e) => {
+            log::error!(""Unable to write to {}: {}"", pid_file_path, e);
+            exit(1);
+        }
+    }
+
+    let listener = UnixListener::bind(sock_file_path)?;
+    loop {
+        match listener.accept() {
+            Ok((mut socket, address)) => {
+                let mut response = String::new();
+                socket.read_to_string(&mut response)?;
+                run_system_command(&response);
+                log::debug!(""Socket: {:?} Address: {:?} Response: {}"", socket, address, response);
+            }
+            Err(e) => log::error!(""accept function failed: {:?}"", e),
+        }
+    }
+}",1,5,"    let sock_file_path = String::from(""/tmp/swhkd.sock"");"
+"    pub fn data(&self) -> &T {
+        self.inner.data()
+    }",0,,
+"fn drop(&mut self) {
+        
+        
+        self.climit.add_permits(1);
+    }",0,,
+"fn test_jlt_imm() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov32 r0, 0
+        mov32 r1, 5
+        jlt r1, 4, +2
+        jlt r1, 5, +1
+        jlt r1, 6, +1
+        exit
+        mov32 r0, 1
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x1 } },
+        7
+    );
+}",0,,
+"fn store_block(post_log: bool, block_number: U256) {
+		let mut transactions = Vec::new();
+		let mut statuses = Vec::new();
+		let mut receipts = Vec::new();
+		let mut logs_bloom = Bloom::default();
+		for (transaction, status, receipt) in Pending::<T>::get() {
+			transactions.push(transaction);
+			statuses.push(status);
+			receipts.push(receipt.clone());
+			Self::logs_bloom(receipt.logs.clone(), &mut logs_bloom);
+		}
+
+		let ommers = Vec::<ethereum::Header>::new();
+		let receipts_root =
+			ethereum::util::ordered_trie_root(receipts.iter().map(|r| rlp::encode(r)));
+		let partial_header = ethereum::PartialHeader {
+			parent_hash: Self::current_block_hash().unwrap_or_default(),
+			beneficiary: pallet_evm::Pallet::<T>::find_author(),
+			state_root: T::StateRoot::get(),
+			receipts_root,
+			logs_bloom,
+			difficulty: U256::zero(),
+			number: block_number,
+			gas_limit: T::BlockGasLimit::get(),
+			gas_used: receipts
+				.clone()
+				.into_iter()
+				.fold(U256::zero(), |acc, r| acc + r.used_gas),
+			timestamp: UniqueSaturatedInto::<u64>::unique_saturated_into(
+				pallet_timestamp::Pallet::<T>::get(),
+			),
+			extra_data: Vec::new(),
+			mix_hash: H256::default(),
+			nonce: H64::default(),
+		};
+		let block = ethereum::Block::new(partial_header, transactions.clone(), ommers);
+
+		CurrentBlock::<T>::put(block.clone());
+		CurrentReceipts::<T>::put(receipts.clone());
+		CurrentTransactionStatuses::<T>::put(statuses.clone());
+		BlockHash::<T>::insert(block_number, block.header.hash());
+
+		if post_log {
+			let digest = DigestItem::<T::Hash>::Consensus(
+				FRONTIER_ENGINE_ID,
+				PostLog::Hashes(fp_consensus::Hashes::from_block(block)).encode(),
+			);
+			frame_system::Pallet::<T>::deposit_log(digest.into());
+		}
+	}",0,,
+"fn sock_send(command: &str) -> std::io::Result<()> {
+    let mut stream = UnixStream::connect(""/tmp/swhkd.sock"")?;
+    stream.write_all(command.as_bytes())?;
+    Ok(())
+}",1,1,"    let mut stream = UnixStream::connect(""/tmp/swhkd.sock"")?;"
+"	pub fn is_valid_web_proxy_access_token(&self, token: &String) -> bool {
+		self.web_proxy_tokens.lock().contains_key(&token)
+	}",1,"0,1","	pub fn is_valid_web_proxy_access_token(&self, token: &String) -> bool {/~/		self.web_proxy_tokens.lock().contains_key(&token)"
+"	pub fn generate_token(&self) -> Result<String, String> {
+		(self.generate_new_token)()
+	}",0,,
+"fn withdraw_fee(who: &H160, fee: U256) -> Result<Self::LiquidityInfo, Error<T>> {
+		if fee.is_zero() {
+			return Ok(None);
+		}
+		let account_id = T::AddressMapping::into_account_id(*who);
+		let imbalance = C::withdraw(
+			&account_id,
+			fee.low_u128().unique_saturated_into(),
+			WithdrawReasons::FEE,
+			ExistenceRequirement::AllowDeath,
+		)
+		.map_err(|_| Error::<T>::BalanceLow)?;
+		Ok(Some(imbalance))
+	}",1,7,"fee.low_u128().unique_saturated_into(),"

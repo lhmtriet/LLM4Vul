@@ -1,0 +1,3459 @@
+processed_func,target,flaw_line_index,flaw_line
+"    fn gen_move(&self, to_reg: Writable<RealReg>, from_reg: RealReg, vreg: VirtualReg) -> I {
+        let ty = self.vreg_type(vreg);
+        I::gen_move(to_reg.map(|r| r.to_reg()), from_reg.to_reg(), ty)
+    }",0,,
+"fn do_transact(source: H160, transaction: Transaction) -> DispatchResultWithPostInfo {
+		let transaction_hash =
+			H256::from_slice(Keccak256::digest(&rlp::encode(&transaction)).as_slice());
+		let transaction_index = Pending::<T>::get().len() as u32;
+
+		let (to, _, info) = Self::execute(
+			source,
+			transaction.input.clone(),
+			transaction.value,
+			transaction.gas_limit,
+			Some(transaction.gas_price),
+			Some(transaction.nonce),
+			transaction.action,
+			None,
+		)?;
+
+		let (reason, status, used_gas, dest) = match info {
+			CallOrCreateInfo::Call(info) => (
+				info.exit_reason,
+				TransactionStatus {
+					transaction_hash,
+					transaction_index,
+					from: source,
+					to,
+					contract_address: None,
+					logs: info.logs.clone(),
+					logs_bloom: {
+						let mut bloom: Bloom = Bloom::default();
+						Self::logs_bloom(info.logs, &mut bloom);
+						bloom
+					},
+				},
+				info.used_gas,
+				to,
+			),
+			CallOrCreateInfo::Create(info) => (
+				info.exit_reason,
+				TransactionStatus {
+					transaction_hash,
+					transaction_index,
+					from: source,
+					to,
+					contract_address: Some(info.value),
+					logs: info.logs.clone(),
+					logs_bloom: {
+						let mut bloom: Bloom = Bloom::default();
+						Self::logs_bloom(info.logs, &mut bloom);
+						bloom
+					},
+				},
+				info.used_gas,
+				Some(info.value),
+			),
+		};
+
+		let receipt = ethereum::Receipt {
+			state_root: match reason {
+				ExitReason::Succeed(_) => H256::from_low_u64_be(1),
+				ExitReason::Error(_) => H256::from_low_u64_le(0),
+				ExitReason::Revert(_) => H256::from_low_u64_le(0),
+				ExitReason::Fatal(_) => H256::from_low_u64_le(0),
+			},
+			used_gas,
+			logs_bloom: status.clone().logs_bloom,
+			logs: status.clone().logs,
+		};
+
+		Pending::<T>::append((transaction, status, receipt));
+
+		Self::deposit_event(Event::Executed(
+			source,
+			dest.unwrap_or_default(),
+			transaction_hash,
+			reason,
+		));
+		Ok(PostDispatchInfo {
+			actual_weight: Some(T::GasWeightMapping::gas_to_weight(
+				used_gas.unique_saturated_into(),
+			)),
+			pays_fee: Pays::No,
+		})
+		.into()
+	}",1,0,"fn do_transact(source: H160, transaction: Transaction) -> DispatchResultWithPostInfo {"
+"fn test_exit() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov r0, 0
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x0 } },
+        2
+    );
+}",0,,
+"pub fn column(&self) -> Option<u32> {
+        self.column
+    }",0,,
+"fn c_byte(&mut self, b: u8) -> ResultOrEmpty {
+        self.c_class_bytes(&[hir::ClassBytesRange::new(b, b)])
+    }",0,,
+"fn atou16_misc() {
+        assert_ok!(atou16(b""0""), 0);
+        assert_ok!(atou16(b""0010""), 10);
+        assert_ok!(atou16(b""9999""), 9999);
+        assert_err_pat!(atou16(b""""), Error::InvalidFormat(_));
+        assert_err_pat!(atou16(b""/""), Error::InvalidFormat(_));
+        assert_err_pat!(atou16(b"":""), Error::InvalidFormat(_));
+        assert_err_pat!(atou16(b""-1""), Error::InvalidFormat(_));
+    }",0,,
+"pub fn fetch_xdg_config_path() -> std::path::PathBuf {
+    let config_file_path: std::path::PathBuf = match env::var(""XDG_CONFIG_HOME"") {
+        Ok(val) => {
+            log::debug!(""XDG_CONFIG_HOME exists: {:#?}"", val);
+            Path::new(&val).join(""swhkd/swhkdrc"")
+        }
+        Err(_) => {
+            log::error!(""XDG_CONFIG_HOME has not been set."");
+            Path::new(""/etc/swhkd/swhkdrc"").to_path_buf()
+        }
+    };
+    config_file_path
+}",0,,
+"fn test_syscall_unknown_static() {
+    
+    
+    
+    
+    
+    
+    test_interpreter_and_jit_elf!(
+        ""tests/elfs/syscall_static_unknown.so"",
+        [],
+        (
+            b""log"" => syscalls::BpfSyscallString::init::<BpfSyscallContext, UserError>; syscalls::BpfSyscallString::call,
+        ),
+        0,
+        { |_vm, res: Result| { matches!(res.unwrap_err(), EbpfError::UnsupportedInstruction(29)) } },
+        1
+    );
+}",0,,
+"pub fn clear(&mut self) {
+        unsafe {
+            core::ptr::write_volatile(&mut self.0, [0u32; 8]);
+        }
+    }",0,,
+"fn test_non_terminate_early() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov64 r6, 0x0
+        mov64 r1, 0x0
+        mov64 r2, 0x0
+        mov64 r3, 0x0
+        mov64 r4, 0x0
+        mov64 r5, r6
+        syscall Unresolved
+        add64 r6, 0x1
+        ja -0x8
+        exit"",
+        [],
+        (),
+        0,
+        {
+            |_vm, res: Result| {
+                matches!(res.unwrap_err(),
+                    EbpfError::UnsupportedInstruction(pc)
+                    if pc == 35
+                )
+            }
+        },
+        7
+    );
+}",0,,
+"    pub(crate) fn wasmtime_memory(&self) -> &Memory {
+        &self.ty
+    }",0,,
+"fn test_string_stack() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov r1, 0x78636261
+        stxw [r10-8], r1
+        mov r6, 0x0
+        stxb [r10-4], r6
+        stxb [r10-12], r6
+        mov r1, 0x79636261
+        stxw [r10-16], r1
+        mov r1, r10
+        add r1, -8
+        mov r2, r1
+        syscall BpfStrCmp
+        mov r1, r0
+        mov r0, 0x1
+        lsh r1, 0x20
+        rsh r1, 0x20
+        jne r1, 0x0, +11
+        mov r1, r10
+        add r1, -8
+        mov r2, r10
+        add r2, -16
+        syscall BpfStrCmp
+        mov r1, r0
+        lsh r1, 0x20
+        rsh r1, 0x20
+        mov r0, 0x1
+        jeq r1, r6, +1
+        mov r0, 0x0
+        exit"",
+        [],
+        (
+            b""BpfStrCmp"" => syscalls::BpfStrCmp::init::<BpfSyscallContext, UserError>; syscalls::BpfStrCmp::call,
+        ),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x0 } },
+        28
+    );
+}",0,,
+"    pub fn get_num_func_imports(&self) -> usize {
+        self.info.imported_funcs.len()
+    }",0,,
+"pub fn get_instruction_count(&self) -> Option<u64> {
+        if self.module.is_instruction_count_instrumented() {
+            let implicits = self.get_instance_implicits();
+            let sum = implicits.instruction_count_bound + implicits.instruction_count_adj;
+            
+            
+            debug_assert!(sum >= 0);
+            return Some(sum as u64);
+        }
+        None
+    }",0,,
+"fn test_ldabsw() {
+    test_interpreter_and_jit_asm!(
+        ""
+        ldabsw 0x3
+        exit"",
+        [
+            0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 
+            0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 
+        ],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x66554433 } },
+        2
+    );
+}",0,,
+"pub fn tweak_mul_assign(&mut self, tweak: &SecretKey) -> Result<(), Error> {
+        if tweak.0.is_zero() {
+            return Err(Error::TweakOutOfRange);
+        }
+
+        let mut r = Jacobian::default();
+        let zero = Scalar::from_int(0);
+        let pt = Jacobian::from_ge(&self.0);
+        ECMULT_CONTEXT.ecmult(&mut r, &pt, &tweak.0, &zero);
+
+        self.0.set_gej(&r);
+        Ok(())
+    }",0,,
+"    pub fn remove_embed_ctx<T: Any>(&mut self) -> Option<T> {
+        self.embed_ctx.remove::<T>()
+    }",0,,
+"fn test_err_sdiv32_by_zero_reg() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov32 r0, 1
+        mov32 r1, 0
+        sdiv32 r0, r1
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| matches!(res.unwrap_err(), EbpfError::DivideByZero(pc) if pc == 31) },
+        3
+    );
+}",0,,
+"fn test_err_instruction_count_syscall_capped() {
+    let config = Config {
+        static_syscalls: false,
+        ..Config::default()
+    };
+    test_interpreter_and_jit_asm!(
+        ""
+        mov64 r2, 0x5
+        call 0
+        mov64 r0, 0x0
+        exit"",
+        config,
+        [72, 101, 108, 108, 111],
+        (
+            b""BpfSyscallString"" => syscalls::BpfSyscallString::init::<BpfSyscallContext, UserError>; syscalls::BpfSyscallString::call,
+        ),
+        0,
+        {
+            |_vm, res: Result| {
+                matches!(res.unwrap_err(),
+                    EbpfError::ExceededMaxInstructions(pc, initial_insn_count)
+                    if pc == 32 && initial_insn_count == 3
+                )
+            }
+        },
+        3
+    );
+}",0,,
+"fn do_transact(transaction: Transaction) -> DispatchResultWithPostInfo {
+		ensure!(
+			fp_consensus::find_pre_log(&frame_system::Pallet::<T>::digest()).is_err(),
+			Error::<T>::PreLogExists,
+		);
+
+		let source =
+			Self::recover_signer(&transaction).ok_or_else(|| Error::<T>::InvalidSignature)?;
+
+		let transaction_hash =
+			H256::from_slice(Keccak256::digest(&rlp::encode(&transaction)).as_slice());
+		let transaction_index = Pending::<T>::get().len() as u32;
+
+		let (to, contract_address, info) = Self::execute(
+			source,
+			transaction.input.clone(),
+			transaction.value,
+			transaction.gas_limit,
+			Some(transaction.gas_price),
+			Some(transaction.nonce),
+			transaction.action,
+			None,
+		)?;
+
+		let (reason, status, used_gas, dest) = match info {
+			CallOrCreateInfo::Call(info) => (
+				info.exit_reason,
+				TransactionStatus {
+					transaction_hash,
+					transaction_index,
+					from: source,
+					to,
+					contract_address: None,
+					logs: info.logs.clone(),
+					logs_bloom: {
+						let mut bloom: Bloom = Bloom::default();
+						Self::logs_bloom(info.logs, &mut bloom);
+						bloom
+					},
+				},
+				info.used_gas,
+				to,
+			),
+			CallOrCreateInfo::Create(info) => (
+				info.exit_reason,
+				TransactionStatus {
+					transaction_hash,
+					transaction_index,
+					from: source,
+					to,
+					contract_address: Some(info.value),
+					logs: info.logs.clone(),
+					logs_bloom: {
+						let mut bloom: Bloom = Bloom::default();
+						Self::logs_bloom(info.logs, &mut bloom);
+						bloom
+					},
+				},
+				info.used_gas,
+				Some(info.value),
+			),
+		};
+
+		let receipt = ethereum::Receipt {
+			state_root: match reason {
+				ExitReason::Succeed(_) => H256::from_low_u64_be(1),
+				ExitReason::Error(_) => H256::from_low_u64_le(0),
+				ExitReason::Revert(_) => H256::from_low_u64_le(0),
+				ExitReason::Fatal(_) => H256::from_low_u64_le(0),
+			},
+			used_gas,
+			logs_bloom: status.clone().logs_bloom,
+			logs: status.clone().logs,
+		};
+
+		Pending::<T>::append((transaction, status, receipt));
+
+		Self::deposit_event(Event::Executed(
+			source,
+			dest.unwrap_or_default(),
+			transaction_hash,
+			reason,
+		));
+		Ok(PostDispatchInfo {
+			actual_weight: Some(T::GasWeightMapping::gas_to_weight(
+				used_gas.unique_saturated_into(),
+			)),
+			pays_fee: Pays::No,
+		})
+		.into()
+	}",0,,
+"fn test_err_exit_capped() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov64 r1, 0x1
+        lsh64 r1, 0x20
+        or64 r1, 0x20
+        callx r1
+        exit
+        "",
+        [],
+        (),
+        0,
+        {
+            |_vm, res: Result| {
+                matches!(res.unwrap_err(),
+                    EbpfError::ExceededMaxInstructions(pc, initial_insn_count) if pc == 34 && initial_insn_count == 5
+                )
+            }
+        },
+        5
+    );
+    test_interpreter_and_jit_asm!(
+        ""
+        mov64 r1, 0x1
+        lsh64 r1, 0x20
+        or64 r1, 0x20
+        callx r1
+        mov r0, r0
+        exit
+        "",
+        [],
+        (),
+        0,
+        {
+            |_vm, res: Result| {
+                matches!(res.unwrap_err(),
+                    EbpfError::ExceededMaxInstructions(pc, initial_insn_count) if pc == 35 && initial_insn_count == 6
+                )
+            }
+        },
+        6
+    );
+    test_interpreter_and_jit_asm!(
+        ""
+        call 0
+        mov r0, r0
+        exit
+        "",
+        [],
+        (),
+        0,
+        {
+            |_vm, res: Result| {
+                matches!(res.unwrap_err(),
+                    EbpfError::ExceededMaxInstructions(pc, initial_insn_count) if pc == 32 && initial_insn_count == 3
+                )
+            }
+        },
+        3
+    );
+}",0,,
+"fn decode_chunk_writes_8_bytes() {
+        let input = b""Zm9vYmFy""; 
+        let mut output = [0_u8, 1, 2, 3, 4, 5, 6, 7];
+        decode_chunk(&input[..], 0, tables::STANDARD_DECODE, &mut output).unwrap();
+        assert_eq!(&vec![b'f', b'o', b'o', b'b', b'a', b'r', 0, 0], &output);
+    }",0,,
+"fn new<E: UserDefinedError>(pc: usize, code_size: usize) -> Result<Self, EbpfError<E>> {
+        #[cfg(target_os = ""windows"")]
+        {
+            Ok(Self {
+                page_size: 0,
+                pc_section: &mut [],
+                text_section: &mut [],
+            })
+        }
+        #[cfg(not(target_os = ""windows""))]
+        unsafe {
+            let page_size = libc::sysconf(libc::_SC_PAGESIZE) as usize;
+            let pc_loc_table_size = round_to_page_size(pc * 8, page_size);
+            let over_allocated_code_size = round_to_page_size(code_size, page_size);
+            let mut raw: *mut libc::c_void = std::ptr::null_mut();
+            libc_error_guard!(mmap, &mut raw, pc_loc_table_size + over_allocated_code_size, libc::PROT_READ | libc::PROT_WRITE, libc::MAP_ANONYMOUS | libc::MAP_PRIVATE, 0, 0);
+            Ok(Self {
+                page_size,
+                pc_section: std::slice::from_raw_parts_mut(raw as *mut u64, pc),
+                text_section: std::slice::from_raw_parts_mut(raw.add(pc_loc_table_size) as *mut u8, over_allocated_code_size),
+            })
+        }
+    }",0,,
+"    pub fn vreg_type(&self, vreg: VirtualReg) -> Type {
+        self.vreg_types[vreg.get_index()]
+    }",0,,
+"fn half_fill_split_goto2(&mut self, goto2: InstPtr) {
+        let half_filled = match *self {
+            MaybeInst::Split => goto2,
+            _ => unreachable!(
+                ""must be called on Split instruction, \
+                 instead it was called on: {:?}"",
+                self
+            ),
+        };
+        *self = MaybeInst::Split2(half_filled);
+    }",0,,
+"    pub fn get_embed_ctx<T: Any>(&self) -> Option<Result<Ref<'_, T>, BorrowError>> {
+        self.embed_ctx.try_get::<T>()
+    }
+
+    
+    pub fn get_embed_ctx_mut<T: Any>(&self) -> Option<Result<RefMut<'_, T>, BorrowMutError>> {
+        self.embed_ctx.try_get_mut::<T>()
+    }",0,,
+"    pub async fn run(&mut self) -> TResult<()> {
+        loop {
+            
+            
+            self.base.climit.acquire().await.unwrap().forget();
+            let stream = self.accept().await?;
+            let mut sslhandle = ConnectionHandler::new(
+                self.base.db.clone(),
+                Connection::new(stream),
+                self.base.climit.clone(),
+                Terminator::new(self.base.signal.subscribe()),
+                self.base.terminate_tx.clone(),
+            );
+            tokio::spawn(async move {
+                if let Err(e) = sslhandle.run().await {
+                    log::error!(""Error: {}"", e);
+                }
+            });
+        }
+    }",1,5,            let stream = self.accept().await?;
+"fn deleted(&self, address: H160) -> bool {
+		self.substate.deleted(address)
+	}",0,,
+"fn test_arsh64() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov32 r0, 1
+        lsh r0, 63
+        arsh r0, 55
+        mov32 r1, 5
+        arsh r0, r1
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0xfffffffffffffff8 } },
+        6
+    );
+}",0,,
+"fn read8_len() {
+        let mut reader = Cursor::new([]);
+        assert_err_kind!(read8(&mut reader), ErrorKind::UnexpectedEof);
+        let mut reader = Cursor::new([0x01]);
+        assert_ok!(read8(&mut reader), 0x01);
+        let mut reader = Cursor::new([0x01, 0x02]);
+        let mut buf = Vec::new();
+        assert_ok!(read8(&mut reader), 0x01);
+        assert_ok!(reader.read_to_end(&mut buf), 1);
+        assert_eq!(buf, [0x02]);
+    }",0,,
+"    pub const fn new(signal: broadcast::Receiver<()>) -> Self {
+        Terminator {
+            
+            terminate: false,
+            signal,
+        }
+    }",0,,
+"fn as_ref(&self) -> &[u8] {
+        &self.0
+    }",0,,
+"pub fn current_block_hash() -> Option<H256> {
+		Self::current_block().map(|block| block.header.hash())
+	}",0,,
+"fn detect_invalid_last_symbol_one_byte() {
+        
+
+        assert!(decode(""/w=="").is_ok());
+        
+        assert_eq!(Err(DecodeError::InvalidLastSymbol(1, b'x')), decode(""/x==""));
+        assert_eq!(Err(DecodeError::InvalidLastSymbol(1, b'z')), decode(""/z==""));
+        assert_eq!(Err(DecodeError::InvalidLastSymbol(1, b'0')), decode(""/0==""));
+        assert_eq!(Err(DecodeError::InvalidLastSymbol(1, b'9')), decode(""/9==""));
+        assert_eq!(Err(DecodeError::InvalidLastSymbol(1, b'+')), decode(""/+==""));
+        assert_eq!(Err(DecodeError::InvalidLastSymbol(1, b'/')), decode(""//==""));
+
+        
+        assert_eq!(
+            Err(DecodeError::InvalidLastSymbol(5, b'x')),
+            decode(""AAAA/x=="")
+        );
+    }",0,,
+"    pub fn stack_canary(&self) -> Option<usize> {
+        self.stack_canary
+    }",0,,
+"fn is_cold(&self, address: H160) -> bool {
+		self.substate
+			.recursive_is_cold(&|a| a.accessed_addresses.contains(&address))
+	}",0,,
+"fn integer_slice(full: &[u8; 33]) -> &[u8] {
+            let mut len = 33;
+            while len > 1 &&
+                full[full.len() - len] == 0 &&
+                full[full.len() - len + 1] < 0x80
+            {
+                len -= 1;
+            }
+            &full[(full.len() - len)..]
+        }",0,,
+"    pub fn new(
+        params: impl IntoIterator<Item = ValType>,
+        results: impl IntoIterator<Item = ValType>,
+    ) -> FuncType {
+        FuncType {
+            sig: WasmFuncType {
+                params: params.into_iter().map(|t| t.to_wasm_type()).collect(),
+                returns: results.into_iter().map(|t| t.to_wasm_type()).collect(),
+            },
+        }
+    }",1,"5,6,7,8","            sig: WasmFuncType {/~/                params: params.into_iter().map(|t| t.to_wasm_type()).collect(),/~/                returns: results.into_iter().map(|t| t.to_wasm_type()).collect(),/~/            },"
+"    fn fill(&self, goto: InstPtr) -> Inst {
+        match *self {
+            InstHole::Save { slot } => {
+                Inst::Save(InstSave { goto: goto, slot: slot })
+            }
+            InstHole::EmptyLook { look } => {
+                Inst::EmptyLook(InstEmptyLook { goto: goto, look: look })
+            }
+            InstHole::Char { c } => Inst::Char(InstChar { goto: goto, c: c }),
+            InstHole::Ranges { ref ranges } => Inst::Ranges(InstRanges {
+                goto: goto,
+                ranges: ranges.clone().into_boxed_slice(),
+            }),
+            InstHole::Bytes { start, end } => {
+                Inst::Bytes(InstBytes { goto: goto, start: start, end: end })
+            }
+        }
+    }",0,,
+"async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let args = set_command_line_args().get_matches();
+    env::set_var(""RUST_LOG"", ""swhkd=warn"");
+
+    if args.is_present(""debug"") {
+        env::set_var(""RUST_LOG"", ""swhkd=trace"");
+    }
+
+    env_logger::init();
+    log::trace!(""Logger initialized."");
+
+    let pidfile: String = String::from(""/tmp/swhkd.pid"");
+    if Path::new(&pidfile).exists() {
+        log::trace!(""Reading {} file and checking for running instances."", pidfile);
+        let swhkd_pid = match fs::read_to_string(&pidfile) {
+            Ok(swhkd_pid) => swhkd_pid,
+            Err(e) => {
+                log::error!(""Unable to read {} to check all running instances"", e);
+                exit(1);
+            }
+        };
+        log::debug!(""Previous PID: {}"", swhkd_pid);
+
+        let mut sys = System::new_all();
+        sys.refresh_all();
+        for (pid, process) in sys.processes() {
+            if pid.to_string() == swhkd_pid && process.exe() == env::current_exe().unwrap() {
+                log::error!(""Swhkd is already running!"");
+                log::error!(""pid of existing swhkd process: {}"", pid.to_string());
+                log::error!(""To close the existing swhkd process, run `sudo killall swhkd`"");
+                exit(1);
+            }
+        }
+    }
+
+    match fs::write(&pidfile, id().to_string()) {
+        Ok(_) => {}
+        Err(e) => {
+            log::error!(""Unable to write to {}: {}"", pidfile, e);
+            exit(1);
+        }
+    }
+
+    if check_user_permissions().is_err() {
+        exit(1);
+    }
+
+    let load_config = || {
+        let config_file_path: std::path::PathBuf = if args.is_present(""config"") {
+            Path::new(args.value_of(""config"").unwrap()).to_path_buf()
+        } else {
+            fetch_xdg_config_path()
+        };
+
+        log::debug!(""Using config file path: {:#?}"", config_file_path);
+
+        if !config_file_path.exists() {
+            log::error!(""{:#?} doesn't exist"", config_file_path);
+            exit(1);
+        }
+
+        let hotkeys = match config::load(&config_file_path) {
+            Err(e) => {
+                log::error!(""Config Error: {}"", e);
+                exit(1);
+            }
+            Ok(out) => out,
+        };
+
+        for hotkey in &hotkeys {
+            log::debug!(""hotkey: {:#?}"", hotkey);
+        }
+
+        hotkeys
+    };
+
+    let mut hotkeys = load_config();
+
+    log::trace!(""Attempting to find all keyboard file descriptors."");
+    let keyboard_devices: Vec<Device> =
+        evdev::enumerate().filter(check_device_is_keyboard).collect();
+
+    let mut uinput_device = match uinput::create_uinput_device() {
+        Ok(dev) => dev,
+        Err(e) => {
+            log::error!(""Err: {:#?}"", e);
+            exit(1);
+        }
+    };
+
+    if keyboard_devices.is_empty() {
+        log::error!(""No valid keyboard device was detected!"");
+        exit(1);
+    }
+    log::debug!(""{} Keyboard device(s) detected."", keyboard_devices.len());
+
+    let modifiers_map: HashMap<Key, config::Modifier> = HashMap::from([
+        (Key::KEY_LEFTMETA, config::Modifier::Super),
+        (Key::KEY_RIGHTMETA, config::Modifier::Super),
+        (Key::KEY_LEFTMETA, config::Modifier::Super),
+        (Key::KEY_RIGHTMETA, config::Modifier::Super),
+        (Key::KEY_LEFTALT, config::Modifier::Alt),
+        (Key::KEY_RIGHTALT, config::Modifier::Alt),
+        (Key::KEY_LEFTCTRL, config::Modifier::Control),
+        (Key::KEY_RIGHTCTRL, config::Modifier::Control),
+        (Key::KEY_LEFTSHIFT, config::Modifier::Shift),
+        (Key::KEY_RIGHTSHIFT, config::Modifier::Shift),
+    ]);
+
+    let repeat_cooldown_duration: u64 = if args.is_present(""cooldown"") {
+        args.value_of(""cooldown"").unwrap().parse::<u64>().unwrap()
+    } else {
+        250
+    };
+
+    let mut signals = Signals::new(&[
+        SIGUSR1, SIGUSR2, SIGHUP, SIGABRT, SIGBUS, SIGCHLD, SIGCONT, SIGINT, SIGPIPE, SIGQUIT,
+        SIGSYS, SIGTERM, SIGTRAP, SIGTSTP, SIGVTALRM, SIGXCPU, SIGXFSZ,
+    ])?;
+
+    let mut execution_is_paused = false;
+    let mut last_hotkey: Option<config::Hotkey> = None;
+    let mut pending_release: bool = false;
+    let mut keyboard_states: Vec<KeyboardState> = Vec::new();
+    let mut keyboard_stream_map = StreamMap::new();
+
+    for (i, mut device) in keyboard_devices.into_iter().enumerate() {
+        let _ = device.grab();
+        keyboard_stream_map.insert(i, device.into_event_stream()?);
+        keyboard_states.push(KeyboardState::new());
+    }
+
+    
+    let hotkey_repeat_timer = sleep(Duration::from_millis(0));
+    tokio::pin!(hotkey_repeat_timer);
+
+    loop {
+        select! {
+            _ = &mut hotkey_repeat_timer, if &last_hotkey.is_some() => {
+                let hotkey = last_hotkey.clone().unwrap();
+                if hotkey.keybinding.on_release {
+                    continue;
+                }
+                send_command(hotkey.clone());
+                hotkey_repeat_timer.as_mut().reset(Instant::now() + Duration::from_millis(repeat_cooldown_duration));
+            }
+
+            Some(signal) = signals.next() => {
+                match signal {
+                    SIGUSR1 => {
+                        execution_is_paused = true;
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.ungrab();
+                        }
+                    }
+
+                    SIGUSR2 => {
+                        execution_is_paused = false;
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.grab();
+                        }
+                    }
+
+                    SIGHUP => {
+                        hotkeys = load_config();
+                    }
+
+                    SIGINT => {
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.ungrab();
+                        }
+                        log::warn!(""Received SIGINT signal, exiting..."");
+                        exit(1);
+                    }
+
+                    _ => {
+                        for mut device in evdev::enumerate().filter(check_device_is_keyboard) {
+                            let _ = device.ungrab();
+                        }
+
+                        log::warn!(""Received signal: {:#?}"", signal);
+                        log::warn!(""Exiting..."");
+                        exit(1);
+                    }
+                }
+            }
+
+            Some((i, Ok(event))) = keyboard_stream_map.next() => {
+                let keyboard_state = &mut keyboard_states[i];
+
+                let key = match event.kind() {
+                    InputEventKind::Key(keycode) => keycode,
+                    _ => continue
+                };
+
+                match event.value() {
+                    
+                    1 => {
+                        if let Some(modifier) = modifiers_map.get(&key) {
+                            keyboard_state.state_modifiers.insert(*modifier);
+                        } else {
+                            keyboard_state.state_keysyms.insert(key);
+                        }
+                    }
+
+                    
+                    0 => {
+                        if last_hotkey.is_some() && pending_release {
+                            pending_release = false;
+                            send_command(last_hotkey.clone().unwrap());
+                            last_hotkey = None;
+                        }
+                        if let Some(modifier) = modifiers_map.get(&key) {
+                            if let Some(hotkey) = &last_hotkey {
+                                if hotkey.modifiers().contains(modifier) {
+                                    last_hotkey = None;
+                                }
+                            }
+                            keyboard_state.state_modifiers.remove(modifier);
+                        } else if keyboard_state.state_keysyms.contains(key) {
+                            if let Some(hotkey) = &last_hotkey {
+                                if key == hotkey.keysym() {
+                                    last_hotkey = None;
+                                }
+                            }
+                            keyboard_state.state_keysyms.remove(key);
+                        }
+                    }
+
+                    _ => {}
+                }
+
+                let possible_hotkeys: Vec<&config::Hotkey> = hotkeys.iter()
+                    .filter(|hotkey| hotkey.modifiers().len() == keyboard_state.state_modifiers.len())
+                    .collect();
+
+                let event_in_hotkeys = hotkeys.iter().any(|hotkey| {
+                    hotkey.keysym().code() == event.code() &&
+                    keyboard_state.state_modifiers
+                        .iter()
+                        .all(|x| hotkey.modifiers().contains(x)) &&
+                    keyboard_state.state_modifiers.len() == hotkey.modifiers().len()
+                    && !hotkey.is_send()
+                        });
+
+                
+                if !event_in_hotkeys {
+                    uinput_device.emit(&[event]).unwrap();
+                }
+
+                if execution_is_paused || possible_hotkeys.is_empty() || last_hotkey.is_some() {
+                    continue;
+                }
+
+                log::debug!(""state_modifiers: {:#?}"", keyboard_state.state_modifiers);
+                log::debug!(""state_keysyms: {:#?}"", keyboard_state.state_keysyms);
+                log::debug!(""hotkey: {:#?}"", possible_hotkeys);
+
+                for hotkey in possible_hotkeys {
+                    
+                    if keyboard_state.state_modifiers.iter().all(|x| hotkey.modifiers().contains(x))
+                        && keyboard_state.state_modifiers.len() == hotkey.modifiers().len()
+                        && keyboard_state.state_keysyms.contains(hotkey.keysym())
+                    {
+                        last_hotkey = Some(hotkey.clone());
+                        if pending_release { break; }
+                        if hotkey.is_on_release() {
+                            pending_release = true;
+                            break;
+                        }
+                        send_command(hotkey.clone());
+                        hotkey_repeat_timer.as_mut().reset(Instant::now() + Duration::from_millis(repeat_cooldown_duration));
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}",1,77,
+"pub fn check_array<T>(user_buf: *const T, count: usize) -> Result<()> {
+        let checked_len = count
+            .checked_mul(size_of::<T>())
+            .ok_or_else(|| errno!(EINVAL, ""the array is too long""))?;
+        if !is_inside_user_space(user_buf as *const u8, checked_len) {
+            return_errno!(EFAULT, ""the whole buffer is not in the user space"");
+        }
+        Ok(())
+    }",0,,
+"    pub fn iter(&self) -> impl Iterator<Item = (VCodeConstant, &VCodeConstantData)> {
+        self.constants.iter()
+    }",0,,
+"fn show_rru(&self, mb_rru: Option<&RealRegUniverse>) -> String {
+        use std::fmt::Write;
+
+        let mut s = String::new();
+        write!(&mut s, ""VCode_ShowWithRRU {{{{\n"").unwrap();
+        write!(&mut s, ""  Entry block: {}\n"", self.entry).unwrap();
+
+        let mut state = Default::default();
+        let mut safepoint_idx = 0;
+        for i in 0..self.num_blocks() {
+            let block = i as BlockIndex;
+
+            write!(&mut s, ""Block {}:\n"", block).unwrap();
+            if let Some(bb) = self.bindex_to_bb(block) {
+                write!(&mut s, ""  (original IR block: {})\n"", bb).unwrap();
+            }
+            for succ in self.succs(block) {
+                write!(&mut s, ""  (successor: Block {})\n"", succ.get()).unwrap();
+            }
+            let (start, end) = self.block_ranges[block as usize];
+            write!(&mut s, ""  (instruction range: {} .. {})\n"", start, end).unwrap();
+            for inst in start..end {
+                if safepoint_idx < self.safepoint_insns.len()
+                    && self.safepoint_insns[safepoint_idx] == inst
+                {
+                    write!(
+                        &mut s,
+                        ""      (safepoint: slots {:?} with EmitState {:?})\n"",
+                        self.safepoint_slots[safepoint_idx], state,
+                    )
+                    .unwrap();
+                    safepoint_idx += 1;
+                }
+                write!(
+                    &mut s,
+                    ""  Inst {}:   {}\n"",
+                    inst,
+                    self.insts[inst as usize].pretty_print(mb_rru, &mut state)
+                )
+                .unwrap();
+            }
+        }
+
+        write!(&mut s, ""}}}}\n"").unwrap();
+
+        s
+    }",0,,
+"fn into(self) -> i32 {
+        self.0 as i32
+    }",0,,
+"pub fn resize_end(&mut self, mut end: U256) -> Result<(), ExitError> {
+		while end % U256::from(32) != U256::zero() {
+			end = match end.checked_add(U256::one()) {
+				Some(end) => end,
+				None => return Err(ExitError::InvalidRange)
+			};
+		}
+
+		self.effective_len = max(self.effective_len, end);
+		Ok(())
+	}",0,,
+"fn test_ldinddw() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov64 r1, 0x2
+        ldinddw r1, 0x3
+        exit"",
+        [
+            0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 
+            0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 
+        ],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0xccbbaa9988776655 } },
+        3
+    );
+}",0,,
+"pub fn new<T>(value: T) -> VMExternRef
+    where
+        T: 'static + Any + Send + Sync,
+    {
+        VMExternRef::new_with(|| value)
+    }
+
+    
+    pub fn new_with<T>(make_value: impl FnOnce() -> T) -> VMExternRef
+    where
+        T: 'static + Any + Send + Sync,
+    {
+        unsafe {
+            let (layout, footer_offset) =
+                VMExternData::layout_for(mem::size_of::<T>(), mem::align_of::<T>());
+
+            let alloc_ptr = std::alloc::alloc(layout);
+            let alloc_ptr = NonNull::new(alloc_ptr).unwrap_or_else(|| {
+                std::alloc::handle_alloc_error(layout);
+            });
+
+            let value_ptr = alloc_ptr.cast::<T>();
+            ptr::write(value_ptr.as_ptr(), make_value());
+
+            let extern_data_ptr =
+                alloc_ptr.cast::<u8>().as_ptr().add(footer_offset) as *mut VMExternData;
+            ptr::write(
+                extern_data_ptr,
+                VMExternData {
+                    ref_count: AtomicUsize::new(1),
+                    
+                    value_ptr: NonNull::new_unchecked(value_ptr.as_ptr()),
+                },
+            );
+
+            VMExternRef(NonNull::new_unchecked(extern_data_ptr))
+        }
+    }",0,,
+"fn test_parse_less_version_wrong_program() {
+    let output = b""more from util-linux 2.34"";
+
+    assert_eq!(None, parse_less_version(output));
+}",0,,
+"fn get() -> H256 {
+		H256::decode(&mut &sp_io::storage::root()[..])
+			.expect(""Node is configured to use the same hash; qed"")
+	}",0,,
+"fn detect_invalid_last_symbol_every_possible_three_symbols() {
+        let mut base64_to_bytes = ::std::collections::HashMap::new();
+
+        let mut bytes = [0_u8; 2];
+        for b1 in 0_u16..256 {
+            bytes[0] = b1 as u8;
+            for b2 in 0_u16..256 {
+                bytes[1] = b2 as u8;
+                let mut b64 = vec![0_u8; 4];
+                assert_eq!(4, encode_config_slice(&bytes, STANDARD, &mut b64[..]));
+                let mut v = ::std::vec::Vec::with_capacity(2);
+                v.extend_from_slice(&bytes[..]);
+
+                assert!(base64_to_bytes.insert(b64, v).is_none());
+            }
+        }
+
+        
+
+        let mut symbols = [0_u8; 4];
+        for &s1 in STANDARD.char_set.encode_table().iter() {
+            symbols[0] = s1;
+            for &s2 in STANDARD.char_set.encode_table().iter() {
+                symbols[1] = s2;
+                for &s3 in STANDARD.char_set.encode_table().iter() {
+                    symbols[2] = s3;
+                    symbols[3] = PAD_BYTE;
+
+                    match base64_to_bytes.get(&symbols[..]) {
+                        Some(bytes) => {
+                            assert_eq!(Ok(bytes.to_vec()), decode_config(&symbols, STANDARD))
+                        }
+                        None => assert_eq!(
+                            Err(DecodeError::InvalidLastSymbol(2, s3)),
+                            decode_config(&symbols[..], STANDARD)
+                        ),
+                    }
+                }
+            }
+        }
+    }",0,,
+"fn half_fill_split_goto1(&mut self, goto1: InstPtr) {
+        let half_filled = match *self {
+            MaybeInst::Split => goto1,
+            _ => unreachable!(
+                ""must be called on Split instruction, \
+                 instead it was called on: {:?}"",
+                self
+            ),
+        };
+        *self = MaybeInst::Split1(half_filled);
+    }",0,,
+"pub fn func_offset(&self) -> usize {
+        match self.instr.file_offset() {
+            Some(i) => (i - self.func_start.file_offset().unwrap()) as usize,
+            None => u32::MAX as usize,
+        }
+    }",0,,
+"    pub(crate) fn from_wasmtime(types: &TypeTables, ty: &EntityType) -> ExternType {
+        match ty {
+            EntityType::Function(idx) => {
+                FuncType::from_wasm_func_type(types.wasm_signatures[*idx].clone()).into()
+            }
+            EntityType::Global(ty) => GlobalType::from_wasmtime_global(ty).into(),
+            EntityType::Memory(ty) => MemoryType::from_wasmtime_memory(ty).into(),
+            EntityType::Table(ty) => TableType::from_wasmtime_table(ty).into(),
+            EntityType::Module(ty) => {
+                let ty = &types.module_signatures[*ty];
+                ModuleType::from_wasmtime(types, ty).into()
+            }
+            EntityType::Instance(ty) => {
+                let ty = &types.instance_signatures[*ty];
+                InstanceType::from_wasmtime(types, ty).into()
+            }
+            EntityType::Tag(_) => unimplemented!(""wasm tag support""),
+        }
+    }",0,,
+"pub fn find_author() -> H160 {
+		let digest = <frame_system::Pallet<T>>::digest();
+		let pre_runtime_digests = digest.logs.iter().filter_map(|d| d.as_pre_runtime());
+
+		T::FindAuthor::find_author(pre_runtime_digests).unwrap_or_default()
+	}",0,,
+"pub(super) fn parse_code_point<'i, 'b>(input: Input<'i, 'b>) -> PResult<'i, 'b, (char, Span)> {
+    alt((
+        try_map(
+            Token::CodePoint,
+            |(s, span)| {
+                let hex = &s[2..];
+                if hex.len() > 6 {
+                    Err(ParseErrorKind::CodePoint(CodePointError::Invalid))
+                } else {
+                    u32::from_str_radix(hex, 16)
+                        .ok()
+                        .and_then(|n| char::try_from(n).ok())
+                        .map(|c| (c, span))
+                        .ok_or(ParseErrorKind::CodePoint(CodePointError::Invalid))
+                }
+            },
+            nom::Err::Failure,
+        ),
+        try_map(
+            Token::Identifier,
+            |(str, span)| {
+                if let Some(rest) = str.strip_prefix('U') {
+                    if let Ok(n) = u32::from_str_radix(rest, 16) {
+                        if let Ok(c) = char::try_from(n) {
+                            return Ok((c, span));
+                        } else {
+                            return Err(ParseErrorKind::CodePoint(CodePointError::Invalid));
+                        }
+                    }
+                }
+                Err(ParseErrorKind::ExpectedToken(Token::CodePoint))
+            },
+            nom::Err::Error,
+        ),
+    ))(input)
+}",0,,
+"fn test_be16_high() {
+    test_interpreter_and_jit_asm!(
+        ""
+        ldxdw r0, [r1]
+        be16 r0
+        exit"",
+        [0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x1122 } },
+        3
+    );
+}",0,,
+"pub unsafe fn into_raw(self) -> *mut u8 {
+        let ptr = self.0.cast::<u8>().as_ptr();
+        std::mem::forget(self);
+        ptr
+    }",0,,
+"    pub fn has_yielded<A: Any>(&self) -> bool {
+        match self {
+            RunResult::Yielded(yv) => yv.is::<A>(),
+            _ => false,
+        }
+    }",0,,
+"fn test_lddw() {
+    test_interpreter_and_jit_asm!(
+        ""
+        lddw r0, 0x1122334455667788
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x1122334455667788 } },
+        2
+    );
+    test_interpreter_and_jit_asm!(
+        ""
+        lddw r0, 0x0000000080000000
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x80000000 } },
+        2
+    );
+}",0,,
+"pub(super) fn parse_special_char<'i, 'b>(input: Input<'i, 'b>) -> PResult<'i, 'b, char> {
+    try_map(
+        Token::Identifier,
+        |(s, _)| {
+            Ok(match s {
+                ""n"" => '\n',
+                ""r"" => '\r',
+                ""t"" => '\t',
+                ""a"" => '\u{07}',
+                ""e"" => '\u{1B}',
+                ""f"" => '\u{0C}',
+                _ => return Err(ParseErrorKind::Incomplete),
+            })
+        },
+        nom::Err::Error,
+    )(input)
+}",0,,
+"	fn on_response(&mut self, res: &mut server::Response) -> Next {
+		match self.state {
+			State::Initial => Next::end(),
+			State::Error(ref mut handler) => handler.on_response(res),
+			State::Fetching(ref mut handler) => handler.on_response(res),
+		}
+	}",0,,
+"    fn tls_write(&mut self) -> io::Result<usize> {
+        self.tls_session.write_tls(&mut self.socket)
+    }",0,,
+"    fn push_hole(&mut self, inst: InstHole) -> Hole {
+        let hole = self.insts.len();
+        self.insts.push(MaybeInst::Uncompiled(inst));
+        Hole::One(hole)
+    }",0,,
+"    pub fn reverse(mut self, yes: bool) -> Self {
+        self.compiled.is_reverse = yes;
+        self
+    }",0,,
+"    fn description(&self) -> &str {
+        match *self {
+            DecodeError::InvalidByte(_, _) => ""invalid byte"",
+            DecodeError::InvalidLength => ""invalid length"",
+            DecodeError::InvalidLastSymbol(_, _) => ""invalid last symbol"",
+        }
+    }",0,,
+"fn test_large_inputs() {
+		let input = hex::decode(
+			""0000000000000000000000000000000000000000000000000000000000000020\
+			0000000000000000000000000000000000000000000000000000000000000020\
+			0000000000000000000000000000000000000000000000000000000000000020\
+			000000000000000000000000000000000000000000000000000000000000EA5F\
+			0000000000000000000000000000000000000000000000000000000000000015\
+			0000000000000000000000000000000000000000000000000000000000003874"",
+		)
+		.expect(""Decode failed"");
+
+		
+
+		let cost: u64 = 100000;
+
+		let context: Context = Context {
+			address: Default::default(),
+			caller: Default::default(),
+			apparent_value: From::from(0),
+		};
+
+		match Modexp::execute(&input, Some(cost), &context, false) {
+			Ok(precompile_result) => {
+				assert_eq!(precompile_result.output.len(), 32); 
+				let result = BigUint::from_bytes_be(&precompile_result.output[..]);
+				let expected = BigUint::parse_bytes(b""10055"", 10).unwrap();
+				assert_eq!(result, expected);
+			}
+			Err(_) => {
+				panic!(""Modexp::execute() returned error""); 
+			}
+		}
+	}",0,,
+"fn build(&self) {
+			<Pallet<T>>::store_block(false, U256::zero());
+			frame_support::storage::unhashed::put::<EthereumStorageSchema>(
+				&PALLET_ETHEREUM_SCHEMA,
+				&EthereumStorageSchema::V1,
+			);
+		}",0,,
+"    pub(crate) unsafe fn from_caller_checked_anyfunc(
+        store: &mut StoreOpaque,
+        anyfunc: *mut VMCallerCheckedAnyfunc,
+    ) -> Option<Self> {
+        let anyfunc = NonNull::new(anyfunc)?;
+        debug_assert!(anyfunc.as_ref().type_index != VMSharedSignatureIndex::default());
+        let export = ExportFunction { anyfunc };
+        Some(Func::from_wasmtime_function(export, store))
+    }",0,,
+"fn test_ldxw() {
+    test_interpreter_and_jit_asm!(
+        ""
+        ldxw r0, [r1+2]
+        exit"",
+        [
+            0xaa, 0xbb, 0x11, 0x22, 0x33, 0x44, 0xcc, 0xdd, 
+        ],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x44332211 } },
+        2
+    );
+}",0,,
+"fn test_mul_loop() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov r0, 0x7
+        add r1, 0xa
+        lsh r1, 0x20
+        rsh r1, 0x20
+        jeq r1, 0x0, +4
+        mov r0, 0x7
+        mul r0, 0x7
+        add r1, -1
+        jne r1, 0x0, -3
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x75db9c97 } },
+        37
+    );
+}",0,,
+"pub fn instantiate(wasm: &[u8], known_valid: bool, strategy: Strategy) {
+    
+    
+    let mut cfg = crate::fuzz_default_config(strategy).unwrap();
+    cfg.wasm_module_linking(false);
+    instantiate_with_config(wasm, known_valid, cfg, Timeout::None);
+}",0,,
+"fn test_err_non_terminate_capped() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov64 r6, 0x0
+        mov64 r1, 0x0
+        mov64 r2, 0x0
+        mov64 r3, 0x0
+        mov64 r4, 0x0
+        mov64 r5, r6
+        syscall BpfTracePrintf
+        add64 r6, 0x1
+        ja -0x8
+        exit"",
+        [],
+        (
+            b""BpfTracePrintf"" => syscalls::BpfTracePrintf::init::<BpfSyscallContext, UserError>; syscalls::BpfTracePrintf::call,
+        ),
+        0,
+        {
+            |_vm, res: Result| {
+                matches!(res.unwrap_err(),
+                    EbpfError::ExceededMaxInstructions(pc, initial_insn_count)
+                    if pc == 35 && initial_insn_count == 6
+                )
+            }
+        },
+        6
+    );
+    test_interpreter_and_jit_asm!(
+        ""
+        mov64 r6, 0x0
+        mov64 r1, 0x0
+        mov64 r2, 0x0
+        mov64 r3, 0x0
+        mov64 r4, 0x0
+        mov64 r5, r6
+        syscall BpfTracePrintf
+        add64 r6, 0x1
+        ja -0x8
+        exit"",
+        [],
+        (
+            b""BpfTracePrintf"" => syscalls::BpfTracePrintf::init::<BpfSyscallContext, UserError>; syscalls::BpfTracePrintf::call,
+        ),
+        0,
+        {
+            |_vm, res: Result| {
+                matches!(res.unwrap_err(),
+                    EbpfError::ExceededMaxInstructions(pc, initial_insn_count)
+                    if pc == 37 && initial_insn_count == 1000
+                )
+            }
+        },
+        1000
+    );
+}",0,,
+"fn test_err_syscall_string() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov64 r1, 0x0
+        syscall BpfSyscallString
+        mov64 r0, 0x0
+        exit"",
+        [72, 101, 108, 108, 111],
+        (
+            b""BpfSyscallString"" => syscalls::BpfSyscallString::init::<BpfSyscallContext, UserError>; syscalls::BpfSyscallString::call,
+        ),
+        0,
+        {
+            |_vm, res: Result| {
+                matches!(res.unwrap_err(),
+                    EbpfError::AccessViolation(pc, access_type, vm_addr, len, name)
+                    if access_type == AccessType::Load && pc == 0 && vm_addr == 0 && len == 0 && name == ""unknown""
+                )
+            }
+        },
+        2
+    );
+}",0,,
+"fn withdraw_fee(
+		who: &H160,
+		fee: U256,
+	) -> Result<Self::LiquidityInfo, Error<T>> {
+		EVMCurrencyAdapter::<<T as Config>::Currency, ()>::withdraw_fee(who, fee)
+	}",0,,
+"fn withdraw_fee(who: &H160, fee: U256) -> Result<Self::LiquidityInfo, Error<T>> {
+		if fee.is_zero() {
+			return Ok(None);
+		}
+		let account_id = T::AddressMapping::into_account_id(*who);
+		let imbalance = C::withdraw(
+			&account_id,
+			fee.low_u128().unique_saturated_into(),
+			WithdrawReasons::FEE,
+			ExistenceRequirement::AllowDeath,
+		)
+		.map_err(|_| Error::<T>::BalanceLow)?;
+		Ok(Some(imbalance))
+	}",1,7,"fee.low_u128().unique_saturated_into(),"
+"fn drop(&mut self) {
+            self.live_refs.fetch_sub(1, SeqCst);
+        }",0,,
+"fn test_load_elf_empty_rodata() {
+    let config = Config {
+        static_syscalls: false,
+        ..Config::default()
+    };
+    test_interpreter_and_jit_elf!(
+        ""tests/elfs/empty_rodata.so"",
+        config,
+        [],
+        (
+            b""log_64"" => syscalls::BpfSyscallU64::init::<BpfSyscallContext, UserError>; syscalls::BpfSyscallU64::call,
+        ),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0 } },
+        8
+    );
+}",0,,
+"fn test_mul32_reg_overflow() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov r0, 0x40000001
+        mov r1, 4
+        mul32 r0, r1
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x4 } },
+        4
+    );
+}",0,,
+"pub fn tweak_add_assign(&mut self, tweak: &SecretKey) -> Result<(), Error> {
+        let mut r = Jacobian::default();
+        let a = Jacobian::from_ge(&self.0);
+        let one = Scalar::from_int(1);
+        ECMULT_CONTEXT.ecmult(&mut r, &a, &one, &tweak.0);
+
+        if r.is_infinity() {
+            return Err(Error::TweakOutOfRange);
+        }
+
+        self.0.set_gej(&r);
+        Ok(())
+    }",0,,
+"	fn exit_discard(&mut self) -> Result<(), ExitError> {
+		self.substate.exit_discard()
+	}",0,,
+"    pub fn call(&self, mut store: impl AsContextMut, params: &[Val]) -> Result<Box<[Val]>> {
+        assert!(
+            !store.as_context().async_support(),
+            ""must use `call_async` when async support is enabled on the config"",
+        );
+        let my_ty = self.ty(&store);
+        self.call_impl(&mut store.as_context_mut(), my_ty, params)
+    }",0,,
+"fn main() -> std::io::Result<()> {
+    env::set_var(""RUST_LOG"", ""swhks=trace"");
+    env_logger::init();
+
+    let pid_file_path = String::from(""/tmp/swhks.pid"");
+    let sock_file_path = String::from(""/tmp/swhkd.sock"");
+
+    if Path::new(&pid_file_path).exists() {
+        log::trace!(""Reading {} file and checking for running instances."", pid_file_path);
+        let swhkd_pid = match fs::read_to_string(&pid_file_path) {
+            Ok(swhkd_pid) => swhkd_pid,
+            Err(e) => {
+                log::error!(""Unable to read {} to check all running instances"", e);
+                exit(1);
+            }
+        };
+        log::debug!(""Previous PID: {}"", swhkd_pid);
+
+        let mut sys = System::new_all();
+        sys.refresh_all();
+        for (pid, process) in sys.processes() {
+            if pid.to_string() == swhkd_pid && process.exe() == env::current_exe().unwrap() {
+                log::error!(""Server is already running!"");
+                exit(1);
+            }
+        }
+    }
+
+    if Path::new(&sock_file_path).exists() {
+        log::trace!(""Sockfile exists, attempting to remove it."");
+        match fs::remove_file(&sock_file_path) {
+            Ok(_) => {
+                log::debug!(""Removed old socket file"");
+            }
+            Err(e) => {
+                log::error!(""Error removing the socket file!: {}"", e);
+                log::error!(""You can manually remove the socket file: {}"", sock_file_path);
+                exit(1);
+            }
+        };
+    }
+
+    match fs::write(&pid_file_path, id().to_string()) {
+        Ok(_) => {}
+        Err(e) => {
+            log::error!(""Unable to write to {}: {}"", pid_file_path, e);
+            exit(1);
+        }
+    }
+
+    let listener = UnixListener::bind(sock_file_path)?;
+    loop {
+        match listener.accept() {
+            Ok((mut socket, address)) => {
+                let mut response = String::new();
+                socket.read_to_string(&mut response)?;
+                run_system_command(&response);
+                log::debug!(""Socket: {:?} Address: {:?} Response: {}"", socket, address, response);
+            }
+            Err(e) => log::error!(""accept function failed: {:?}"", e),
+        }
+    }
+}",1,5,"    let sock_file_path = String::from(""/tmp/swhkd.sock"");"
+"    pub fn sqr(&self) -> Scalar {
+        let mut ret = Scalar::default();
+        ret.sqr_in_place(self);
+        ret
+    }",0,,
+"    fn init_hang_limit<T>(store: &mut Store<T>, instance: Instance) {
+        match instance.get_export(&mut *store, ""hangLimitInitializer"") {
+            None => return,
+            Some(Extern::Func(f)) => {
+                f.call(store, &[])
+                    .expect(""initializing the hang limit should not fail"");
+            }
+            Some(_) => panic!(""unexpected hangLimitInitializer export""),
+        }
+    }",0,,
+"    fn insert_precise_stack_root(
+        precise_stack_roots: &mut HashSet<VMExternRefWithTraits>,
+        root: NonNull<VMExternData>,
+    ) {
+        let root = unsafe { VMExternRef::clone_from_raw(root.as_ptr() as *mut _) };
+        precise_stack_roots.insert(VMExternRefWithTraits(root));
+    }",0,,
+"fn strip_first_last(s: &str) -> &str {
+    &s[1..s.len() - 1]
+}",0,,
+"pub fn insert(&mut self, data: VCodeConstantData) -> VCodeConstant {
+        match data {
+            VCodeConstantData::Generated(_) => self.constants.push(data),
+            VCodeConstantData::Pool(constant, _) => match self.pool_uses.get(&constant) {
+                None => {
+                    let vcode_constant = self.constants.push(data);
+                    self.pool_uses.insert(constant, vcode_constant);
+                    vcode_constant
+                }
+                Some(&vcode_constant) => vcode_constant,
+            },
+            VCodeConstantData::WellKnown(data_ref) => {
+                match self.well_known_uses.get(&(data_ref as *const [u8])) {
+                    None => {
+                        let vcode_constant = self.constants.push(data);
+                        self.well_known_uses
+                            .insert(data_ref as *const [u8], vcode_constant);
+                        vcode_constant
+                    }
+                    Some(&vcode_constant) => vcode_constant,
+                }
+            }
+        }
+    }",0,,
+"    pub fn ensure_sigstack_installed(&mut self, ensure: bool) {
+        self.ensure_sigstack_installed = ensure;
+    }",0,,
+"fn reference_type(wasm_ty: cranelift_wasm::WasmType, pointer_type: ir::Type) -> ir::Type {
+    match wasm_ty {
+        cranelift_wasm::WasmType::FuncRef => pointer_type,
+        cranelift_wasm::WasmType::ExternRef => match pointer_type {
+            ir::types::I32 => ir::types::R32,
+            ir::types::I64 => ir::types::R64,
+            _ => panic!(""unsupported pointer type""),
+        },
+        _ => panic!(""unsupported Wasm reference type""),
+    }
+}",0,,
+"    pub fn unwrap_yielded(self) -> YieldedVal {
+        self.yielded().unwrap()
+    }",0,,
+"    fn fill_to_next(&mut self, hole: Hole) {
+        let next = self.insts.len();
+        self.fill(hole, next);
+    }",0,,
+"    pub(crate) fn from_wasmtime_global(global: &Global) -> GlobalType {
+        let ty = ValType::from_wasm_type(&global.wasm_ty);
+        let mutability = if global.mutability {
+            Mutability::Var
+        } else {
+            Mutability::Const
+        };
+        GlobalType::new(ty, mutability)
+    }",0,,
+"	pub fn ui_middleware(
+		deps: Dependencies,
+		dapps_domain: String,
+	) -> Result<Middleware, String> {
+		let parity_remote = parity_reactor::Remote::new(deps.remote.clone());
+		Ok(parity_dapps::Middleware::ui(
+			parity_remote,
+			deps.contract_client,
+			deps.sync_status,
+			deps.fetch,
+			dapps_domain,
+		))
+	}",0,,
+"	fn default() -> Self {
+		Self::Undefined
+	}",0,,
+"async fn accept(&mut self) -> TResult<TcpStream> {
+        
+        let mut backoff = 1;
+        loop {
+            match self.listener.accept().await {
+                
+                Ok((stream, _)) => return Ok(stream),
+                Err(e) => {
+                    if backoff > 64 {
+                        
+                        return Err(e.into());
+                    }
+                }
+            }
+            
+            time::sleep(Duration::from_secs(backoff)).await;
+            
+            backoff *= 2;
+        }
+    }",0,,
+"pub fn b32(&self) -> [u8; 32] {
+        let mut bin = [0u8; 32];
+        self.fill_b32(&mut bin);
+        bin
+    }",0,,
+"fn drop(&mut self) {
+            self.0.fetch_add(1, SeqCst);
+        }",0,,
+"fn extern_data(&self) -> &VMExternData {
+        unsafe { self.0.as_ref() }
+    }",0,,
+"fn drop(&mut self) {
+            self.0.store(true, SeqCst);
+        }",0,,
+"fn test_mov_large() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov32 r1, -1
+        mov32 r0, r1
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0xffffffff } },
+        3
+    );
+}",0,,
+"    fn next_inst(&self) -> Patch {
+        Patch { hole: Hole::None, entry: self.insts.len() }
+    }",0,,
+"fn recover_signer(transaction: &Transaction) -> Option<H160> {
+		let mut sig = [0u8; 65];
+		let mut msg = [0u8; 32];
+		sig[0..32].copy_from_slice(&transaction.signature.r()[..]);
+		sig[32..64].copy_from_slice(&transaction.signature.s()[..]);
+		sig[64] = transaction.signature.standard_v();
+		msg.copy_from_slice(&LegacyTransactionMessage::from(transaction.clone()).hash()[..]);
+
+		let pubkey = sp_io::crypto::secp256k1_ecdsa_recover(&sig, &msg).ok()?;
+		Some(H160::from(H256::from_slice(
+			Keccak256::digest(&pubkey).as_slice(),
+		)))
+	}",0,,
+"fn drop(&mut self) {
+            self.0.store(true, SeqCst);
+        }",0,,
+"fn table_drops_externref() -> anyhow::Result<()> {
+    test_engine(&Engine::default())?;
+
+    if !skip_pooling_allocator_tests() {
+        test_engine(&Engine::new(
+            Config::new().allocation_strategy(InstanceAllocationStrategy::pooling()),
+        )?)?;
+    }
+
+    return Ok(());
+
+    fn test_engine(engine: &Engine) -> anyhow::Result<()> {
+        let mut store = Store::new(&engine, ());
+        let flag = Arc::new(AtomicBool::new(false));
+        let externref = ExternRef::new(SetFlagOnDrop(flag.clone()));
+        Table::new(
+            &mut store,
+            TableType::new(ValType::ExternRef, 1, None),
+            externref.into(),
+        )?;
+        drop(store);
+        assert!(flag.load(SeqCst));
+
+        let mut store = Store::new(&engine, ());
+        let module = Module::new(
+            &engine,
+            r#""
+            (module
+                (table 1 externref)
+
+                (func (export ""run"") (param externref)
+                    i32.const 0
+                    local.get 0
+                    table.set 0
+                )
+            )
+        ""#,
+        )?;
+        let instance = Instance::new(&mut store, &module, &[])?;
+        let run = instance.get_typed_func::<Option<ExternRef>, (), _>(&mut store, ""run"")?;
+        let flag = Arc::new(AtomicBool::new(false));
+        let externref = ExternRef::new(SetFlagOnDrop(flag.clone()));
+        run.call(&mut store, Some(externref))?;
+        drop(store);
+        assert!(flag.load(SeqCst));
+        Ok(())
+    }
+}",0,,
+"fn c_class_bytes(
+        &mut self,
+        ranges: &[hir::ClassBytesRange],
+    ) -> ResultOrEmpty {
+        debug_assert!(!ranges.is_empty());
+
+        let first_split_entry = self.insts.len();
+        let mut holes = vec![];
+        let mut prev_hole = Hole::None;
+        for r in &ranges[0..ranges.len() - 1] {
+            self.fill_to_next(prev_hole);
+            let split = self.push_split_hole();
+            let next = self.insts.len();
+            self.byte_classes.set_range(r.start(), r.end());
+            holes.push(self.push_hole(InstHole::Bytes {
+                start: r.start(),
+                end: r.end(),
+            }));
+            prev_hole = self.fill_split(split, Some(next), None);
+        }
+        let next = self.insts.len();
+        let r = &ranges[ranges.len() - 1];
+        self.byte_classes.set_range(r.start(), r.end());
+        holes.push(
+            self.push_hole(InstHole::Bytes { start: r.start(), end: r.end() }),
+        );
+        self.fill(prev_hole, next);
+        Ok(Some(Patch { hole: Hole::Many(holes), entry: first_split_entry }))
+    }",0,,
+"    pub fn block_order(&self) -> &BlockLoweringOrder {
+        &self.vcode.block_order
+    }",0,,
+"pub fn seteuid(uid: u32) {
+    let uid = nix::unistd::Uid::from_raw(uid);
+    match nix::unistd::seteuid(uid) {
+        Ok(_) => log::debug!(""Dropping privileges...""),
+        Err(e) => {
+            log::error!(""Failed to set UID: {:#?}"", e);
+            exit(1);
+        }
+    }
+}",1,"1,5","    let uid = nix::unistd::Uid::from_raw(uid);/~/            log::error!(""Failed to set UID: {:#?}"", e);"
+"fn decode_into_slice_fits_in_precisely_sized_slice() {
+        let mut orig_data = Vec::new();
+        let mut encoded_data = String::new();
+        let mut decode_buf = Vec::new();
+
+        let input_len_range = Uniform::new(0, 1000);
+
+        let mut rng = rand::rngs::SmallRng::from_entropy();
+
+        for _ in 0..10_000 {
+            orig_data.clear();
+            encoded_data.clear();
+            decode_buf.clear();
+
+            let input_len = input_len_range.sample(&mut rng);
+
+            for _ in 0..input_len {
+                orig_data.push(rng.gen());
+            }
+
+            let config = random_config(&mut rng);
+            encode_config_buf(&orig_data, config, &mut encoded_data);
+            assert_encode_sanity(&encoded_data, config, input_len);
+
+            decode_buf.resize(input_len, 0);
+
+            
+            let decode_bytes_written =
+                decode_config_slice(&encoded_data, config, &mut decode_buf[..]).unwrap();
+
+            assert_eq!(orig_data.len(), decode_bytes_written);
+            assert_eq!(orig_data, decode_buf);
+        }
+    }",0,,
+"pub(super) fn parse_group<'i, 'b>(input: Input<'i, 'b>) -> PResult<'i, 'b, Rule<'i>> {
+    fn parse_capture<'i, 'b>(input: Input<'i, 'b>) -> PResult<'i, 'b, (Capture<'i>, Span)> {
+        map(pair(Token::Colon, opt(Token::Identifier)), |((_, span1), name)| {
+            (Capture::new(name.map(|(s, _)| s)), span1)
+        })(input)
+    }",0,,
+"pub async fn test_run(listener: TcpListener, db: CoreDB, sig: impl Future) {
+    let (signal, _) = broadcast::channel(1);
+    let (terminate_tx, terminate_rx) = mpsc::channel(1);
+    let mut server = Listener {
+        listener,
+        db,
+        climit: Arc::new(Semaphore::new(50000)),
+        signal,
+        terminate_tx,
+        terminate_rx,
+    };
+    tokio::select! {
+        _ = server.run() => {}
+        _ = sig => {}
+    }
+    let Listener {
+        mut terminate_rx,
+        terminate_tx,
+        signal,
+        ..
+    } = server;
+    drop(signal);
+    drop(terminate_tx);
+    let _ = terminate_rx.recv().await;
+}",0,,
+"fn validate_transaction_in_pool(
+		origin: H160,
+		transaction: &Transaction,
+	) -> TransactionValidity {
+		let transaction_data: TransactionData = transaction.into();
+		let transaction_nonce = transaction_data.nonce;
+
+		let (base_fee, _) = T::FeeCalculator::min_gas_price();
+		let (who, _) = pallet_evm::Pallet::<T>::account_basic(&origin);
+
+		let _ = CheckEvmTransaction::<InvalidTransactionWrapper>::new(
+			CheckEvmTransactionConfig {
+				evm_config: T::config(),
+				block_gas_limit: T::BlockGasLimit::get(),
+				base_fee,
+				chain_id: T::ChainId::get(),
+				is_transactional: true,
+			},
+			transaction_data.clone().into(),
+		)
+		.validate_in_pool_for(&who)
+		.and_then(|v| v.with_chain_id())
+		.and_then(|v| v.with_base_fee())
+		.and_then(|v| v.with_balance_for(&who))
+		.map_err(|e| e.0)?;
+
+		let priority = match (
+			transaction_data.gas_price,
+			transaction_data.max_fee_per_gas,
+			transaction_data.max_priority_fee_per_gas,
+		) {
+			
+			
+			
+			(Some(gas_price), None, None) => {
+				gas_price.saturating_sub(base_fee).unique_saturated_into()
+			}
+			
+			(None, Some(_), None) => 0,
+			
+			(None, Some(max_fee_per_gas), Some(max_priority_fee_per_gas)) => max_fee_per_gas
+				.saturating_sub(base_fee)
+				.min(max_priority_fee_per_gas)
+				.unique_saturated_into(),
+			
+			_ => return Err(InvalidTransaction::Payment.into()),
+		};
+
+		
+		let mut builder = ValidTransactionBuilder::default()
+			.and_provides((origin, transaction_nonce))
+			.priority(priority);
+
+		
+		
+		if transaction_nonce > who.nonce {
+			if let Some(prev_nonce) = transaction_nonce.checked_sub(1.into()) {
+				builder = builder.and_requires((origin, prev_nonce))
+			}
+		}
+
+		builder.build()
+	}",0,,
+"fn test_div64_imm() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov r0, 0xc
+        lsh r0, 32
+        div r0, 4
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x300000000 } },
+        4
+    );
+}",0,,
+"fn test_parse_less_version_551() {
+    let output = b""less 551 (PCRE regular expressions)
+Copyright (C) 1984-2019  Mark Nudelman
+
+less comes with NO WARRANTY, to the extent permitted by law.
+For information about the terms of redistribution,
+see the file named README in the less distribution.
+Home page: http://www.greenwoodsoftware.com/less"";
+
+    assert_eq!(Some(551), parse_less_version(output));
+}",0,,
+"fn build(&self) {
+			<Pallet<T>>::store_block(false, U256::zero());
+			frame_support::storage::unhashed::put::<EthereumStorageSchema>(
+				&PALLET_ETHEREUM_SCHEMA,
+				&EthereumStorageSchema::V1,
+			);
+		}",0,,
+"fn test_parse_less_version_529() {
+    let output = b""less 529 (Spencer V8 regular expressions)
+Copyright (C) 1984-2017  Mark Nudelman
+
+less comes with NO WARRANTY, to the extent permitted by law.
+For information about the terms of redistribution,
+see the file named README in the less distribution.
+Homepage: http://www.greenwoodsoftware.com/less"";
+
+    assert_eq!(Some(529), parse_less_version(output));
+}",0,,
+"fn drop(&mut self) {
+            self.live_refs.fetch_sub(1, SeqCst);
+        }",0,,
+"fn block_hash(number: u32) -> H256 {
+		BlockHash::<T>::get(U256::from(number))
+	}",0,,
+"pub fn serialize(&self) -> [u8; util::MESSAGE_SIZE] {
+        self.0.b32()
+    }",0,,
+"    fn new(socket: TcpStream,
+           token: mio::Token,
+           mode: ServerMode,
+           tls_session: rustls::ServerSession)
+           -> Connection {
+        let back = open_back(&mode);
+        Connection {
+            socket,
+            token,
+            closing: false,
+            closed: false,
+            mode,
+            tls_session,
+            back,
+            sent_http_response: false,
+        }
+    }",0,,
+"fn test_lldxdw() {
+    test_interpreter_and_jit_asm!(
+        ""
+        ldxdw r0, [r1+2]
+        exit"",
+        [
+            0xaa, 0xbb, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 
+            0x77, 0x88, 0xcc, 0xdd, 
+        ],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x8877665544332211 } },
+        2
+    );
+}",0,,
+"	fn on_response_writable(&mut self, encoder: &mut Encoder<net::HttpStream>) -> Next {
+		match self.state {
+			State::Initial => Next::end(),
+			State::Error(ref mut handler) => handler.on_response_writable(encoder),
+			State::Fetching(ref mut handler) => handler.on_response_writable(encoder),
+		}
+	}",0,,
+"fn test_stack_call_depth_tracking() {
+    for dynamic_stack_frames in [false, true] {
+        let config = Config {
+            dynamic_stack_frames,
+            max_call_depth: 2,
+            ..Config::default()
+        };
+
+        
+        
+        
+        
+        test_interpreter_and_jit_asm!(
+            ""
+            call foo
+            call foo
+            exit
+            foo:
+            exit
+            "",
+            config,
+            [],
+            (),
+            0,
+            { |_vm, res: Result| { res.is_ok() } },
+            5
+        );
+
+        
+        test_interpreter_and_jit_asm!(
+            ""
+            entrypoint:
+            call foo
+            exit
+            foo:
+            call bar
+            exit
+            bar:
+            exit
+            "",
+            config,
+            [],
+            (),
+            0,
+            {
+                |_vm, res: Result| {
+                    matches!(res.unwrap_err(),
+                        EbpfError::CallDepthExceeded(pc, depth)
+                        if pc == 29 + 2 && depth == config.max_call_depth
+                    )
+                }
+            },
+            2
+        );
+    }
+}",0,,
+"pub fn heap_u32_mut(&mut self) -> &mut [u32] {
+        unsafe { self.alloc.heap_u32_mut() }
+    }",0,,
+"fn test_bpf_to_bpf_depth() {
+    let config = Config {
+        static_syscalls: false,
+        ..Config::default()
+    };
+    for i in 0..config.max_call_depth {
+        test_interpreter_and_jit_elf!(
+            ""tests/elfs/multiple_file.so"",
+            config,
+            [i as u8],
+            (
+                b""log"" => syscalls::BpfSyscallString::init::<BpfSyscallContext, UserError>; syscalls::BpfSyscallString::call,
+            ),
+            0,
+            { |_vm, res: Result| { res.unwrap() == 0 } },
+            if i == 0 { 4 } else { 3 + 10 * i as u64 }
+        );
+    }
+}",0,,
+"    fn insns(&self) -> &[I] {
+        &self.insts[..]
+    }",0,,
+"    fn test_diff_same_non_empty_file() {
+        _do_diff_test(""/etc/passwd"", ""/etc/passwd"", false);
+    }",0,,
+"pub fn verify(message: &Message, signature: &Signature, pubkey: &PublicKey) -> bool {
+    ECMULT_CONTEXT.verify_raw(&signature.r, &signature.s, &pubkey.0, &message.0)
+}",0,,
+"pub async fn run(
+    listener: TcpListener,
+    bgsave_cfg: BGSave,
+    snapshot_cfg: SnapshotConfig,
+    sig: impl Future,
+    restore_filepath: Option<PathBuf>,
+) {
+    let (signal, _) = broadcast::channel(1);
+    let (terminate_tx, terminate_rx) = mpsc::channel(1);
+    let db = match CoreDB::new(bgsave_cfg, snapshot_cfg, restore_filepath) {
+        Ok(d) => d,
+        Err(e) => {
+            eprintln!(""ERROR: {}"", e);
+            process::exit(0x100);
+        }
+    };
+    match fs::create_dir_all(&*DIR_REMOTE_SNAPSHOT) {
+        Ok(_) => (),
+        Err(e) => match e.kind() {
+            ErrorKind::AlreadyExists => (),
+            _ => {
+                log::error!(""Failed to create snapshot directories: '{}'"", e);
+                process::exit(0x100);
+            }
+        },
+    }
+    log::info!(
+        ""Started server on terrapipe://{}"",
+        listener
+            .local_addr()
+            .expect(""The local address couldn't be fetched. Please file a bug report"")
+    );
+    let mut server = Listener {
+        listener,
+        db,
+        climit: Arc::new(Semaphore::new(50000)),
+        signal,
+        terminate_tx,
+        terminate_rx,
+    };
+    tokio::select! {
+        _ = server.run() => {}
+        _ = sig => {
+            log::info!(""Signalling all workers to shut down"");
+        }
+    }
+    let Listener {
+        mut terminate_rx,
+        terminate_tx,
+        signal,
+        db,
+        ..
+    } = server;
+    if let Ok(_) = db.flush_db() {
+        log::info!(""Successfully saved data to disk"");
+        ()
+    } else {
+        log::error!(""Failed to flush data to disk"");
+        loop {
+            
+            log::warn!(""Press enter to try again..."");
+            io::stdout().flush().unwrap();
+            io::stdin().read(&mut [0]).unwrap();
+            if let Ok(_) = db.flush_db() {
+                log::info!(""Successfully saved data to disk"");
+                break;
+            } else {
+                continue;
+            }
+        }
+    }
+    drop(signal);
+    drop(terminate_tx);
+    let _ = terminate_rx.recv().await;
+    terminal::write_info(""Goodbye :)\n"").unwrap();
+}",0,,
+"    pub(crate) fn span(&self) -> Span {
+        self.tokens
+            .first()
+            .map(|&(_, span)| span)
+            .unwrap_or_else(|| (self.source.len()..self.source.len()).into())
+    }",0,,
+"fn test_be32() {
+    test_interpreter_and_jit_asm!(
+        ""
+        ldxw r0, [r1]
+        be32 r0
+        exit"",
+        [0x11, 0x22, 0x33, 0x44],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x11223344 } },
+        3
+    );
+}",0,,
+"fn from(val: f64) -> Val {
+        Val::F64(val.to_bits())
+    }",0,,
+"pub fn check_device_is_keyboard(device: &Device) -> bool {
+    if device.supported_keys().map_or(false, |keys| keys.contains(Key::KEY_ENTER)) {
+        if device.name() == Some(""swhkd virtual output"") {
+            return false;
+        }
+        log::debug!(""Keyboard: {}"", device.name().unwrap(),);
+        true
+    } else {
+        log::trace!(""Other: {}"", device.name().unwrap(),);
+        false
+    }
+}",0,,
+"fn incoming_plaintext(&mut self, buf: &[u8]) {
+        match self.mode {
+            ServerMode::Echo => {
+                self.tls_session.write_all(buf).unwrap();
+            }
+            ServerMode::Http => {
+                self.send_http_response_once();
+            }
+            ServerMode::Forward(_) => {
+                self.back.as_mut().unwrap().write_all(buf).unwrap();
+            }
+        }
+    }",0,,
+"pub fn native_version() -> NativeVersion {
+	NativeVersion {
+		runtime_version: VERSION,
+		can_author_with: Default::default(),
+	}
+}",0,,
+"pub unsafe fn instance_handle_from_raw(
+    ptr: *mut Instance,
+    needs_inst_drop: bool,
+) -> InstanceHandle {
+    InstanceHandle {
+        inst: NonNull::new_unchecked(ptr),
+        needs_inst_drop,
+    }
+}",0,,
+"pub fn check_user_permissions() -> Result<(), ()> {
+    if !Uid::current().is_root() {
+        let groups = nix::unistd::getgroups();
+        for (_, groups) in groups.iter().enumerate() {
+            for group in groups {
+                let group = Group::from_gid(*group);
+                if group.unwrap().unwrap().name == ""input"" {
+                    log::error!(""Note: INVOKING USER IS IN INPUT GROUP!!!!"");
+                    log::error!(""THIS IS A HUGE SECURITY RISK!!!!"");
+                }
+            }
+        }
+        log::error!(""Consider using `pkexec swhkd ...`"");
+        Err(())
+    } else {
+        log::warn!(""Running swhkd as root!"");
+        Ok(())
+    }
+}",0,,
+"    pub fn has_unparsed_debuginfo(&self) -> bool {
+        self.module.has_unparsed_debuginfo()
+    }",0,,
+"fn test_reloc_64_64_high_vaddr() {
+    
+    
+    test_interpreter_and_jit_elf!(
+        ""tests/elfs/reloc_64_64_high_vaddr.so"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == ebpf::MM_PROGRAM_START } },
+        2
+    );
+}",0,,
+"fn test_dynamic_stack_frames_empty() {
+    let config = Config {
+        dynamic_stack_frames: true,
+        ..Config::default()
+    };
+
+    
+    test_interpreter_and_jit_asm!(
+        ""
+        call foo
+        exit
+        foo:
+        mov r0, r10
+        exit"",
+        config,
+        [],
+        (),
+        0,
+        { |_vm, res: Result| res.unwrap() == ebpf::MM_STACK_START + config.stack_size() as u64 },
+        4
+    );
+}",0,,
+"fn sqr_512(&self, l: &mut [u32; 16]) {
+        let (mut c0, mut c1, mut c2): (u32, u32, u32) = (0, 0, 0);
+        define_ops!(c0, c1, c2);
+
+        
+        muladd_fast!(self.0[0], self.0[0]);
+        l[0] = extract_fast!();
+        muladd2!(self.0[0], self.0[1]);
+        l[1] = extract!();
+        muladd2!(self.0[0], self.0[2]);
+        muladd!(self.0[1], self.0[1]);
+        l[2] = extract!();
+        muladd2!(self.0[0], self.0[3]);
+        muladd2!(self.0[1], self.0[2]);
+        l[3] = extract!();
+        muladd2!(self.0[0], self.0[4]);
+        muladd2!(self.0[1], self.0[3]);
+        muladd!(self.0[2], self.0[2]);
+        l[4] = extract!();
+        muladd2!(self.0[0], self.0[5]);
+        muladd2!(self.0[1], self.0[4]);
+        muladd2!(self.0[2], self.0[3]);
+        l[5] = extract!();
+        muladd2!(self.0[0], self.0[6]);
+        muladd2!(self.0[1], self.0[5]);
+        muladd2!(self.0[2], self.0[4]);
+        muladd!(self.0[3], self.0[3]);
+        l[6] = extract!();
+        muladd2!(self.0[0], self.0[7]);
+        muladd2!(self.0[1], self.0[6]);
+        muladd2!(self.0[2], self.0[5]);
+        muladd2!(self.0[3], self.0[4]);
+        l[7] = extract!();
+        muladd2!(self.0[1], self.0[7]);
+        muladd2!(self.0[2], self.0[6]);
+        muladd2!(self.0[3], self.0[5]);
+        muladd!(self.0[4], self.0[4]);
+        l[8] = extract!();
+        muladd2!(self.0[2], self.0[7]);
+        muladd2!(self.0[3], self.0[6]);
+        muladd2!(self.0[4], self.0[5]);
+        l[9] = extract!();
+        muladd2!(self.0[3], self.0[7]);
+        muladd2!(self.0[4], self.0[6]);
+        muladd!(self.0[5], self.0[5]);
+        l[10] = extract!();
+        muladd2!(self.0[4], self.0[7]);
+        muladd2!(self.0[5], self.0[6]);
+        l[11] = extract!();
+        muladd2!(self.0[5], self.0[7]);
+        muladd!(self.0[6], self.0[6]);
+        l[12] = extract!();
+        muladd2!(self.0[6], self.0[7]);
+        l[13] = extract!();
+        muladd_fast!(self.0[7], self.0[7]);
+        l[14] = extract_fast!();
+        debug_assert!(c1 == 0);
+        l[15] = c0;
+    }",0,,
+"pub fn check_mut_array<T>(user_buf: *mut T, count: usize) -> Result<()> {
+        
+        
+        check_array(user_buf, count)
+    }",0,,
+"    fn into(self) -> InternalRunResult {
+        InternalRunResult::Normal(self)
+    }",0,,
+"pub fn check_user_permissions() -> Result<(), ()> {
+    if !Uid::current().is_root() {
+        let groups = nix::unistd::getgroups();
+        for (_, groups) in groups.iter().enumerate() {
+            for group in groups {
+                let group = Group::from_gid(*group);
+                if group.unwrap().unwrap().name == ""input"" {
+                    log::error!(""Note: INVOKING USER IS IN INPUT GROUP!!!!"");
+                    log::error!(""THIS IS A HUGE SECURITY RISK!!!!"");
+                }
+            }
+        }
+        log::error!(""Consider using `pkexec swhkd ...`"");
+        Err(())
+    } else {
+        log::warn!(""Running swhkd as root!"");
+        Ok(())
+    }
+}",0,,
+"fn min_gas_price() -> U256 {
+		1.into()
+	}",0,,
+"pub(crate) fn to_wasm_type(&self) -> WasmType {
+        match self {
+            Self::I32 => WasmType::I32,
+            Self::I64 => WasmType::I64,
+            Self::F32 => WasmType::F32,
+            Self::F64 => WasmType::F64,
+            Self::V128 => WasmType::V128,
+            Self::FuncRef => WasmType::FuncRef,
+            Self::ExternRef => WasmType::ExternRef,
+        }
+    }",0,,
+"fn test_syscall_with_context() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov64 r1, 0xAA
+        mov64 r2, 0xBB
+        mov64 r3, 0xCC
+        mov64 r4, 0xDD
+        mov64 r5, 0xEE
+        syscall SyscallWithContext
+        mov64 r0, 0x0
+        exit"",
+        [],
+        (
+            b""SyscallWithContext"" => syscalls::SyscallWithContext::init::< syscalls::BpfSyscallContext, UserError>; syscalls::SyscallWithContext::call
+        ),
+        42,
+        { |vm: &EbpfVm<UserError, TestInstructionMeter>, res: Result| {
+            let syscall_context_object = unsafe { &*(vm.get_syscall_context_object(syscalls::SyscallWithContext::call as usize).unwrap() as *const syscalls::SyscallWithContext) };
+            assert_eq!(syscall_context_object.context, 84);
+            res.unwrap() == 0
+        }},
+        8
+    );
+}",0,,
+"fn accept(&mut self, poll: &mut mio::Poll) -> bool {
+        match self.server.accept() {
+            Ok((socket, addr)) => {
+                debug!(""Accepting new connection from {:?}"", addr);
+
+                let tls_session = rustls::ServerSession::new(&self.tls_config);
+                let mode = self.mode.clone();
+
+                let token = mio::Token(self.next_id);
+                self.next_id += 1;
+
+                self.connections.insert(token, Connection::new(socket, token, mode, tls_session));
+                self.connections[&token].register(poll);
+                true
+            }
+            Err(e) => {
+                println!(""encountered error while accepting connection; err={:?}"", e);
+                false
+            }
+        }
+    }",0,,
+"fn try_back_read(&mut self) {
+        if self.back.is_none() {
+            return;
+        }
+
+        
+        let mut buf = [0u8; 1024];
+        let back = self.back.as_mut().unwrap();
+        let rc = try_read(back.read(&mut buf));
+
+        if rc.is_err() {
+            error!(""backend read failed: {:?}"", rc);
+            self.closing = true;
+            return;
+        }
+
+        let maybe_len = rc.unwrap();
+
+        
+        
+        match maybe_len {
+            Some(len) if len == 0 => {
+                debug!(""back eof"");
+                self.closing = true;
+            }
+            Some(len) => {
+                self.tls_session.write_all(&buf[..len]).unwrap();
+            }
+            None => {}
+        };
+    }",0,,
+"fn store_block(post_log: bool, block_number: U256) {
+		let mut transactions = Vec::new();
+		let mut statuses = Vec::new();
+		let mut receipts = Vec::new();
+		let mut logs_bloom = Bloom::default();
+		for (transaction, status, receipt) in Pending::<T>::get() {
+			transactions.push(transaction);
+			statuses.push(status);
+			receipts.push(receipt.clone());
+			Self::logs_bloom(receipt.logs.clone(), &mut logs_bloom);
+		}
+
+		let ommers = Vec::<ethereum::Header>::new();
+		let receipts_root =
+			ethereum::util::ordered_trie_root(receipts.iter().map(|r| rlp::encode(r)));
+		let partial_header = ethereum::PartialHeader {
+			parent_hash: Self::current_block_hash().unwrap_or_default(),
+			beneficiary: pallet_evm::Pallet::<T>::find_author(),
+			state_root: T::StateRoot::get(),
+			receipts_root,
+			logs_bloom,
+			difficulty: U256::zero(),
+			number: block_number,
+			gas_limit: T::BlockGasLimit::get(),
+			gas_used: receipts
+				.clone()
+				.into_iter()
+				.fold(U256::zero(), |acc, r| acc + r.used_gas),
+			timestamp: UniqueSaturatedInto::<u64>::unique_saturated_into(
+				pallet_timestamp::Pallet::<T>::get(),
+			),
+			extra_data: Vec::new(),
+			mix_hash: H256::default(),
+			nonce: H64::default(),
+		};
+		let block = ethereum::Block::new(partial_header, transactions.clone(), ommers);
+
+		CurrentBlock::<T>::put(block.clone());
+		CurrentReceipts::<T>::put(receipts.clone());
+		CurrentTransactionStatuses::<T>::put(statuses.clone());
+		BlockHash::<T>::insert(block_number, block.header.hash());
+
+		if post_log {
+			let digest = DigestItem::<T::Hash>::Consensus(
+				FRONTIER_ENGINE_ID,
+				PostLog::Hashes(fp_consensus::Hashes::from_block(block)).encode(),
+			);
+			frame_system::Pallet::<T>::deposit_log(digest.into());
+		}
+	}",0,,
+"    pub fn end_bb(&mut self) {
+        let start_idx = self.block_start;
+        let end_idx = self.vcode.insts.len() as InsnIndex;
+        self.block_start = end_idx;
+        
+        self.vcode.block_ranges.push((start_idx, end_idx));
+        
+        let succ_end = self.vcode.block_succs.len();
+        self.vcode
+            .block_succ_range
+            .push((self.succ_start, succ_end));
+        self.succ_start = succ_end;
+    }",0,,
+"    fn insns_mut(&mut self) -> &mut [I] {
+        &mut self.insts[..]
+    }",0,,
+"pub fn _list_syntax_themes_for_humans(writer: &mut dyn Write) -> std::io::Result<()> {
+    let assets = HighlightingAssets::new();
+    let themes = &assets.theme_set.themes;
+
+    writeln!(writer, ""Light themes:"")?;
+    for (theme, _) in themes.iter().filter(|(t, _)| is_light_syntax_theme(*t)) {
+        writeln!(writer, ""    {}"", theme)?;
+    }
+    writeln!(writer, ""\nDark themes:"")?;
+    for (theme, _) in themes.iter().filter(|(t, _)| !is_light_syntax_theme(*t)) {
+        writeln!(writer, ""    {}"", theme)?;
+    }
+    writeln!(
+        writer,
+        ""\nUse delta --show-syntax-themes to demo the themes.""
+    )?;
+    Ok(())
+}",0,,
+"    pub fn externref(&self) -> Option<Option<ExternRef>> {
+        match self {
+            Val::ExternRef(e) => Some(e.clone()),
+            _ => None,
+        }
+    }",0,,
+"    pub fn mutability(&self) -> Mutability {
+        self.mutability
+    }",0,,
+"fn increment_ref_count(&self) {
+        
+        
+        
+        
+        
+        
+        
+        self.ref_count.fetch_add(1, Ordering::Relaxed);
+    }",0,,
+"pub fn cond_neg_mut(&mut self, flag: bool) -> isize {
+        let mask = if flag { u32::max_value() } else { 0 };
+        let nonzero: u64 = 0xFFFFFFFF * if !self.is_zero() { 1 } else { 0 };
+        let mut t: u64 = (self.0[0] ^ mask) as u64 + ((SECP256K1_N_0 + 1) & mask) as u64;
+        self.0[0] = (t & nonzero) as u32; t >>= 32;
+        t += (self.0[1] ^ mask) as u64 + (SECP256K1_N_1 & mask) as u64;
+        self.0[1] = (t & nonzero) as u32; t >>= 32;
+        t += (self.0[2] ^ mask) as u64 + (SECP256K1_N_2 & mask) as u64;
+        self.0[2] = (t & nonzero) as u32; t >>= 32;
+        t += (self.0[3] ^ mask) as u64 + (SECP256K1_N_3 & mask) as u64;
+        self.0[3] = (t & nonzero) as u32; t >>= 32;
+        t += (self.0[4] ^ mask) as u64 + (SECP256K1_N_4 & mask) as u64;
+        self.0[4] = (t & nonzero) as u32; t >>= 32;
+        t += (self.0[5] ^ mask) as u64 + (SECP256K1_N_5 & mask) as u64;
+        self.0[5] = (t & nonzero) as u32; t >>= 32;
+        t += (self.0[6] ^ mask) as u64 + (SECP256K1_N_6 & mask) as u64;
+        self.0[6] = (t & nonzero) as u32; t >>= 32;
+        t += (self.0[7] ^ mask) as u64 + (SECP256K1_N_7 & mask) as u64;
+        self.0[7] = (t & nonzero) as u32;
+
+        if mask == 0 {
+            return 1;
+        } else {
+            return -1;
+        }
+    }",0,,
+"	pub fn current_transaction_statuses() -> Option<Vec<TransactionStatus>> {
+		CurrentTransactionStatuses::<T>::get()
+	}",0,,
+"fn new(size: usize) -> Self {
+        SuffixCache {
+            sparse: vec![0usize; size].into(),
+            dense: Vec::with_capacity(size),
+        }
+    }",0,,
+"    pub const fn is_termination_signal(&self) -> bool {
+        self.terminate
+    }",0,,
+"fn test_stxb_all2() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov r0, r1
+        mov r1, 0xf1
+        mov r9, 0xf9
+        stxb [r0], r1
+        stxb [r0+1], r9
+        ldxh r0, [r0]
+        be16 r0
+        exit"",
+        [0xff, 0xff],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0xf1f9 } },
+        8
+    );
+}",0,,
+"fn test_show_syntax_themes() {
+        let opt = integration_test_utils::make_options_from_args(&[]);
+
+        let mut writer = Cursor::new(vec![0; 1024]);
+        _show_syntax_themes(opt, true, &mut writer, None).unwrap();
+        let mut s = String::new();
+        writer.seek(SeekFrom::Start(0)).unwrap();
+        writer.read_to_string(&mut s).unwrap();
+        let s = ansi::strip_ansi_codes(&s);
+        assert!(s.contains(""\nTheme: gruvbox-light\n""));
+        println!(""{}"", s);
+        assert!(s.contains(""\nfn print_cube(num: f64) {\n""));
+    }",0,,
+"fn from(ty: wasmparser::TagType) -> Tag {
+        Tag {
+            ty: TypeIndex::from_u32(ty.type_index),
+        }
+    }",0,,
+"pub fn parse_program(program_str: &str) -> Result<ast::Program> {
+    let stripped_string = &strip_comments(program_str);
+    let parser = syntax::ProgramParser::new();
+    match parser.parse(stripped_string) {
+        Ok(program) => Ok(program),
+        Err(e) => handle_error(e, program_str),
+    }
+}",1,"1,5","    let stripped_string = &strip_comments(program_str);/~/        Err(e) => handle_error(e, program_str),"
+"    fn from(val: Func) -> Val {
+        Val::FuncRef(Some(val))
+    }",0,,
+"    fn fill(&mut self, hole: Hole, goto: InstPtr) {
+        match hole {
+            Hole::None => {}
+            Hole::One(pc) => {
+                self.insts[pc].fill(goto);
+            }
+            Hole::Many(holes) => {
+                for hole in holes {
+                    self.fill(hole, goto);
+                }
+            }
+        }
+    }",0,,
+"fn test_show_config() {
+        let config = integration_test_utils::make_config_from_args(&[]);
+        let mut writer = Cursor::new(vec![0; 1024]);
+        show_config(&config, &mut writer).unwrap();
+        let mut s = String::new();
+        writer.seek(SeekFrom::Start(0)).unwrap();
+        writer.read_to_string(&mut s).unwrap();
+        let s = ansi::strip_ansi_codes(&s);
+        assert!(s.contains(""    commit-style                  = raw\n""));
+        assert!(s.contains(r""    word-diff-regex               = '\w+'""));
+    }",0,,
+"fn diff(
+    minus_file: Option<&PathBuf>,
+    plus_file: Option<&PathBuf>,
+    config: &config::Config,
+    writer: &mut dyn Write,
+) -> i32 {
+    use std::io::BufReader;
+    let die = || {
+        eprintln!(
+            ""\
+The main way to use delta is to configure it as the pager for git: \
+see https://github.com/dandavison/delta#configuration. \
+You can also use delta to diff two files: `delta file_A file_B`.""
+        );
+        process::exit(config.error_exit_code);
+    };
+    let diff_command = ""git"";
+    let minus_file = minus_file.unwrap_or_else(die);
+    let plus_file = plus_file.unwrap_or_else(die);
+    let mut diff_process = process::Command::new(PathBuf::from(diff_command))
+        .args(&[""diff"", ""--no-index""])
+        .args(&[minus_file, plus_file])
+        .stdout(process::Stdio::piped())
+        .spawn()
+        .unwrap_or_else(|err| {
+            eprintln!(""Failed to execute the command '{}': {}"", diff_command, err);
+            process::exit(config.error_exit_code);
+        });
+
+    let exit_code = diff_process
+        .wait()
+        .unwrap_or_else(|_| {
+            delta_unreachable(&format!(""'{}' process not running."", diff_command));
+        })
+        .code()
+        .unwrap_or_else(|| {
+            eprintln!(""'{}' process terminated without exit status."", diff_command);
+            process::exit(config.error_exit_code);
+        });
+
+    if let Err(error) = delta(
+        BufReader::new(diff_process.stdout.unwrap()).byte_lines(),
+        writer,
+        &config,
+    ) {
+        match error.kind() {
+            ErrorKind::BrokenPipe => process::exit(0),
+            _ => {
+                eprintln!(""{}"", error);
+                process::exit(config.error_exit_code);
+            }
+        }
+    };
+    exit_code
+}",1,19,    let mut diff_process = process::Command::new(PathBuf::from(diff_command))
+"pub fn execute(
+		from: H160,
+		transaction: &Transaction,
+		config: Option<evm::Config>,
+	) -> Result<
+		(Option<H160>, Option<H160>, CallOrCreateInfo),
+		DispatchErrorWithPostInfo<PostDispatchInfo>,
+	> {
+		let (
+			input,
+			value,
+			gas_limit,
+			max_fee_per_gas,
+			max_priority_fee_per_gas,
+			nonce,
+			action,
+			access_list,
+		) = {
+			match transaction {
+				
+				
+				Transaction::Legacy(t) => (
+					t.input.clone(),
+					t.value,
+					t.gas_limit,
+					Some(t.gas_price),
+					Some(t.gas_price),
+					Some(t.nonce),
+					t.action,
+					Vec::new(),
+				),
+				Transaction::EIP2930(t) => {
+					let access_list: Vec<(H160, Vec<H256>)> = t
+						.access_list
+						.iter()
+						.map(|item| (item.address, item.storage_keys.clone()))
+						.collect();
+					(
+						t.input.clone(),
+						t.value,
+						t.gas_limit,
+						Some(t.gas_price),
+						Some(t.gas_price),
+						Some(t.nonce),
+						t.action,
+						access_list,
+					)
+				}
+				Transaction::EIP1559(t) => {
+					let access_list: Vec<(H160, Vec<H256>)> = t
+						.access_list
+						.iter()
+						.map(|item| (item.address, item.storage_keys.clone()))
+						.collect();
+					(
+						t.input.clone(),
+						t.value,
+						t.gas_limit,
+						Some(t.max_fee_per_gas),
+						Some(t.max_priority_fee_per_gas),
+						Some(t.nonce),
+						t.action,
+						access_list,
+					)
+				}
+			}
+		};
+
+		let is_transactional = true;
+		let validate = false;
+		match action {
+			ethereum::TransactionAction::Call(target) => {
+				let res = match T::Runner::call(
+					from,
+					target,
+					input,
+					value,
+					gas_limit.low_u64(),
+					max_fee_per_gas,
+					max_priority_fee_per_gas,
+					nonce,
+					access_list,
+					is_transactional,
+					validate,
+					config.as_ref().unwrap_or_else(|| T::config()),
+				) {
+					Ok(res) => res,
+					Err(e) => {
+						return Err(DispatchErrorWithPostInfo {
+							post_info: PostDispatchInfo {
+								actual_weight: Some(e.weight),
+								pays_fee: Pays::Yes,
+							},
+							error: e.error.into(),
+						})
+					}
+				};
+
+				Ok((Some(target), None, CallOrCreateInfo::Call(res)))
+			}
+			ethereum::TransactionAction::Create => {
+				let res = match T::Runner::create(
+					from,
+					input,
+					value,
+					gas_limit.low_u64(),
+					max_fee_per_gas,
+					max_priority_fee_per_gas,
+					nonce,
+					access_list,
+					is_transactional,
+					validate,
+					config.as_ref().unwrap_or_else(|| T::config()),
+				) {
+					Ok(res) => res,
+					Err(e) => {
+						return Err(DispatchErrorWithPostInfo {
+							post_info: PostDispatchInfo {
+								actual_weight: Some(e.weight),
+								pays_fee: Pays::Yes,
+							},
+							error: e.error.into(),
+						})
+					}
+				};
+
+				Ok((None, Some(res.value), CallOrCreateInfo::Create(res)))
+			}
+		}
+	}",1,"77,105","gas_limit.low_u64(),/~/					gas_limit.low_u64(),"
+"    fn get(&mut self, key: SuffixCacheKey, pc: InstPtr) -> Option<InstPtr> {
+        let hash = self.hash(&key);
+        let pos = &mut self.sparse[hash];
+        if let Some(entry) = self.dense.get(*pos) {
+            if entry.key == key {
+                return Some(entry.pc);
+            }
+        }
+        *pos = self.dense.len();
+        self.dense.push(SuffixCacheEntry { key: key, pc: pc });
+        None
+    }",0,,
+"pub(crate) fn from_wasm_type(ty: &WasmType) -> Self {
+        match ty {
+            WasmType::I32 => Self::I32,
+            WasmType::I64 => Self::I64,
+            WasmType::F32 => Self::F32,
+            WasmType::F64 => Self::F64,
+            WasmType::V128 => Self::V128,
+            WasmType::FuncRef => Self::FuncRef,
+            WasmType::ExternRef => Self::ExternRef,
+            WasmType::ExnRef => unimplemented!(),
+        }
+    }",0,,
+"    pub fn constants(&mut self) -> &mut VCodeConstants {
+        &mut self.vcode.constants
+    }",0,,
+"    pub fn new_pem_based_ssl_connection(
+        key_file: String,
+        chain_file: String,
+        base: BaseListener,
+        tls_passfile: Option<String>,
+    ) -> TResult<Self> {
+        let mut acceptor_builder = SslAcceptor::mozilla_intermediate(SslMethod::tls())?;
+        
+        acceptor_builder.set_certificate_chain_file(chain_file)?;
+        if let Some(tls_passfile) = tls_passfile {
+            
+            let tls_private_key = fs::read(key_file).map_err(|e: IoError| {
+                format!(""Failed to read TLS private key file with error: {}"", e)
+            })?;
+            
+            let tls_keyfile_stream = fs::read(tls_passfile).map_err(|e: IoError| {
+                format!(
+                    ""Failed to read TLS private key passphrase file with error: {}"",
+                    e
+                )
+            })?;
+            
+            let pkey = Rsa::private_key_from_pem_passphrase(&tls_private_key, &tls_keyfile_stream)?;
+            let pkey = PKey::from_rsa(pkey)?;
+            
+            acceptor_builder.set_private_key(&pkey)?;
+        } else {
+            
+            acceptor_builder.set_private_key_file(key_file, SslFiletype::PEM)?;
+        }
+        Ok(SslListener {
+            base,
+            acceptor: acceptor_builder.build(),
+        })
+    }",0,,
+"fn test_custom_entrypoint() {
+    let mut file = File::open(""tests/elfs/unresolved_syscall.so"").expect(""file open failed"");
+    let mut elf = Vec::new();
+    file.read_to_end(&mut elf).unwrap();
+    elf[24] = 80; 
+    let config = Config {
+        enable_instruction_tracing: true,
+        ..Config::default()
+    };
+    let mut syscall_registry = SyscallRegistry::default();
+    test_interpreter_and_jit!(register, syscall_registry, b""log"" => syscalls::BpfSyscallString::init::<BpfSyscallContext, UserError>; syscalls::BpfSyscallString::call);
+    let mut syscall_registry = SyscallRegistry::default();
+    test_interpreter_and_jit!(register, syscall_registry, b""log_64"" => syscalls::BpfSyscallU64::init::<BpfSyscallContext, UserError>; syscalls::BpfSyscallU64::call);
+    #[allow(unused_mut)]
+    let mut executable = Executable::<UserError, TestInstructionMeter>::from_elf(
+        &elf,
+        None,
+        config,
+        syscall_registry,
+    )
+    .unwrap();
+    test_interpreter_and_jit!(
+        executable,
+        [],
+        syscalls::BpfSyscallContext::default(),
+        { |_vm, res: Result| { res.unwrap() == 0 } },
+        2
+    );
+}",0,,
+"fn send_command(hotkey: config::Hotkey) {
+    log::info!(""Hotkey pressed: {:#?}"", hotkey);
+    if let Err(e) = sock_send(&hotkey.command) {
+        log::error!(""Failed to send command to swhks through IPC."");
+        log::error!(""Please make sure that swhks is running."");
+        log::error!(""Err: {:#?}"", e)
+    }
+}",0,,
+"	pub fn current_transaction_statuses() -> Option<Vec<TransactionStatus>> {
+		CurrentTransactionStatuses::<T>::get()
+	}",0,,
+"fn test_jeq_reg() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov32 r0, 0
+        mov32 r1, 0xa
+        mov32 r2, 0xb
+        jeq r1, r2, +4
+        mov32 r0, 1
+        mov32 r1, 0xb
+        jeq r1, r2, +1
+        mov32 r0, 2
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x1 } },
+        8
+    );
+}",0,,
+"    fn is_move(&self, insn: &I) -> Option<(Writable<Reg>, Reg)> {
+        insn.is_move()
+    }",0,,
+"pub fn check_ptr<T>(out_ptr: *const T) -> Result<()> {
+        if !sgx_trts::trts::rsgx_raw_is_outside_enclave(out_ptr as *const u8, size_of::<T>()) {
+            return_errno!(EFAULT, ""the pointer is not outside enclave"");
+        }
+        Ok(())
+    }",0,,
+"    fn c_repeat_zero_or_one(
+        &mut self,
+        expr: &Hir,
+        greedy: bool,
+    ) -> ResultOrEmpty {
+        let split_entry = self.insts.len();
+        let split = self.push_split_hole();
+        let Patch { hole: hole_rep, entry: entry_rep } = match self.c(expr)? {
+            Some(p) => p,
+            None => return self.pop_split_hole(),
+        };
+        let split_hole = if greedy {
+            self.fill_split(split, Some(entry_rep), None)
+        } else {
+            self.fill_split(split, None, Some(entry_rep))
+        };
+        let holes = vec![hole_rep, split_hole];
+        Ok(Some(Patch { hole: Hole::Many(holes), entry: split_entry }))
+    }",0,,
+"pub fn bits_var(&self, offset: usize, count: usize) -> u32 {
+        debug_assert!(count < 32);
+        debug_assert!(offset + count <= 256);
+        if (offset + count - 1) >> 5 == offset >> 5 {
+            return self.bits(offset, count);
+        } else {
+            debug_assert!((offset >> 5) + 1 < 8);
+            return ((self.0[offset >> 5] >> (offset & 0x1f)) | (self.0[(offset >> 5) + 1] << (32 - (offset & 0x1f)))) & ((1 << count) - 1);
+        }
+    }",0,,
+"    pub(crate) fn lookup_trap_code(&self, pc: usize) -> Option<TrapCode> {
+        let (module, offset) = self.module(pc)?;
+        wasmtime_environ::lookup_trap_code(module.module.trap_data(), offset)
+    }",0,,
+"pub fn sign(message: &Message, seckey: &SecretKey) -> (Signature, RecoveryId) {
+    let seckey_b32 = seckey.0.b32();
+    let message_b32 = message.0.b32();
+
+    let mut drbg = HmacDRBG::<Sha256>::new(&seckey_b32, &message_b32, &[]);
+    let mut nonce = Scalar::default();
+    let mut overflow;
+
+    let result;
+    loop {
+        let generated = drbg.generate::<U32>(None);
+        overflow = nonce.set_b32(array_ref!(generated, 0, 32));
+
+        if !overflow && !nonce.is_zero() {
+            match ECMULT_GEN_CONTEXT.sign_raw(&seckey.0, &message.0, &nonce) {
+                Ok(val) => {
+                    result = val;
+                    break
+                },
+                Err(_) => (),
+            }
+        }
+    }
+
+    #[allow(unused_assignments)]
+    {
+        nonce = Scalar::default();
+    }
+    let (sigr, sigs, recid) = result;
+
+    (Signature {
+        r: sigr,
+        s: sigs,
+    }, RecoveryId(recid))
+}",0,,
+"	pub fn service(_: &Option<Middleware>) -> Option<Arc<rpc_apis::DappsService>> {
+		None
+	}",0,,
+"fn test_err_ldindb_nomem() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov64 r1, 0x5
+        ldindb r1, 0x33
+        exit"",
+        [],
+        (),
+        0,
+        {
+            |_vm, res: Result| {
+                matches!(res.unwrap_err(),
+                    EbpfError::AccessViolation(pc, access_type, vm_addr, len, name)
+                    if access_type == AccessType::Load && pc == 30 && vm_addr == 0x400000038 && len == 1 && name == ""input""
+                )
+            }
+        },
+        2
+    );
+}",0,,
+"fn test_sdiv32_reg() {
+    test_interpreter_and_jit_asm!(
+        ""
+        lddw r0, 0x10000000c
+        mov r1, 4
+        sdiv32 r0, r1
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x3 } },
+        4
+    );
+}",0,,
+"fn test_entrypoint_exit() {
+    
+    
+    
+    
+    
+    
+    for dynamic_stack_frames in [false, true] {
+        let config = Config {
+            dynamic_stack_frames,
+            ..Config::default()
+        };
+
+        
+        
+        test_interpreter_and_jit_asm!(
+            ""
+            entrypoint:
+            call foo
+            mov r0, 42
+            exit
+            foo:
+            mov r0, 12
+            exit"",
+            config,
+            [],
+            (),
+            0,
+            { |_vm, res: Result| { res.unwrap() == 42 } },
+            5
+        );
+    }
+}",0,,
+"    pub(crate) fn as_wasm_func_type(&self) -> &WasmFuncType {
+        &self.sig
+    }",0,,
+"fn strip_comments(string: &str) -> String {
+    
+    let line_comments = Regex::new(r""(?m)//.*$"").unwrap();
+    line_comments.replace_all(string, ""$1"").into_owned()
+}",1,"0,1,2,3","fn strip_comments(string: &str) -> String {/~/    // Remove line comments/~/    let line_comments = Regex::new(r""(?m)//.*$"").unwrap();/~/    line_comments.replace_all(string, ""$1"").into_owned()"
+"    fn take(&self, count: usize) -> Self {
+        let tokens = &self.tokens[..count];
+
+        Input { source: self.source, tokens }
+    }",1,3,"        Input { source: self.source, tokens }"
+"pub async fn call_async<T>(
+        &self,
+        mut store: impl AsContextMut<Data = T>,
+        params: Params,
+    ) -> Result<Results, Trap>
+    where
+        T: Send,
+    {
+        let mut store = store.as_context_mut();
+        assert!(
+            store.0.async_support(),
+            ""must use `call` with non-async stores""
+        );
+        store
+            .on_fiber(|store| unsafe { self._call(store, params) })
+            .await?
+    }",0,,
+"	pub fn service(middleware: &Option<Middleware>) -> Option<Arc<rpc_apis::DappsService>> {
+		middleware.as_ref().map(|m| Arc::new(DappsServiceWrapper {
+			endpoints: m.endpoints()
+		}) as Arc<rpc_apis::DappsService>)
+	}",0,,
+"fn calculate_gas_cost(
+	base_length: u64,
+	exp_length: u64,
+	mod_length: u64,
+	exponent: &BigUint,
+) -> u64 {
+	fn calculate_multiplication_complexity(base_length: u64, mod_length: u64) -> u64 {
+		let max_length = max(base_length, mod_length);
+		let mut words = max_length / 8;
+		if max_length % 8 > 0 {
+			words += 1;
+		}
+
+		
+		words * words
+	}
+
+	fn calculate_iteration_count(exp_length: u64, exponent: &BigUint) -> u64 {
+		let mut iteration_count: u64 = 0;
+
+		if exp_length <= 32 && exponent.is_zero() {
+			iteration_count = 0;
+		} else if exp_length <= 32 {
+			iteration_count = exponent.bits() - 1;
+		} else if exp_length > 32 {
+			
+			let bytes: [u8; 32] = [0xFF; 32];
+			let max_256_bit_uint = BigUint::from_bytes_be(&bytes);
+
+			iteration_count =
+				(8 * (exp_length - 32)) + ((exponent.bitand(max_256_bit_uint)).bits() - 1);
+		}
+
+		max(iteration_count, 1)
+	}
+
+	let multiplication_complexity = calculate_multiplication_complexity(base_length, mod_length);
+	let iteration_count = calculate_iteration_count(exp_length, exponent);
+	let gas = max(
+		MIN_GAS_COST,
+		multiplication_complexity * iteration_count / 3,
+	);
+
+	gas
+}",1,"13,30",// TODO: prevent/handle overflow/~/				(8 * (exp_length - 32)) + ((exponent.bitand(max_256_bit_uint)).bits() - 1);
+"fn apply_validated_transaction(
+		source: H160,
+		transaction: Transaction,
+	) -> DispatchResultWithPostInfo {
+		let (to, _, info) = Self::execute(source, &transaction, None)?;
+
+		let pending = Pending::<T>::get();
+		let transaction_hash = transaction.hash();
+		let transaction_index = pending.len() as u32;
+
+		let (reason, status, used_gas, dest) = match info {
+			CallOrCreateInfo::Call(info) => (
+				info.exit_reason,
+				TransactionStatus {
+					transaction_hash,
+					transaction_index,
+					from: source,
+					to,
+					contract_address: None,
+					logs: info.logs.clone(),
+					logs_bloom: {
+						let mut bloom: Bloom = Bloom::default();
+						Self::logs_bloom(info.logs, &mut bloom);
+						bloom
+					},
+				},
+				info.used_gas,
+				to,
+			),
+			CallOrCreateInfo::Create(info) => (
+				info.exit_reason,
+				TransactionStatus {
+					transaction_hash,
+					transaction_index,
+					from: source,
+					to,
+					contract_address: Some(info.value),
+					logs: info.logs.clone(),
+					logs_bloom: {
+						let mut bloom: Bloom = Bloom::default();
+						Self::logs_bloom(info.logs, &mut bloom);
+						bloom
+					},
+				},
+				info.used_gas,
+				Some(info.value),
+			),
+		};
+
+		let receipt = {
+			let status_code: u8 = match reason {
+				ExitReason::Succeed(_) => 1,
+				_ => 0,
+			};
+			let logs_bloom = status.logs_bloom;
+			let logs = status.clone().logs;
+			let cumulative_gas_used = if let Some((_, _, receipt)) = pending.last() {
+				match receipt {
+					Receipt::Legacy(d) | Receipt::EIP2930(d) | Receipt::EIP1559(d) => {
+						d.used_gas.saturating_add(used_gas)
+					}
+				}
+			} else {
+				used_gas
+			};
+			match &transaction {
+				Transaction::Legacy(_) => Receipt::Legacy(ethereum::EIP658ReceiptData {
+					status_code,
+					used_gas: cumulative_gas_used,
+					logs_bloom,
+					logs,
+				}),
+				Transaction::EIP2930(_) => Receipt::EIP2930(ethereum::EIP2930ReceiptData {
+					status_code,
+					used_gas: cumulative_gas_used,
+					logs_bloom,
+					logs,
+				}),
+				Transaction::EIP1559(_) => Receipt::EIP1559(ethereum::EIP2930ReceiptData {
+					status_code,
+					used_gas: cumulative_gas_used,
+					logs_bloom,
+					logs,
+				}),
+			}
+		};
+
+		Pending::<T>::append((transaction, status, receipt));
+
+		Self::deposit_event(Event::Executed(
+			source,
+			dest.unwrap_or_default(),
+			transaction_hash,
+			reason,
+		));
+
+		Ok(PostDispatchInfo {
+			actual_weight: Some(T::GasWeightMapping::gas_to_weight(
+				used_gas.unique_saturated_into(),
+			)),
+			pays_fee: Pays::No,
+		})
+	}",0,,
+"fn test_call_reg() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov64 r0, 0x0
+        mov64 r8, 0x1
+        lsh64 r8, 0x20
+        or64 r8, 0x30
+        callx r8
+        exit
+        mov64 r0, 0x2A
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 42 } },
+        8
+    );
+}",0,,
+"fn test_parse_less_version_529() {
+    let output = b""less 529 (Spencer V8 regular expressions)
+Copyright (C) 1984-2017  Mark Nudelman
+
+less comes with NO WARRANTY, to the extent permitted by law.
+For information about the terms of redistribution,
+see the file named README in the less distribution.
+Homepage: http://www.greenwoodsoftware.com/less"";
+
+    assert_eq!(Some(529), parse_less_version(output));
+}",0,,
+"pub fn minimum(&self) -> u64 {
+        self.ty.minimum
+    }",0,,
+"    fn drop(&mut self) {
+        if let OutputType::Pager(ref mut command) = *self {
+            let _ = command.wait();
+        }
+    }",0,,
+"pub fn check_mut_ptr<T>(user_ptr: *mut T) -> Result<()> {
+        
+        
+        check_ptr(user_ptr)
+    }",0,,
+"    pub fn unwrap_externref(&self) -> Option<ExternRef> {
+        self.externref().expect(""expected externref"")
+    }",0,,
+"fn on_finalize(n: T::BlockNumber) {
+			<Pallet<T>>::store_block(
+				fp_consensus::find_pre_log(&frame_system::Pallet::<T>::digest()).is_err(),
+				U256::from(UniqueSaturatedInto::<u128>::unique_saturated_into(
+					frame_system::Pallet::<T>::block_number(),
+				)),
+			);
+			
+			let block_hash_count = T::BlockHashCount::get();
+			let to_remove = n
+				.saturating_sub(block_hash_count)
+				.saturating_sub(One::one());
+			
+			if !to_remove.is_zero() {
+				<BlockHash<T>>::remove(U256::from(
+					UniqueSaturatedInto::<u32>::unique_saturated_into(to_remove),
+				));
+			}
+		}",0,,
+"pub fn data(&self) -> &Vec<u8> {
+		&self.data
+	}",0,,
+"    pub async fn release_self(self) {
+        let Self {
+            mut terminate_rx,
+            terminate_tx,
+            signal,
+            ..
+        } = self;
+        drop(signal);
+        drop(terminate_tx);
+        let _ = terminate_rx.recv().await;
+    }",0,,
+"    pub fn can_resume(&self) -> bool {
+        self.is_yielded()
+    }",0,,
+"fn test_jgt_imm() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov32 r0, 0
+        mov32 r1, 5
+        jgt r1, 6, +2
+        jgt r1, 5, +1
+        jgt r1, 4, +1
+        exit
+        mov32 r0, 1
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x1 } },
+        7
+    );
+}",0,,
+"    pub fn init<C, E>(_unused: C) -> Box<dyn SyscallObject<UserError>> {
+        Box::new(Self {})
+    }",0,,
+"pub fn tweak_mul_assign(&mut self, tweak: &SecretKey) -> Result<(), Error> {
+        if tweak.0.is_zero() {
+            return Err(Error::TweakOutOfRange);
+        }
+
+        self.0 *= &tweak.0;
+        Ok(())
+    }",0,,
+"    pub fn abi(&mut self) -> &mut dyn ABICallee<I = I> {
+        &mut *self.vcode.abi
+    }",0,,

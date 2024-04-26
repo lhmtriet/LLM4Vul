@@ -1,0 +1,2032 @@
+processed_func,target,flaw_line_index,flaw_line
+"private func updateExistingOrCreateParticipantRole(for user: ZMUser, with role: Role?) -> (FetchOrCreation, ParticipantRole)? {
+        
+        guard let moc = self.managedObjectContext else { return nil }
+        
+        // If the user is already there, just change the role
+        if let current = self.participantRoles.first(where: {$0.user == user}) {
+            if let role = role {
+                current.role = role
+            }
+            
+            return (.fetched, current)
+            
+        } else {
+            // A new participant role
+            let participantRole = ParticipantRole.insertNewObject(in: moc)
+            participantRole.conversation = self
+            participantRole.user = user
+            participantRole.role = role
+            
+            return (.created, participantRole)
+        }
+    }",0,,
+"    func scheduleNotification(expositionInfo: ExpositionInfo) {
+        var title, body: String?
+        var sound: UNNotificationSound?
+        formatter.dateFormat = ""dd.MM.YYYY""
+
+        switch expositionInfo.level {
+        case .exposed:
+            title = ""NOTIFICATION_TITLE_EXPOSURE_HIGH"".localized
+            body = ""NOTIFICATION_MESSAGE_EXPOSURE_HIGH"".localized
+            sound = .defaultCritical
+        default:
+            debugPrint(""No notification for exposition: \(expositionInfo.level.rawValue)"")
+        }
+
+        if let title = title, let body = body, let sound = sound {
+            scheduleNotification(title: title, body: body, sound: sound)
+        }
+    }",1,4,
+"internal static func recordTip(_ p1: Any) -> String {
+              return L10n.tr(""Localizable"", ""conversation.input_bar.audio_message.keyboard.record_tip"", String(describing: p1))
+            }",0,,
+"internal static func text(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""content.ping.text"", String(describing: p1))
+        }",0,,
+"internal static func title(_ p1: Any) -> String {
+        return L10n.tr(""Localizable"", ""connection_request.title"", String(describing: p1))
+      }",0,,
+"        super.init()
+
+        setupAppStateCalculator()
+        setupURLActionRouter()
+        setupNotifications()
+        setupAdditionalWindows()
+
+        AppRootRouter.configureAppearance()
+
+        createLifeCycleObserverTokens()
+        setCallingSettings()
+    }
+
+    // MARK: - Public implementation
+
+    public func start(launchOptions: LaunchOptions) {
+        showInitial(launchOptions: launchOptions)
+    }",0,,
+"    public func refreshTeamData() {
+        team?.refreshMetadata()
+    }",0,,
+"    init(values: [URLQueryFragment] = [], children: [String: URLEncodedFormData] = [:]) {
+        self.values = values
+        self.children = children
+    }",0,,
+"internal static func otherWantedToTalk(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""content.system.other_wanted_to_talk"", String(describing: p1))
+        }",0,,
+"    private func streamView(at location: CGPoint) -> BaseVideoPreviewView? {
+        guard let indexPath = gridView.indexPathForItem(at: location) else {
+            return nil
+        }
+        return streamView(for: dataSource[indexPath.row].stream) as? BaseVideoPreviewView
+    }",0,,
+"    fileprivate init(fromOperating state: Operating, idleTask: Scheduled<Void>) {
+      // We won't transition to this state unless we've seen a SETTINGS frame.
+      assert(state.hasSeenSettings)
+
+      self.role = state.role
+      self.lastPeerInitiatedStreamID = state.lastPeerInitiatedStreamID
+      self.maxConcurrentStreams = state.maxConcurrentStreams
+      self.idleTask = idleTask
+    }",0,,
+"internal static func message(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""self.new_device_alert.message"", String(describing: p1))
+        }",0,,
+"internal static func message(_ p1: Any) -> String {
+                  return L10n.tr(""Localizable"", ""self.settings.account_section.phone_number.change.resend.message"", String(describing: p1))
+                }",0,,
+"  private func schedulePing(in delay: TimeAmount, timeout: TimeAmount) {
+    guard delay != .nanoseconds(.max) else {
+      return
+    }
+
+    self.scheduledPing = self.context?.eventLoop.scheduleRepeatedTask(
+      initialDelay: delay,
+      delay: delay
+    ) { _ in
+      self.handlePingAction(self.pingHandler.pingFired())
+      // `timeout` is less than `interval`, guaranteeing that the close task
+      // will be fired before a new ping is triggered.
+      assert(timeout < delay, ""`timeout` must be less than `interval`"")
+      self.scheduleClose(in: timeout)
+    }
+  }",0,,
+"    private func resetAuthenticationCoordinatorIfNeeded(for state: AppState) {
+        switch state {
+        case .authenticated:
+            authenticationCoordinator = nil
+        default:
+            break
+        }
+    }",0,,
+"    public func decreaseSecurityLevelIfNeededAfterDiscovering(clients: Set<UserClient>, causedBy users: Set<ZMUser>) {
+        applySecurityChanges(cause: .addedUsers(users))
+    }",0,,
+"internal static func peopleWaiting(_ p1: Int) -> String {
+          return L10n.tr(""Localizable"", ""list.connect_request.people_waiting"", p1)
+        }",0,,
+"    private func configureSelfUserProviderIfNeeded(for appState: AppState) {
+        guard AppDelegate.shared.shouldConfigureSelfUserProvider else { return }
+
+        if case .authenticated = appState {
+            SelfUser.provider = ZMUserSession.shared()
+        }
+    }",0,,
+"    public init(buffer: ByteBuffer) throws {
+        self.buffer = buffer
+    }",0,,
+"    fileprivate static func validate(string : String) -> Bool {
+        return CharacterSet(charactersIn: string).isSubset(of: legalCharacterSet)
+    }",0,,
+"    func setupNotifications() -> Observable<Bool> {
+        .create { (observer) -> Disposable in
+            let notificationCenter = UNUserNotificationCenter.current()
+            notificationCenter.delegate = self
+            let options: UNAuthorizationOptions = [.alert, .sound]
+            notificationCenter.requestAuthorization(options: options) { didAllow, error in
+                if let error = error {
+                    observer.onError(error)
+                } else {
+                    if !didAllow {
+                        debugPrint(""User has declined notifications"")
+                    }
+                    observer.onNext(didAllow)
+                    observer.onCompleted()
+                }
+
+            }
+            return Disposables.create()
+        }
+
+    }",0,,
+"internal static func footer(_ p1: Int) -> String {
+            return L10n.tr(""Localizable"", ""participants.section.name.footer"", p1)
+          }",0,,
+"    public func refreshRichProfile() {
+        needsRichProfileUpdate = true
+    }",0,,
+"internal static func user(_ p1: Any) -> String {
+            return L10n.tr(""Localizable"", ""call.status.outgoing.user"", String(describing: p1))
+          }",0,,
+"    private func degradeSecurityLevelIfNeeded(for cause: SecurityChangeCause) {
+        guard securityLevel == .secure && !allUsersTrusted else {
+            return
+        }
+
+        securityLevel = .secureWithIgnored
+
+        switch cause {
+        case .addedClients, .addedUsers:
+            appendNewAddedClientSystemMessage(cause: cause)
+            expireAllPendingMessagesBecauseOfSecurityLevelDegradation()
+        case .ignoredClients(let clients):
+            appendIgnoredClientsSystemMessage(ignored: clients)
+        default:
+            break
+        }
+    }",0,,
+"func scheduleNotification(title: String, body: String, sound: UNNotificationSound) {
+
+        let center = UNUserNotificationCenter.current()
+
+        let content = UNMutableNotificationContent()
+
+        content.title = title
+        content.body = body
+        content.sound = sound
+
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
+
+        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
+        center.add(request)
+    }",0,,
+"    public func addParticipantAndUpdateConversationState(user: ZMUser, role: Role?) {
+        self.addParticipantsAndUpdateConversationState(usersAndRoles: [(user, role)])
+    }",0,,
+"internal static func otherLeft(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""content.system.other_left"", String(describing: p1))
+        }",0,,
+"    func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification,
+                withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        // Forground notifications.
+        completionHandler([.alert, .sound, .badge])
+    }",0,,
+"    override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
+        super.viewWillTransition(to: size, with: coordinator)
+        coordinator.animate(alongsideTransition: { [updateGridViewAxis] _ in updateGridViewAxis() })
+    }",0,,
+"private(set) var connectionManagerEvent: ConnectionManagerEvent?
+
+    /// The value of HTTP/2 SETTINGS_MAX_CONCURRENT_STREAMS changed.
+    private(set) var maxConcurrentStreamsChange: Int?
+
+    /// An idle task, either scheduling or cancelling an idle timeout.
+    private(set) var idleTask: IdleTask?
+
+    /// Send a GOAWAY frame with the last peer initiated stream ID set to this value.
+    private(set) var sendGoAwayWithLastPeerInitiatedStreamID: HTTP2StreamID?
+
+    /// Whether the channel should be closed.
+    private(set) var shouldCloseChannel: Bool
+
+    fileprivate static let none = Operations()
+
+    fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+      self.sendGoAwayWithLastPeerInitiatedStreamID = streamID
+    }",1,16,fileprivate mutating func sendGoAwayFrame(lastPeerInitiatedStreamID streamID: HTTP2StreamID) {
+"    private func setCallingSettings() {
+        sessionManager.updateCallNotificationStyleFromSettings()
+        sessionManager.useConstantBitRateAudio = SecurityFlags.forceConstantBitRateCalls.isEnabled
+            ? true
+            : Settings.shared[.callingConstantBitRate] ?? false
+    }",0,,
+"    private func updateSecurityLevel(cause: SecurityChangeCause) {
+        switch cause {
+        case .addedUsers, .addedClients, .ignoredClients:
+            degradeSecurityLevelIfNeeded(for: cause)
+
+        case .removedUsers, .removedClients, .verifiedClients:
+            increaseSecurityLevelIfNeeded(for: cause)
+            
+        case .verifyLegalHold:
+            // no-op: verifying legal hold does not impact security level
+            break
+        }
+    }",0,,
+"internal static func knowsTwo(_ p1: Any, _ p2: Any) -> String {
+          return L10n.tr(""Localizable"", ""peoplepicker.suggested.knows_two"", String(describing: p1), String(describing: p2))
+        }",0,,
+"private func updateStates(with videoStreams: [VideoStream]) {
+        videoStreams.forEach {
+            let view = (streamView(for: $0.stream) as? BaseVideoPreviewView)
+            view?.stream = $0.stream
+            view?.shouldShowActiveSpeakerFrame = configuration.shouldShowActiveSpeakerFrame
+            (view as? VideoPreviewView)?.isPaused = $0.isPaused
+        }
+    }",0,,
+"    func asUrlEncoded() throws -> String {
+        switch self {
+        case .urlEncoded(let encoded):
+            return encoded
+        case .urlDecoded(let decoded):
+            return try decoded.urlEncoded()
+        }
+    }",0,,
+"    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        
+        if window != nil {
+            startCapture()
+        }
+    }",1,4,            startCapture()
+"    func startCapture() {
+        previewView.startVideoCapture()
+    }",0,,
+"internal static func user(_ p1: Any) -> String {
+                return L10n.tr(""Localizable"", ""call.degraded.ended.alert.message.user"", String(describing: p1))
+              }",0,,
+"didSet {
+      if self.activeStreams > 0 {
+        self.sentPingsWithoutData = 0
+      }
+    }",0,,
+"internal static func message(_ p1: Any) -> String {
+            return L10n.tr(""Localizable"", ""content.message.open_link_alert.message"", String(describing: p1))
+          }",0,,
+"internal static func resendPlaceholder(_ p1: Float) -> String {
+          return L10n.tr(""Localizable"", ""registration.verify_phone_number.resend_placeholder"", p1)
+        }",0,,
+"internal static func services(_ p1: Int) -> String {
+          return L10n.tr(""Localizable"", ""participants.section.services"", p1)
+        }",0,,
+"    func mainColor(color: UIColor?) -> UIColor {
+        return color ?? UIColor.from(scheme: .textForeground, variant: self)
+    }",0,,
+"    func userDidGrantAudioPermissions() {
+        sessionManager.updateCallNotificationStyleFromSettings()
+    }",0,,
+"public func streamFile(
+        at path: String,
+        chunkSize: Int = NonBlockingFileIO.defaultChunkSize,
+        mediaType: HTTPMediaType? = nil,
+        onCompleted: @escaping (Result<Void, Error>) -> () = { _ in }
+    ) -> Response {
+        // Get file attributes for this file.
+        guard
+            let attributes = try? FileManager.default.attributesOfItem(atPath: path),
+            let modifiedAt = attributes[.modificationDate] as? Date,
+            let fileSize = (attributes[.size] as? NSNumber)?.intValue
+        else {
+            return Response(status: .internalServerError)
+        }
+
+        let contentRange: HTTPHeaders.Range?
+        if let rangeFromHeaders = request.headers.range {
+            if rangeFromHeaders.unit == .bytes && rangeFromHeaders.ranges.count == 1 {
+                contentRange = rangeFromHeaders
+            } else {
+                contentRange = nil
+            }
+        } else {
+            contentRange = nil
+        }
+        // Create empty headers array.
+        var headers: HTTPHeaders = [:]
+
+        // Generate ETag value, ""HEX value of last modified date"" + ""-"" + ""file size""
+        let fileETag = ""\(modifiedAt.timeIntervalSince1970)-\(fileSize)""
+        headers.replaceOrAdd(name: .eTag, value: fileETag)
+
+        // Check if file has been cached already and return NotModified response if the etags match
+        if fileETag == request.headers.first(name: .ifNoneMatch) {
+            return Response(status: .notModified)
+        }
+
+        // Create the HTTP response.
+        let response = Response(status: .ok, headers: headers)
+        let offset: Int64
+        let byteCount: Int
+        if let contentRange = contentRange {
+            response.status = .partialContent
+            response.headers.add(name: .accept, value: contentRange.unit.serialize())
+            if let firstRange = contentRange.ranges.first {
+                let range = firstRange.asResponseContentRange(limit: fileSize)
+                response.headers.contentRange = HTTPHeaders.ContentRange(unit: contentRange.unit, range: range)
+                (offset, byteCount) = firstRange.asByteBufferBounds(withMaxSize: fileSize)
+            } else {
+                offset = 0
+                byteCount = fileSize
+            }
+        } else {
+            offset = 0
+            byteCount = fileSize
+        }
+        // Set Content-Type header based on the media type
+        // Only set Content-Type if file not modified and returned above.
+        if
+            let fileExtension = path.components(separatedBy: ""."").last,
+            let type = mediaType ?? HTTPMediaType.fileExtension(fileExtension)
+        {
+            response.headers.contentType = type
+        }
+        response.body = .init(stream: { stream in
+            self.read(path: path, fromOffset: offset, byteCount: byteCount, chunkSize: chunkSize) { chunk in
+                return stream.write(.buffer(chunk))
+            }.whenComplete { result in
+                switch result {
+                case .failure(let error):
+                    stream.write(.error(error), promise: nil)
+                case .success:
+                    stream.write(.end, promise: nil)
+                }
+                onCompleted(result)
+            }
+        }, count: byteCount, byteBufferAllocator: request.byteBufferAllocator)
+        
+        return response
+    }
+
+    /// Private read method. `onRead` closure uses ByteBuffer and expects future return.
+    /// There may be use in publicizing this in the future for reads that must be async.
+    private func read(
+        path: String,
+        fromOffset offset: Int64,
+        byteCount: Int,
+        chunkSize: Int,
+        onRead: @escaping (ByteBuffer) -> EventLoopFuture<Void>
+    ) -> EventLoopFuture<Void> {
+        do {
+            let fd = try NIOFileHandle(path: path)
+            let done = self.io.readChunked(
+                fileHandle: fd,
+                fromOffset: offset,
+                byteCount: byteCount,
+                chunkSize: chunkSize,
+                allocator: allocator,
+                eventLoop: self.request.eventLoop
+            ) { chunk in
+                return onRead(chunk)
+            }
+            done.whenComplete { _ in
+                try? fd.close()
+            }
+            return done
+        } catch {
+            return self.request.eventLoop.makeFailedFuture(error)
+        }
+    }
+    
+    /// Write the contents of buffer to a file at the supplied path.
+    ///
+    ///     let data = ByteBuffer(string: ""ByteBuffer"")
+    ///     try req.fileio.writeFile(data, at: ""/path/to/file.txt"").wait()
+    ///
+    /// - parameters:
+    ///     - path: Path to file on the disk.
+    ///     - buffer: The `ByteBuffer` to write.
+    /// - returns: `Future` that will complete when the file write is finished.
+    public func writeFile(_ buffer: ByteBuffer, at path: String) -> EventLoopFuture<Void> {
+        do {
+            let fd = try NIOFileHandle(path: path, mode: .write, flags: .allowFileCreation())
+            let done = io.write(fileHandle: fd, buffer: buffer, eventLoop: self.request.eventLoop)
+            done.whenComplete { _ in
+                try? fd.close()
+            }
+            return done
+        } catch {
+            return self.request.eventLoop.makeFailedFuture(error)
+        }
+    }
+}",1,47,"                (offset, byteCount) = firstRange.asByteBufferBounds(withMaxSize: fileSize)"
+"internal static func description(_ p1: Any) -> String {
+                  return L10n.tr(""Localizable"", ""self.settings.account_section.phone_number.change.verify.description"", String(describing: p1))
+                }",0,,
+"internal static func message(_ p1: Int) -> String {
+            return L10n.tr(""Localizable"", ""conversation.call.many_participants_confirmation.message"", p1)
+          }",0,,
+"internal static func subtitleRemoved(_ p1: Any, _ p2: Int) -> String {
+            return L10n.tr(""Localizable"", ""content.system.missing_messages.subtitle_removed"", String(describing: p1), p2)
+          }",0,,
+"internal static func title(_ p1: Any) -> String {
+            return L10n.tr(""Localizable"", ""registration.phone_invitation.hero.title"", String(describing: p1))
+          }",0,,
+"internal static func other(_ p1: Any) -> String {
+            return L10n.tr(""Localizable"", ""content.system.session_reset.other"", String(describing: p1))
+          }",0,,
+"internal static func subtitleAdded(_ p1: Any, _ p2: Int) -> String {
+            return L10n.tr(""Localizable"", ""content.system.missing_messages.subtitle_added"", String(describing: p1), p2)
+          }",0,,
+"internal static func continuedConversation(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""content.system.continued_conversation"", String(describing: p1))
+        }",0,,
+"    fileprivate mutating func scheduleIdleTask() {
+      self.idleTask = .schedule
+    }",0,,
+"    @objc(acknowledgePrivacyWarningWithResendIntent:) public func acknowledgePrivacyWarning(withResendIntent shouldResendMessages: Bool) {
+        acknowledgePrivacyChanges()
+
+        if shouldResendMessages {
+            resendPendingMessagesAfterPrivacyChanges()
+        } else {
+            discardPendingMessagesAfterPrivacyChanges()
+        }
+    }",0,,
+"        didSet {
+            guard isCovered != oldValue else { return }
+            notifyVisibilityChanged()
+            displayIndicatorViewsIfNeeded()
+            animateNetworkConditionView()
+        }",0,,
+"    @objc public func requestCompleteProfileImage() {
+        guard let moc = self.managedObjectContext, moc.zm_isUserInterfaceContext, !moc.zm_userImageCache.hasUserImage(self, size: .complete) else { return }
+        
+        NotificationInContext(name: .userDidRequestCompleteAsset,
+                              context: moc.notificationContext,
+                              object: self.objectID).post()
+    }",0,,
+"internal static func title(_ p1: Any) -> String {
+            return L10n.tr(""Localizable"", ""content.system.renamed_conv.title"", String(describing: p1))
+          }",0,,
+"internal static func participants1Other(_ p1: Any, _ p2: Any) -> String {
+          return L10n.tr(""Localizable"", ""content.system.participants_1_other"", String(describing: p1), String(describing: p2))
+        }",0,,
+"    static func from(scheme: ColorSchemeColor, variant: ColorSchemeVariant? = nil) -> UIColor {
+        return ColorScheme.default.color(named: scheme, variant: variant)
+    }",0,,
+"private func processRawMessagesInBuffer(_ pointer: UnsafePointer<UInt8>, bufferLen: Int) {
+        var buffer = UnsafeBufferPointer(start: pointer, count: bufferLen)
+        repeat {
+            buffer = processOneRawMessage(inBuffer: buffer)
+        } while buffer.count >= 2
+        if buffer.count > 0 {
+            fragBuffer = Data(buffer: buffer)
+        }
+    }",0,,
+"  func channelActive(context: ChannelHandlerContext) {
+    self.stateMachine.logger.addIPAddressMetadata(
+      local: context.localAddress,
+      remote: context.remoteAddress
+    )
+
+    // No state machine action here.
+    switch self.mode {
+    case let .client(connectionManager, multiplexer):
+      connectionManager.channelActive(channel: context.channel, multiplexer: multiplexer)
+    case .server:
+      ()
+    }
+    context.fireChannelActive()
+  }",0,,
+"    private func isMaximized(stream: Stream?) -> Bool {
+        guard
+            let streamId = stream?.streamId,
+            let maximizedStreamId = maximizedView?.stream.streamId
+        else { return false }
+        
+        return streamId == maximizedStreamId
+    }",0,,
+"internal static func lowercase(_ p1: Int) -> String {
+            return L10n.tr(""Localizable"", ""registration.password.rules.lowercase"", p1)
+          }",0,,
+"public func removeParticipantsAndUpdateConversationState(users: Set<ZMUser>, initiatingUser: ZMUser? = nil) {
+        
+        guard let moc = self.managedObjectContext else { return }
+        let existingUsers = Set(self.participantRoles.map { $0.user })
+        
+        let removedUsers = Set(users.compactMap { user -> ZMUser? in
+            
+            guard existingUsers.contains(user),
+                let existingRole = participantRoles.first(where: { $0.user == user })
+                else { return nil }
+            
+            participantRoles.remove(existingRole)
+            moc.delete(existingRole)
+            return user
+        })
+        
+        if !removedUsers.isEmpty {
+            let removedSelf = removedUsers.contains(where: { $0.isSelfUser })
+            self.checkIfArchivedStatusChanged(removedSelfUser: removedSelf, initiatingUser: initiatingUser)
+            self.checkIfVerificationLevelChanged(removedUsers: removedUsers)
+        }
+    }",0,,
+"    private func addHeader(_ urlRequest: CFHTTPMessage, key: String, val: String) {
+        CFHTTPMessageSetHeaderFieldValue(urlRequest, key as CFString, val as CFString)
+    }",0,,
+"internal static func mention(_ p1: Any) -> String {
+            return L10n.tr(""Localizable"", ""conversation.status.message.mention"", String(describing: p1))
+          }",0,,
+"internal static func started(_ p1: Any, _ p2: Any) -> String {
+              return L10n.tr(""Localizable"", ""content.system.conversation.you.started"", String(describing: p1), String(describing: p2))
+            }",0,,
+"    fileprivate func timestamp(after: ZMConversationMessage?) -> Date? {
+        guard let timestamp = after?.serverTimestamp ?? self.lastModifiedDate else { return nil }
+        return timestamp.nextNearestTimestamp
+    }",0,,
+"    func appendSystemMessage(type: ZMSystemMessageType,
+                                         sender: ZMUser,
+                                         users: Set<ZMUser>?,
+                                         addedUsers: Set<ZMUser> = Set(),
+                                         clients: Set<UserClient>?,
+                                         timestamp: Date,
+                                         duration: TimeInterval? = nil,
+                                         messageTimer: Double? = nil,
+                                         relevantForStatus: Bool = true) -> ZMSystemMessage {
+        let systemMessage = ZMSystemMessage(nonce: UUID(), managedObjectContext: managedObjectContext!)
+        systemMessage.systemMessageType = type
+        systemMessage.sender = sender
+        systemMessage.users = users ?? Set()
+        systemMessage.addedUsers = addedUsers
+        systemMessage.clients = clients ?? Set()
+        systemMessage.serverTimestamp = timestamp
+        if let duration = duration {
+            systemMessage.duration = duration
+        }
+        
+        if let messageTimer = messageTimer {
+            systemMessage.messageTimer = NSNumber(value: messageTimer)
+        }
+        
+        systemMessage.relevantForConversationStatus = relevantForStatus
+        
+        self.append(systemMessage)
+        
+        return systemMessage
+    }",0,,
+"    func updateOverlayWindowFrame(size: CGSize? = nil) {
+        if let size = size {
+            screenCurtain.frame.size = size
+        } else {
+            screenCurtain.frame = UIApplication.shared.keyWindow?.frame ?? UIScreen.main.bounds
+        }
+    }",0,,
+"internal static func called(_ p1: Any) -> String {
+            return L10n.tr(""Localizable"", ""content.system.call.called"", String(describing: p1))
+          }",0,,
+"internal static func fingerprintMessageUnencrypted(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""profile.devices.fingerprint_message_unencrypted"", String(describing: p1))
+        }",0,,
+"internal static func youAddedParticipant(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""content.system.you_added_participant"", String(describing: p1))
+        }",0,,
+"    func fromOffset(_ offset: Int) -> UnsafeBufferPointer<Element> {
+        return UnsafeBufferPointer<Element>(start: baseAddress?.advanced(by: offset), count: count - offset)
+    }",0,,
+"  func errorCaught(context: ChannelHandlerContext, error: Error) {
+    // No state machine action here.
+    self.mode.connectionManager?.channelError(error)
+    context.fireErrorCaught(error)
+  }",0,,
+"internal static func selfUserNewSelfClient(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""content.system.self_user_new_self_client"", String(describing: p1))
+        }",0,,
+"private static func readUint16(_ buffer: UnsafePointer<UInt8>, offset: Int) -> UInt16 {
+        return (UInt16(buffer[offset + 0]) << 8) | UInt16(buffer[offset + 1])
+    }",0,,
+"internal static func messageReadReceiptOff(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""content.system.message_read_receipt_off"", String(describing: p1))
+        }",0,,
+"private func doDisconnect(_ error: NSError?) {
+        guard !didDisconnect else { return }
+        didDisconnect = true
+        isConnecting = false
+        connected = false
+        guard canDispatch else {return}
+        callbackQueue.async { [weak self] in
+            guard let s = self else { return }
+            s.onDisconnect?(error)
+            s.delegate?.websocketDidDisconnect(socket: s, error: error)
+            let userInfo = error.map{ [WebsocketDisconnectionErrorKeyName: $0] }
+            s.notificationCenter.post(name: NSNotification.Name(WebsocketDidDisconnectNotification), object: self, userInfo: userInfo)
+        }
+    }",0,,
+"fileprivate mutating func streamCreated(_ streamID: HTTP2StreamID, logger: Logger) {
+    self.openStreams += 1
+
+    switch self.role {
+    case .client where streamID.isServerInitiated:
+      self.lastPeerInitiatedStreamID = streamID
+    case .server where streamID.isClientInitiated:
+      self.lastPeerInitiatedStreamID = streamID
+    default:
+      ()
+    }
+
+    logger.debug(""HTTP2 stream created"", metadata: [
+      MetadataKey.h2StreamID: ""\(streamID)"",
+      MetadataKey.h2ActiveStreams: ""\(self.openStreams)"",
+    ])
+
+    if self.openStreams == self.maxConcurrentStreams {
+      logger.warning(""HTTP2 max concurrent stream limit reached"", metadata: [
+        MetadataKey.h2ActiveStreams: ""\(self.openStreams)"",
+      ])
+    }
+  }",0,,
+"private func stream(with streamId: AVSClient) -> Stream? {
+        var stream = configuration.videoStreams.first(where: { $0.stream.streamId == streamId })?.stream
+
+        if stream == nil && configuration.floatingVideoStream?.stream.streamId == streamId {
+            stream = configuration.floatingVideoStream?.stream
+        }
+
+        return stream
+    }",0,,
+"    fileprivate init(fromQuiescing state: Quiescing) {
+      self.role = state.role
+      // If we initiated the quiescing then we shouldn't go idle (we want to shutdown instead).
+      self.shouldIdle = !state.initiatedByUs
+    }",0,,
+"    private func appendLegalHoldEnabledSystemMessageForConversation(cause: SecurityChangeCause) {
+        var timestamp : Date?
+        
+        if case .addedClients(_, let message) = cause, message?.conversation == self, message?.isUpdatingExistingMessage == false {
+            timestamp = self.timestamp(before: message)
+        }
+        
+        appendSystemMessage(type: .legalHoldEnabled,
+                            sender: ZMUser.selfUser(in: self.managedObjectContext!),
+                            users: nil,
+                            clients: nil,
+                            timestamp: timestamp ?? timestampAfterLastMessage())
+    }",0,,
+"    func applicationDidEnterBackground() {
+        let unreadConversations = sessionManager.accountManager.totalUnreadCount
+        UIApplication.shared.applicationIconBadgeNumber = unreadConversations
+    }",0,,
+"internal static func nameInContacts(_ p1: Any) -> String {
+        return L10n.tr(""Localizable"", ""contacts_ui.name_in_contacts"", String(describing: p1))
+      }",0,,
+"        self.init(url: url, protocols: protocols)
+        writeQueue.qualityOfService = writeQueueQOS
+    }
+
+    /**
+     Connect to the WebSocket server on a background thread.
+     */
+    open func connect() {
+        guard !isConnecting else { return }
+        didDisconnect = false
+        isConnecting = true
+        createHTTPRequest()
+    }",0,,
+"    public func updateAndSyncProfileAssetIdentifiers(previewIdentifier: String, completeIdentifier: String) {
+        guard isSelfUser else { return }
+        previewProfileAssetIdentifier = previewIdentifier
+        completeProfileAssetIdentifier = completeIdentifier
+        setLocallyModifiedKeys([ZMUser.previewProfileAssetIdentifierKey, ZMUser.completeProfileAssetIdentifierKey])
+    }",0,,
+"private func perform(operations: GRPCIdleHandlerStateMachine.Operations) {
+    // Prod the connection manager.
+    if let event = operations.connectionManagerEvent, let manager = self.mode.connectionManager {
+      switch event {
+      case .idle:
+        manager.idle()
+      case .inactive:
+        manager.channelInactive()
+      case .ready:
+        manager.ready()
+      case .quiescing:
+        manager.beginQuiescing()
+      }
+    }
+
+    // Max concurrent streams changed.
+    if let manager = self.mode.connectionManager,
+      let maxConcurrentStreams = operations.maxConcurrentStreamsChange {
+      manager.maxConcurrentStreamsChanged(maxConcurrentStreams)
+    }
+
+    // Handle idle timeout creation/cancellation.
+    if let idleTask = operations.idleTask {
+      switch idleTask {
+      case let .cancel(task):
+        task.cancel()
+
+      case .schedule:
+        if self.idleTimeout != .nanoseconds(.max), let context = self.context {
+          let task = context.eventLoop.scheduleTask(in: self.idleTimeout) {
+            self.idleTimeoutFired()
+          }
+          self.perform(operations: self.stateMachine.scheduledIdleTimeoutTask(task))
+        }
+      }
+    }
+
+    // Send a GOAWAY frame.
+    if let streamID = operations.sendGoAwayWithLastPeerInitiatedStreamID {
+      let goAwayFrame = HTTP2Frame(
+        streamID: .rootStream,
+        payload: .goAway(lastStreamID: streamID, errorCode: .noError, opaqueData: nil)
+      )
+      self.context?.writeAndFlush(self.wrapOutboundOut(goAwayFrame), promise: nil)
+    }
+
+    // Close the channel, if necessary.
+    if operations.shouldCloseChannel, let context = self.context {
+      // Close on the next event-loop tick so we don't drop any events which are
+      // currently being processed.
+      context.eventLoop.execute {
+        context.close(mode: .all, promise: nil)
+      }
+    }
+  }",1,43,"      self.context?.writeAndFlush(self.wrapOutboundOut(goAwayFrame), promise: nil)"
+"    public class func keyPathsForValuesAffectingDisplayName() -> Set<String> {
+        return Set([ZMConversationConversationTypeKey,
+                    ""participantRoles.user.name"",
+                    ""connection.to.name"",
+                    ""connection.to.availability"",
+                    ZMConversationUserDefinedNameKey] +
+                   ZMConversation.participantRolesKeys)
+    }",0,,
+"private func createConstraints() {
+        for subView in [gridView, thumbnailViewController.view] {
+            subView?.translatesAutoresizingMaskIntoConstraints = false
+            subView?.fitInSuperview()
+        }
+
+        constrain(view, networkConditionView) { view, networkConditionView in
+            networkConditionView.centerX == view.centerX
+            networkConditionView.top == view.safeAreaLayoutGuideOrFallback.top + 24
+        }
+    }",0,,
+"internal static func fileMessage(_ p1: Any) -> String {
+              return L10n.tr(""Localizable"", ""conversation.input_bar.message_preview.accessibility.file_message"", String(describing: p1))
+            }",0,,
+"private func writeError(_ code: UInt16) {
+        let buf = NSMutableData(capacity: MemoryLayout<UInt16>.size)
+        let buffer = UnsafeMutableRawPointer(mutating: buf!.bytes).assumingMemoryBound(to: UInt8.self)
+        WebSocket.writeUint16(buffer, offset: 0, value: code)
+        dequeueWrite(Data(bytes: buffer, count: MemoryLayout<UInt16>.size), code: .connectionClose)
+    }",0,,
+"    private func increaseSecurityLevelIfNeeded(for cause: SecurityChangeCause) {
+        guard securityLevel != .secure &&
+            allUsersTrusted &&
+            allParticipantsHaveClients &&
+            conversationType != .connection else {
+                return
+        }
+
+        securityLevel = .secure
+        appendNewIsSecureSystemMessage(cause: cause)
+        notifyOnUI(name: ZMConversation.isVerifiedNotificationName)
+    }",1,"1,4,5",        guard securityLevel != .secure &&/~/            conversationType != .connection else {/~/                return
+"internal static func guests(_ p1: Any) -> String {
+              return L10n.tr(""Localizable"", ""content.system.started_conversation.complete_team.guests"", String(describing: p1))
+            }",0,,
+"    fileprivate mutating func notifyConnectionManager(about event: ConnectionManagerEvent) {
+      self.connectionManagerEvent = event
+    }",0,,
+"internal static func otherAddedParticipant(_ p1: Any, _ p2: Any) -> String {
+          return L10n.tr(""Localizable"", ""content.system.other_added_participant"", String(describing: p1), String(describing: p2))
+        }",0,,
+"    private func presentAlertForDeletedAccountIfNeeded(_ error: NSError?) {
+        guard
+            error?.userSessionErrorCode == .accountDeleted,
+            let reason = error?.userInfo[ZMAccountDeletedReasonKey] as? ZMAccountDeletedReason
+        else {
+            return
+        }
+
+        switch reason {
+        case .sessionExpired:
+            rootViewController.presentAlertWithOKButton(title: ""account_deleted_session_expired_alert.title"".localized,
+                                                        message: ""account_deleted_session_expired_alert.message"".localized)
+
+        case .databaseWiped:
+            let wipeCompletionViewController = WipeCompletionViewController()
+            wipeCompletionViewController.modalPresentationStyle = .fullScreen
+            rootViewController.present(wipeCompletionViewController, animated: true)
+
+        default:
+            break
+        }
+    }",1,"10,11","            rootViewController.presentAlertWithOKButton(title: ""account_deleted_session_expired_alert.title"".localized,/~/                                                        message: ""account_deleted_session_expired_alert.message"".localized)"
+"            if let size = data[""size""].flatMap(ProfileImageSize.init), let key = data[""key""].flatMap(AssetKey.init) {
+                switch size {
+                case .preview:
+                    if key.stringValue != previewProfileAssetIdentifier {
+                        previewProfileAssetIdentifier = key.stringValue
+                    }
+                case .complete:
+                    if key.stringValue != completeProfileAssetIdentifier {
+                        completeProfileAssetIdentifier = key.stringValue
+                    }
+                }
+            }
+        }
+    }",0,,
+"mutating func read(pingData: HTTP2PingData, ack: Bool) -> Action {
+    if ack {
+      return self.handlePong(pingData)
+    } else {
+      return self.handlePing(pingData)
+    }
+  }",0,,
+"    func executeAuthenticatedBlocks() {
+        while !authenticatedBlocks.isEmpty {
+            authenticatedBlocks.removeFirst()()
+        }
+    }",0,,
+"    private func checkIfArchivedStatusChanged(removedSelfUser: Bool, initiatingUser: ZMUser?) {
+        if removedSelfUser, let initiatingUser = initiatingUser {
+            self.isArchived = initiatingUser.isSelfUser
+        }
+    }",0,,
+"    public func respond(to request: Request, chainingTo next: Responder) -> EventLoopFuture<Response> {
+        // make a copy of the path
+        var path = request.url.path
+
+        // path must be relative.
+        while path.hasPrefix(""/"") {
+            path = String(path.dropFirst())
+        }
+
+        // protect against relative paths
+        guard !path.contains(""../"") else {
+            return request.eventLoop.makeFailedFuture(Abort(.forbidden))
+        }
+
+        // create absolute file path
+        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+
+        // check if file exists and is not a directory
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: filePath, isDirectory: &isDir), !isDir.boolValue else {
+            return next.respond(to: request)
+        }
+
+        // stream the file
+        let res = request.fileio.streamFile(at: filePath)
+        return request.eventLoop.makeSucceededFuture(res)
+    }",1,"1,2,15",        // make a copy of the path/~/        var path = request.url.path/~/        let filePath = self.publicDirectory + (path.removingPercentEncoding ?? path)
+"    class func keyboardAppearance(for variant: ColorSchemeVariant) -> UIKeyboardAppearance {
+        return variant == .light ? .light : .dark
+    }",0,,
+"    public func decreaseSecurityLevelIfNeededAfterDiscovering(clients: Set<UserClient>, causedBy message: ZMOTRMessage?) {
+        applySecurityChanges(cause: .addedClients(clients, source: message))
+    }",0,,
+"fileprivate func appendIgnoredClientsSystemMessage(ignored clients: Set<UserClient>) {
+        guard !clients.isEmpty else { return }
+        let users = Set(clients.compactMap { $0.user })
+        self.appendSystemMessage(type: .ignoredClient,
+                                 sender: ZMUser.selfUser(in: self.managedObjectContext!),
+                                 users: users,
+                                 clients: clients,
+                                 timestamp: timestampAfterLastMessage())
+    }",0,,
+"private func updateMetrics(
+        for request: Request,
+        path: String,
+        startTime: UInt64,
+        statusCode: UInt
+    ) {
+        let counterDimensions = [
+            (""method"", request.method.string),
+            (""path"", path),
+            (""status"", statusCode.description),
+        ]
+        Counter(label: ""http_requests_total"", dimensions: counterDimensions).increment()
+        if statusCode >= 500 {
+            Counter(label: ""http_request_errors_total"", dimensions: counterDimensions).increment()
+        }
+        Timer(
+            label: ""http_request_duration_seconds"",
+            dimensions: [
+                (""method"", request.method.string),
+                (""path"", path)
+            ],
+            preferredDisplayUnit: .seconds
+        ).recordNanoseconds(DispatchTime.now().uptimeNanoseconds - startTime)
+    }",1,"2,6,7,8,11,13,17,18,19,20","        path: String,/~/        let counterDimensions = [/~/            (""method"", request.method.string),/~/            (""path"", path),/~/        Counter(label: ""http_requests_total"", dimensions: counterDimensions).increment()/~/            Counter(label: ""http_request_errors_total"", dimensions: counterDimensions).increment()/~/            dimensions: [/~/                (""method"", request.method.string),/~/                (""path"", path)/~/            ],"
+"    private func setupAnalyticsSharing() {
+        guard
+            appStateCalculator.wasUnauthenticated,
+            let selfUser = SelfUser.provider?.selfUser,
+            selfUser.isTeamMember
+        else {
+            return
+        }
+
+        TrackingManager.shared.disableCrashSharing = true
+        TrackingManager.shared.disableAnalyticsSharing = false
+        Analytics.shared.provider?.selfUser = selfUser
+    }",0,,
+    init() { },0,,
+"private func checkIfVerificationLevelChanged(addedUsers: Set<ZMUser>) {
+        self.decreaseSecurityLevelIfNeededAfterDiscovering(clients: Set(addedUsers.flatMap { $0.clients }), causedBy: addedUsers)
+    }",1,"0,1","private func checkIfVerificationLevelChanged(addedUsers: Set<ZMUser>) {/~/        self.decreaseSecurityLevelIfNeededAfterDiscovering(clients: Set(addedUsers.flatMap { $0.clients }), causedBy: addedUsers)"
+"    private func updateSelfPreview() {
+        guard
+            let selfStreamId = ZMUser.selfUser()?.selfStreamId,
+            let selfStream = stream(with: selfStreamId)
+        else {
+            return
+        }
+
+        if let view = viewCache[selfStreamId] as? SelfVideoPreviewView {
+            view.stream = selfStream
+            view.shouldShowActiveSpeakerFrame = configuration.shouldShowActiveSpeakerFrame
+        } else {
+            viewCache[selfStreamId] = SelfVideoPreviewView(
+                stream: selfStream,
+                isCovered: isCovered,
+                shouldShowActiveSpeakerFrame: configuration.shouldShowActiveSpeakerFrame
+            )
+        }
+    }",1,"1,2,3,4","        guard/~/            let selfStreamId = ZMUser.selfUser()?.selfStreamId,/~/            let selfStream = stream(with: selfStreamId)/~/        else {"
+"    fileprivate func appendNewIsSecureSystemMessage(verified clients: Set<UserClient>, for users: Set<ZMUser>) {
+        guard !users.isEmpty, securityLevel != .secureWithIgnored else {
+            return
+        }
+
+        appendSystemMessage(type: .conversationIsSecure,
+                            sender: ZMUser.selfUser(in: self.managedObjectContext!),
+                            users: users,
+                            clients: clients,
+                            timestamp: timestampAfterLastMessage())
+    }",0,,
+"    public class func keyPathsForValuesAffectingActiveParticipants() -> Set<String> {
+        return Set(participantRolesKeys)
+    }",0,,
+"private static func writeUint16(_ buffer: UnsafeMutablePointer<UInt8>, offset: Int, value: UInt16) {
+        buffer[offset + 0] = UInt8(value >> 8)
+        buffer[offset + 1] = UInt8(value & 0xff)
+    }",0,,
+"    private func buildAuthenticatedRouter(account: Account, isComingFromRegistration: Bool) -> AuthenticatedRouter? {
+
+        let needToShowDataUsagePermissionDialog = appStateCalculator.wasUnauthenticated
+                                                    && !SelfUser.current.isTeamMember
+
+        return AuthenticatedRouter(rootViewController: rootViewController,
+                                   account: account,
+                                   selfUser: ZMUser.selfUser(),
+                                   isComingFromRegistration: isComingFromRegistration,
+                                   needToShowDataUsagePermissionDialog: needToShowDataUsagePermissionDialog)
+    }",0,,
+"    @objc public func appendNewPotentialGapSystemMessage(users: Set<ZMUser>?, timestamp: Date) {
+        
+        let previousLastMessage = lastMessage
+        let systemMessage = self.appendSystemMessage(type: .potentialGap,
+                                                     sender: ZMUser.selfUser(in: self.managedObjectContext!),
+                                                     users: users,
+                                                     clients: nil,
+                                                     timestamp: timestamp)
+        systemMessage.needsUpdatingUsers = true
+        
+        if let previousLastMessage = previousLastMessage as? ZMSystemMessage, previousLastMessage.systemMessageType == .potentialGap,
+           let previousLastMessageTimestamp = previousLastMessage.serverTimestamp, previousLastMessageTimestamp <= timestamp {
+            // In case the message before the new system message was also a system message of
+            // the type ZMSystemMessageTypePotentialGap, we delete the old one and update the
+            // users property of the new one to use old users and calculate the added / removed users
+            // from the time the previous one was added
+            systemMessage.users = previousLastMessage.users
+            self.managedObjectContext?.delete(previousLastMessage)
+        }
+    }",0,,
+"internal static func other(_ p1: Any) -> String {
+            return L10n.tr(""Localizable"", ""content.system.cannot_decrypt_identity_changed.other"", String(describing: p1))
+          }",0,,
+"fileprivate init(role: Role) {
+      self.role = role
+      self.openStreams = 0
+      self.lastPeerInitiatedStreamID = .rootStream
+      // Assumed until we know better.
+      self.maxConcurrentStreams = 100
+      self.hasSeenSettings = false
+    }",0,,
+"    public func increaseSecurityLevelIfNeededAfterRemoving(clients: [ZMUser: Set<UserClient>]) {
+        applySecurityChanges(cause: .removedClients(clients))
+    }",0,,
+"@objc public func markToDownloadRolesIfNeeded() {
+        guard self.conversationType == .group else { return }
+        
+        let selfUser = ZMUser.selfUser(in: self.managedObjectContext!)
+        let notInMyTeam = self.teamRemoteIdentifier == nil ||
+            selfUser.team?.remoteIdentifier != self.teamRemoteIdentifier
+        
+        guard notInMyTeam else { return }
+        
+        if self.nonTeamRoles.isEmpty ||
+            self.nonTeamRoles.first(where: {!$0.actions.isEmpty}) == nil // there are no roles with actions
+        {
+            self.needsToDownloadRoles = true
+        }
+    }",0,,
+"internal static func time(_ p1: Any) -> String {
+              return L10n.tr(""Localizable"", ""content.message.reply.original_timestamp.time"", String(describing: p1))
+            }",0,,
+"    private func showInitial(launchOptions: LaunchOptions) {
+        enqueueTransition(to: .headless) { [weak self] in
+            Analytics.shared.tagEvent(""app.open"")
+            self?.sessionManager.start(launchOptions: launchOptions)
+        }
+    }",0,,
+"    private func configureColorScheme() {
+        let colorScheme = ColorScheme.default
+        colorScheme.accentColor = .accent()
+        colorScheme.variant = Settings.shared.colorSchemeVariant
+    }",0,,
+"public init(url: URL, protocols: [String]? = nil) {
+        self.url = url
+        self.origin = url.absoluteString
+        if let hostUrl = URL (string: ""/"", relativeTo: url) {
+            var origin = hostUrl.absoluteString
+            origin.remove(at: origin.index(before: origin.endIndex))
+            self.origin = origin
+        }
+        writeQueue.maxConcurrentOperationCount = 1
+        optionalProtocols = protocols
+    }",0,,
+"    fileprivate func expireAllPendingMessagesBecauseOfSecurityLevelDegradation() {
+        for message in undeliveredMessages {
+            if let clientMessage = message as? ZMClientMessage,
+                let genericMessage = clientMessage.underlyingMessage,
+                genericMessage.hasConfirmation {
+                // Delivery receipt: just expire it
+                message.expire()
+            } else {
+                // All other messages: expire and mark that it caused security degradation
+                message.expire()
+                message.causedSecurityLevelDegradation = true
+            }
+        }
+    }",0,,
+"    private func checkIfVerificationLevelChanged(removedUsers: Set<ZMUser>) {
+        self.increaseSecurityLevelIfNeededAfterRemoving(users: removedUsers)
+    }",0,,
+"private func processInputStream() {
+        let buf = NSMutableData(capacity: BUFFER_MAX)
+        let buffer = UnsafeMutableRawPointer(mutating: buf!.bytes).assumingMemoryBound(to: UInt8.self)
+        let length = inputStream!.read(buffer, maxLength: BUFFER_MAX)
+        guard length > 0 else { return }
+        var process = false
+        if inputQueue.count == 0 {
+            process = true
+        }
+        inputQueue.append(Data(bytes: buffer, count: length))
+        if process {
+            dequeueInput()
+        }
+    }",0,,
+"    open func write(data: Data, completion: (() -> ())? = nil) {
+        guard isConnected else { return }
+        dequeueWrite(data, code: .binaryFrame, writeCompletion: completion)
+    }",0,,
+"internal static func message(_ p1: Any) -> String {
+              return L10n.tr(""Localizable"", ""conversation.input_bar.audio_message.too_long_size.message"", String(describing: p1))
+            }",0,,
+"internal static func withRequirements(_ p1: Any, _ p2: Any) -> String {
+            return L10n.tr(""Localizable"", ""registration.password.rules.with_requirements"", String(describing: p1), String(describing: p2))
+          }",0,,
+"    public func writeFile(_ buffer: ByteBuffer, at path: String) -> EventLoopFuture<Void> {
+        do {
+            let fd = try NIOFileHandle(path: path, mode: .write, flags: .allowFileCreation())
+            let done = io.write(fileHandle: fd, buffer: buffer, eventLoop: self.request.eventLoop)
+            done.whenComplete { _ in
+                try? fd.close()
+            }
+            return done
+        } catch {
+            return self.request.eventLoop.makeFailedFuture(error)
+        }
+    }",0,,
+"    @objc public func markAccountAsDeleted(at timestamp: Date) {
+        isAccountDeleted = true
+        removeFromAllConversations(at: timestamp)
+    }",0,,
+"    override func updateUserDetails() {
+        userDetailsView.microphoneIconStyle = MicrophoneIconStyle(state: stream.microphoneState,
+                                                                  shouldPulse: stream.isParticipantActiveSpeaker)
+        
+        guard let name = stream.participantName else {
+            return
+        }
+        userDetailsView.name = name + ""user_cell.title.you_suffix"".localized
+    }",0,,
+"  func channelInactive(context: ChannelHandlerContext) {
+    self.perform(operations: self.stateMachine.channelInactive())
+    self.scheduledPing?.cancel()
+    self.scheduledClose?.cancel()
+    self.scheduledPing = nil
+    self.scheduledClose = nil
+    context.fireChannelInactive()
+  }",0,,
+"public func role(in conversation: ConversationLike?) -> Role? {
+        return participantRoles.first(where: { $0.conversation === conversation })?.role
+    }",0,,
+"    private func updateLegalHoldIfNeededWithHint(from message: GenericMessage, timestamp: Date) {
+        switch message.legalHoldStatus {
+        case .enabled where !legalHoldStatus.denotesEnabledComplianceDevice:
+            needsToVerifyLegalHold = true
+            legalHoldStatus = .pendingApproval
+            appendLegalHoldEnabledSystemMessageForConversationAfterReceivingMessage(at: timestamp)
+            expireAllPendingMessagesBecauseOfSecurityLevelDegradation()
+        case .disabled where legalHoldStatus.denotesEnabledComplianceDevice:
+            needsToVerifyLegalHold = true
+            legalHoldStatus = .disabled
+            appendLegalHoldDisabledSystemMessageForConversationAfterReceivingMessage(at: timestamp)
+        default:
+            break
+        }
+    }",0,,
+"private func updateVideoGrid(with newVideoStreams: [VideoStream]) {
+        let changeSet = StagedChangeset(source: dataSource, target: newVideoStreams)
+
+        UIView.performWithoutAnimation {
+            gridView.reload(using: changeSet) { dataSource = $0 }
+        }
+
+        updateStates(with: dataSource)
+        pruneCache()
+    }",0,,
+"    fileprivate init(fromOperating state: Operating, initiatedByUs: Bool) {
+      // If we didn't initiate shutdown, the remote peer must have done so by sending a GOAWAY frame
+      // in which case we must have seen a SETTINGS frame.
+      assert(initiatedByUs || state.hasSeenSettings)
+      self.role = state.role
+      self.initiatedByUs = initiatedByUs
+      self.openStreams = state.openStreams
+      self.lastPeerInitiatedStreamID = state.lastPeerInitiatedStreamID
+      self.maxConcurrentStreams = state.maxConcurrentStreams
+    }",0,,
+"internal static func otherAddedYou(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""content.system.other_added_you"", String(describing: p1))
+        }",0,,
+"internal static func `left`(_ p1: Any) -> String {
+              return L10n.tr(""Localizable"", ""content.system.conversation.other.left"", String(describing: p1))
+            }",0,,
+"internal static func newConversation(_ p1: Int) -> String {
+            return L10n.tr(""Localizable"", ""add_participants.alert.message.new_conversation"", p1)
+          }",0,,
+"internal static func other(_ p1: Any) -> String {
+            return L10n.tr(""Localizable"", ""content.system.cannot_decrypt.other"", String(describing: p1))
+          }",0,,
+"internal static func youStartedConversation(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""content.system.you_started_conversation"", String(describing: p1))
+        }",0,,
+"fileprivate mutating func streamClosed(_ streamID: HTTP2StreamID, logger: Logger) {
+    self.openStreams -= 1
+
+    logger.debug(""HTTP2 stream closed"", metadata: [
+      MetadataKey.h2StreamID: ""\(streamID)"",
+      MetadataKey.h2ActiveStreams: ""\(self.openStreams)"",
+    ])
+  }",0,,
+"internal static func message(_ p1: Any) -> String {
+              return L10n.tr(""Localizable"", ""login.sso.error.alert.message"", String(describing: p1))
+            }",0,,
+"internal static func messageTimerChangesYou(_ p1: Any, _ p2: Any) -> String {
+          return L10n.tr(""Localizable"", ""content.system.message_timer_changes-you"", String(describing: p1), String(describing: p2))
+        }",0,,
+"fileprivate func asByteBufferBounds(withMaxSize size: Int) -> (offset: Int64, byteCount: Int) {
+        switch self {
+            case .start(let value):
+                return (offset: numericCast(value), byteCount: size - value)
+            case .tail(let value):
+                return (offset: numericCast(size - value), byteCount: value)
+            case .within(let start, let end):
+                return (offset: numericCast(start), byteCount: end - start + 1)
+        }
+    }",1,"0,7","fileprivate func asByteBufferBounds(withMaxSize size: Int) -> (offset: Int64, byteCount: Int) {/~/                return (offset: numericCast(start), byteCount: end - start + 1)"
+"get {
+            willAccessValue(forKey: #keyPath(legalHoldStatus))
+            defer { didAccessValue(forKey: #keyPath(legalHoldStatus)) }
+
+            if let status = ZMConversationLegalHoldStatus(rawValue: primitiveLegalHoldStatus.int16Value) {
+                return status
+            } else {
+                return .disabled
+            }
+        }
+        set {
+            willChangeValue(forKey: #keyPath(legalHoldStatus))
+            primitiveLegalHoldStatus = NSNumber(value: newValue.rawValue)
+            didChangeValue(forKey: #keyPath(legalHoldStatus))
+        }
+    }",0,,
+"internal static func text(_ p1: Any) -> String {
+        return L10n.tr(""Localizable"", ""send_invitation.text"", String(describing: p1))
+      }",0,,
+"    private func toggleMaximized(view: BaseVideoPreviewView?) {
+        let stream = view?.stream
+        
+        maximizedView = isMaximized(stream: stream) ? nil : view
+        view?.isMaximized = isMaximized(stream: stream)
+        updateVideoGrid(with: videoStreams)
+    }",0,,
+"    public class func keyPathsForValuesAffectingLocalParticipantsExcludingSelf() -> Set<String> {
+        return Set(ZMConversation.participantRolesKeys)
+    }",0,,
+"@objc public func replaceNewClientMessageIfNeededWithNewDeviceMesssage() {
+
+        let selfUser = ZMUser.selfUser(in: self.managedObjectContext!)
+        guard let selfClient = selfUser.selfClient() else { return }
+        
+        NSOrderedSet(array: lastMessages()).enumerateObjects() { (msg, idx, stop) in
+            guard idx <= 2 else {
+                stop.initialize(to: true)
+                return
+            }
+            
+            guard let systemMessage = msg as? ZMSystemMessage,
+                systemMessage.systemMessageType == .newClient,
+                systemMessage.sender == selfUser else {
+                    return
+            }
+            
+            if systemMessage.clients.contains(selfClient) {
+                systemMessage.systemMessageType = .usingNewDevice
+                stop.initialize(to: true)
+            }
+        }
+    }",0,,
+"internal static func title(_ p1: Any) -> String {
+              return L10n.tr(""Localizable"", ""content.system.conversation.with_name.title"", String(describing: p1))
+            }",0,,
+"internal static func title(_ p1: Any) -> String {
+            return L10n.tr(""Localizable"", ""profile.devices.fingerprint_message.title"", String(describing: p1))
+          }",0,,
+"internal static func title(_ p1: Any) -> String {
+              return L10n.tr(""Localizable"", ""landing.custom_backend.more_info.alert.title"", String(describing: p1))
+            }",0,,
+"internal static func newUserDevice(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""voice.degradation.new_user_device"", String(describing: p1))
+        }",0,,
+"public func collectFile(at path: String) -> EventLoopFuture<ByteBuffer> {
+        var data = self.allocator.buffer(capacity: 0)
+        return self.readFile(at: path) { new in
+            var new = new
+            data.writeBuffer(&new)
+            return self.request.eventLoop.makeSucceededFuture(())
+        }.map { data }
+    }",0,,
+"    func applicationWillEnterForeground() {
+        updateOverlayWindowFrame()
+    }",0,,
+"fileprivate func appendNewIsSecureSystemMessage(cause: SecurityChangeCause) {
+        switch cause {
+        case .removedUsers(let users):
+            appendNewIsSecureSystemMessage(verified: [], for: users)
+        case .verifiedClients(let userClients):
+            let users = Set(userClients.compactMap { $0.user })
+            appendNewIsSecureSystemMessage(verified: userClients, for: users)
+        case .removedClients(let userClients):
+            let users = Set(userClients.keys)
+            let clients = Set(userClients.values.flatMap { $0 })
+            appendNewIsSecureSystemMessage(verified: clients, for: users)
+        default:
+            // no-op: the conversation is not secure in other cases
+            return
+        }
+    }",0,,
+"    override func setupViews() {
+        super.setupViews()
+        previewView.backgroundColor = .clear
+        previewView.translatesAutoresizingMaskIntoConstraints = false
+        insertSubview(previewView, belowSubview: userDetailsView)
+    }",0,,
+"internal static func message(_ p1: Any) -> String {
+                  return L10n.tr(""Localizable"", ""self.settings.account_section.email.change.resend.message"", String(describing: p1))
+                }",0,,
+"    fileprivate mutating func closeChannel() {
+      self.shouldCloseChannel = true
+    }",0,,
+"internal static func showAll(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""call.participants.show_all"", String(describing: p1))
+        }",0,,
+"internal static func message(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""profile.connection_request_dialog.message"", String(describing: p1))
+        }",0,,
+"private func processTCPHandshake(_ buffer: UnsafePointer<UInt8>, bufferLen: Int) {
+        let code = processHTTP(buffer, bufferLen: bufferLen)
+        switch code {
+        case 0:
+            break
+        case -1:
+            fragBuffer = Data(bytes: buffer, count: bufferLen)
+            break // do nothing, we are going to collect more data
+        default:
+            doDisconnect(errorWithDetail(""Invalid HTTP upgrade"", code: UInt16(code)))
+        }
+    }",0,,
+"internal static func messageReadReceiptOffYou(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""content.system.message_read_receipt_off-you"", String(describing: p1))
+        }",0,,
+"private static func writeUint64(_ buffer: UnsafeMutablePointer<UInt8>, offset: Int, value: UInt64) {
+        for i in 0...7 {
+            buffer[offset + i] = UInt8((value >> (8*UInt64(7 - i))) & 0xff)
+        }
+    }",0,,
+"internal static func textYou(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""content.ping.text-you"", String(describing: p1))
+        }",0,,
+"    @objc class func keyPathsForValuesAffectingIsUnderLegalHold() -> Set<String> {
+        return [UserClientsKey, ""clients.deviceClass""]
+    }",0,,
+"    private(set) var colors: [AnyHashable: Any]?
+
+    var variant: ColorSchemeVariant = .light
+
+    private(set) var defaultColorScheme: ColorScheme?
+    var accentColor: UIColor = .red
+
+    var keyboardAppearance: UIKeyboardAppearance {
+        return ColorScheme.keyboardAppearance(for: variant)
+    }",0,,
+"internal static func removed(_ p1: Any, _ p2: Any) -> String {
+              return L10n.tr(""Localizable"", ""content.system.conversation.you.removed"", String(describing: p1), String(describing: p2))
+            }",0,,
+"internal static func special(_ p1: Int) -> String {
+            return L10n.tr(""Localizable"", ""registration.password.rules.special"", p1)
+          }",0,,
+"internal static func errorDetails(_ p1: Int, _ p2: Any) -> String {
+            return L10n.tr(""Localizable"", ""content.system.cannot_decrypt.error_details"", p1, String(describing: p2))
+          }",0,,
+"    private func resetSelfUserProviderIfNeeded(for appState: AppState) {
+        guard AppDelegate.shared.shouldConfigureSelfUserProvider else { return }
+
+        switch appState {
+        case .authenticated: break
+        default:
+            SelfUser.provider = nil
+        }
+    }",0,,
+"    fileprivate init(fromOperating state: Operating) {
+      self.role = state.role
+      // Idle if there are no open streams and we've seen the first SETTINGS frame.
+      self.shouldIdle = !state.hasOpenStreams && state.hasSeenSettings
+    }",0,,
+"    func nameAccent(for color: ZMAccentColor, variant: ColorSchemeVariant) -> UIColor {
+        return UIColor.nameColor(for: color, variant: variant)
+    }",0,,
+"open func write(string: String, completion: (() -> ())? = nil) {
+        guard isConnected else { return }
+        dequeueWrite(string.data(using: String.Encoding.utf8)!, code: .textFrame, writeCompletion: completion)
+    }",0,,
+"    func addObserverToken(_ token: NSObjectProtocol) {
+        observerTokens.append(token)
+    }",0,,
+"internal static func subheadline(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""team.activation_code.subheadline"", String(describing: p1))
+        }",0,,
+"internal static func message(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""profile.cancel_connection_request_dialog.message"", String(describing: p1))
+        }",0,,
+"internal static func selfUserNewClient(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""content.system.self_user_new_client"", String(describing: p1))
+        }",0,,
+"private func processResponse(_ response: WSResponse) -> Bool {
+        if response.isFin && response.bytesLeft <= 0 {
+            if response.code == .ping {
+                let data = response.buffer! // local copy so it is perverse for writing
+                dequeueWrite(data as Data, code: .pong)
+            } else if response.code == .textFrame {
+                let str: NSString? = NSString(data: response.buffer! as Data, encoding: String.Encoding.utf8.rawValue)
+                if str == nil {
+                    writeError(CloseCode.encoding.rawValue)
+                    return false
+                }
+                if canDispatch {
+                    callbackQueue.async { [weak self] in
+                        guard let s = self else { return }
+                        s.onText?(str! as String)
+                        s.delegate?.websocketDidReceiveMessage(socket: s, text: str! as String)
+                    }
+                }
+            } else if response.code == .binaryFrame {
+                if canDispatch {
+                    let data = response.buffer! // local copy so it is perverse for writing
+                    callbackQueue.async { [weak self] in
+                        guard let s = self else { return }
+                        s.onData?(data as Data)
+                        s.delegate?.websocketDidReceiveData(socket: s, data: data as Data)
+                    }
+                }
+            }
+            readStack.removeLast()
+            return true
+        }
+        return false
+    }",0,,
+"    public func canManagedGroupRole(of user: UserType, conversation: ZMConversation) -> Bool {
+        guard isGroupAdmin(in: conversation) else { return false }
+        return !user.isSelfUser && (user.isConnected || isOnSameTeam(otherUser: user))
+    }",0,,
+"internal static func existingConversation(_ p1: Int, _ p2: Int) -> String {
+            return L10n.tr(""Localizable"", ""add_participants.alert.message.existing_conversation"", p1, p2)
+          }",0,,
+"  private func idleTimeoutFired() {
+    self.perform(operations: self.stateMachine.idleTimeoutTaskFired())
+  }",0,,
+"internal static func participants(_ p1: Int) -> String {
+          return L10n.tr(""Localizable"", ""participants.section.participants"", p1)
+        }",0,,
+"    func stopCapture() {
+        previewView.stopVideoCapture()
+    }",0,,
+"    private func pruneCache() {
+        let existingStreamsIds = Set(viewCache.keys)
+        let currentStreamsIds = configuration.allStreamIds
+
+        for deletedStreamId in existingStreamsIds.subtracting(currentStreamsIds) {
+            viewCache[deletedStreamId]?.removeFromSuperview()
+            viewCache.removeValue(forKey: deletedStreamId)
+        }
+    }",0,,
+"    public func updateSecurityLevelIfNeededAfterFetchingClients(changes: ZMConversationRemoteClientChangeSet) {
+        needsToVerifyLegalHold = false
+
+        if changes.isEmpty {
+            applySecurityChanges(cause: .verifyLegalHold)
+        }
+    }",0,,
+"internal static func others(_ p1: Any) -> String {
+              return L10n.tr(""Localizable"", ""content.system.started_conversation.truncated_people.others"", String(describing: p1))
+            }",0,,
+"internal static func titleYou(_ p1: Any) -> String {
+              return L10n.tr(""Localizable"", ""content.system.conversation.with_name.title-you"", String(describing: p1))
+            }",0,,
+"  private func now() -> NIODeadline {
+    return self._testingOnlyNow ?? .now()
+  }",0,,
+"    private func checkIfArchivedStatusChanged(addedSelfUser: Bool) {
+        if addedSelfUser &&
+            self.mutedStatus == MutedMessageOptionValue.none.rawValue &&
+            self.isArchived
+        {
+            self.isArchived = false
+        }
+    }",0,,
+"internal static func accessibilityValue(_ p1: Any) -> String {
+            return L10n.tr(""Localizable"", ""conversation_list.header.self_team.accessibility_value"", String(describing: p1))
+          }",0,,
+"internal static func instructions(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""registration.verify_email.instructions"", String(describing: p1))
+        }",0,,
+"internal static func lockDescription(_ p1: Any) -> String {
+                return L10n.tr(""Localizable"", ""self.settings.privacy_security.lock_app.subtitle.lock_description"", String(describing: p1))
+              }",0,,
+"internal static func groups(_ p1: Any) -> String {
+              return L10n.tr(""Localizable"", ""conversation.status.message.missedcall.groups"", String(describing: p1))
+            }",0,,
+"    fileprivate mutating func maxConcurrentStreamsChanged(_ newValue: Int) {
+      self.maxConcurrentStreamsChange = newValue
+    }",0,,
+"internal static func otherRemovedYou(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""content.system.other_removed_you"", String(describing: p1))
+        }",0,,
+"private func handlePong(_ pingData: HTTP2PingData) -> Action {
+    if pingData.integer == self.pingCode {
+      return .cancelScheduledTimeout
+    } else {
+      return .none
+    }
+  }",1,1,    if pingData.integer == self.pingCode {
+"internal static func groupsYou(_ p1: Int) -> String {
+              return L10n.tr(""Localizable"", ""content.system.call.missed-call.groups-you"", p1)
+            }",0,,
+"    func color(named: ColorSchemeColor, variant: ColorSchemeVariant? = nil) -> UIColor {
+        let colorSchemeVariant = variant ?? self.variant
+
+        let colorPair = named.colorPair(accentColor: accentColor)
+        switch colorSchemeVariant {
+        case .dark:
+            return colorPair.dark
+        case .light:
+            return colorPair.light
+        }
+    }",0,,
+"    private func streamView(for stream: Stream) -> UIView? {
+        return viewCache[stream.streamId]
+    }",0,,
+"open func disconnect(forceTimeout: TimeInterval? = nil, closeCode: UInt16 = CloseCode.normal.rawValue) {
+        guard isConnected else { return }
+        switch forceTimeout {
+        case .some(let seconds) where seconds > 0:
+            let milliseconds = Int(seconds * 1_000)
+            callbackQueue.asyncAfter(deadline: .now() + .milliseconds(milliseconds)) { [weak self] in
+                self?.disconnectStream(nil)
+            }
+            fallthrough
+        case .none:
+            writeError(closeCode)
+        default:
+            disconnectStream(nil)
+            break
+        }
+    }",0,,
+"internal static func missedcall(_ p1: Int) -> String {
+              return L10n.tr(""Localizable"", ""conversation.silenced.status.message.missedcall"", p1)
+            }",0,,
+"internal static func incoming(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""call.announcement.incoming"", String(describing: p1))
+        }",0,,
+"    private func discardPendingMessagesAfterPrivacyChanges() {
+        guard let syncMOC = managedObjectContext?.zm_sync else { return }
+        syncMOC.performGroupedBlock {
+            guard let conversation = (try? syncMOC.existingObject(with: self.objectID)) as? ZMConversation else { return }
+            conversation.clearMessagesThatCausedSecurityLevelDegradation()
+            syncMOC.saveOrRollback()
+        }
+    }",0,,
+"    init(arrayLiteral: String...) {
+        self.values = arrayLiteral.map({ (s: String) -> URLQueryFragment in
+            return .urlDecoded(s)
+        })
+        self.children = [:]
+    }",0,,
+"internal static func youRemovedOther(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""content.system.you_removed_other"", String(describing: p1))
+        }",0,,
+"        super.init(nibName: nil, bundle: nil)
+
+        setupViews()
+        createConstraints()
+        updateState()
+        displayIndicatorViewsIfNeeded()
+    }
+
+    required init?(coder aDecoder: NSCoder) {
+        fatalError(""init(coder:) has not been implemented"")
+    }",0,,
+"  func handlerRemoved(context: ChannelHandlerContext) {
+    self.context = nil
+  }",0,,
+"    init(dictionaryLiteral: (String, URLEncodedFormData)...) {
+        self.values = []
+        self.children = Dictionary(uniqueKeysWithValues: dictionaryLiteral)
+    }",0,,
+"internal static func newDevices(_ p1: Int) -> String {
+          return L10n.tr(""Localizable"", ""content.system.new_devices"", p1)
+        }",0,,
+"  private static func tr(_ table: String, _ key: String, _ args: CVarArg...) -> String {
+    let format = BundleToken.bundle.localizedString(forKey: key, value: nil, table: table)
+    return String(format: format, locale: Locale.current, arguments: args)
+  }",0,,
+"    private func applicationDidTransition(to appState: AppState) {
+        if case .unauthenticated(let error) = appState {
+            presentAlertForDeletedAccountIfNeeded(error)
+        }
+
+        if case .authenticated = appState {
+            authenticatedRouter?.updateActiveCallPresentationState()
+
+            ZClientViewController.shared?.legalHoldDisclosureController?.discloseCurrentState(cause: .appOpen)
+        }
+
+        resetSelfUserProviderIfNeeded(for: appState)
+        urlActionRouter.openDeepLink(for: appState)
+        appStateTransitionGroup.leave()
+    }",0,,
+"    public func openDeepLinkURL(_ deepLinkURL: URL) -> Bool {
+        return urlActionRouter.open(url: deepLinkURL)
+    }",0,,
+"internal static func onTwitter(_ p1: Any) -> String {
+        return L10n.tr(""Localizable"", ""twitter_status.on_twitter"", String(describing: p1))
+      }",0,,
+"internal static func messageReadReceiptOn(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""content.system.message_read_receipt_on"", String(describing: p1))
+        }",0,,
+"internal static func knock(_ p1: Int) -> String {
+              return L10n.tr(""Localizable"", ""conversation.silenced.status.message.knock"", p1)
+            }",0,,
+"internal static func message(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""profile.block_dialog.message"", String(describing: p1))
+        }",0,,
+"internal static func `left`(_ p1: Any) -> String {
+              return L10n.tr(""Localizable"", ""content.system.conversation.you.left"", String(describing: p1))
+            }",0,,
+"    private func appendLegalHoldDisabledSystemMessageForConversationAfterReceivingMessage(at timestamp: Date) {
+        appendSystemMessage(type: .legalHoldDisabled,
+                            sender: ZMUser.selfUser(in: self.managedObjectContext!),
+                            users: nil,
+                            clients: nil,
+                            timestamp: timestamp.previousNearestTimestamp)
+    }",0,,
+"internal static func user(_ p1: Any) -> String {
+            return L10n.tr(""Localizable"", ""call.status.incoming.user"", String(describing: p1))
+          }",0,,
+"    @objc public func requestPreviewProfileImage() {
+        guard let moc = self.managedObjectContext, moc.zm_isUserInterfaceContext, !moc.zm_userImageCache.hasUserImage(self, size: .preview) else { return }
+        
+        NotificationInContext(name: .userDidRequestPreviewAsset,
+                              context: moc.notificationContext,
+                              object: self.objectID).post()
+    }",0,,
+"        rootViewController.set(childViewController: AppLockModule.build(session: session),
+                               completion: completion)
+    }
+
+    // MARK: - Helpers
+    private func configureUnauthenticatedAppearance() {
+        rootViewController.view.window?.tintColor = UIColor.Wire.primaryLabel
+        ValidatedTextField.appearance(whenContainedInInstancesOf: [AuthenticationStepController.self]).tintColor = UIColor.Team.activeButton
+    }",0,,
+"internal static func knowsOne(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""peoplepicker.suggested.knows_one"", String(describing: p1))
+        }",0,,
+"internal static func group(_ p1: Any) -> String {
+            return L10n.tr(""Localizable"", ""conversation.status.typing.group"", String(describing: p1))
+          }",0,,
+"    private func transition(to appState: AppState, completion: @escaping () -> Void) {
+        applicationWillTransition(to: appState)
+
+        resetAuthenticationCoordinatorIfNeeded(for: appState)
+
+        let completionBlock = { [weak self] in
+            completion()
+            self?.applicationDidTransition(to: appState)
+        }
+
+        switch appState {
+        case .blacklisted:
+            showBlacklisted(completion: completionBlock)
+        case .jailbroken:
+            showJailbroken(completion: completionBlock)
+        case .databaseFailure:
+            showDatabaseLoadingFailure(completion: completionBlock)
+        case .migrating:
+            showLaunchScreen(isLoading: true, completion: completionBlock)
+        case .unauthenticated(error: let error):
+            screenCurtain.delegate = nil
+            configureUnauthenticatedAppearance()
+            showUnauthenticatedFlow(error: error, completion: completionBlock)
+        case .authenticated(completedRegistration: let completedRegistration):
+            configureAuthenticatedAppearance()
+            executeAuthenticatedBlocks()
+            // TODO: [John] Avoid singleton.
+            screenCurtain.delegate = ZMUserSession.shared()
+            showAuthenticated(isComingFromRegistration: completedRegistration,
+                              completion: completionBlock)
+        case .headless:
+            showLaunchScreen(completion: completionBlock)
+        case .loading(account: let toAccount, from: let fromAccount):
+            showSkeleton(fromAccount: fromAccount,
+                         toAccount: toAccount,
+                         completion: completionBlock)
+        case .locked:
+            // TODO: [John] Avoid singleton.
+            screenCurtain.delegate = ZMUserSession.shared()
+            showAppLock(completion: completionBlock)
+        }
+    }",0,,
+"internal static func hoursLeft(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""guest_room.expiration.hours_left"", String(describing: p1))
+        }",0,,
+"    public func increaseSecurityLevelIfNeededAfterRemoving(users: Set<ZMUser>) {
+        applySecurityChanges(cause: .removedUsers(users))
+    }",0,,
+"    public func performQuickAction(for shortcutItem: UIApplicationShortcutItem,
+                                   completionHandler: ((Bool) -> Void)?) {
+        quickActionsManager.performAction(for: shortcutItem,
+                                          completionHandler: completionHandler)
+    }",0,,
+"    deinit {
+        stopCapture()
+    }",0,,
+"internal static func subtitleSendDate(_ p1: Any) -> String {
+        return L10n.tr(""Localizable"", ""message_details.subtitle_send_date"", String(describing: p1))
+      }",0,,
+"internal static func message(_ p1: Any) -> String {
+                return L10n.tr(""Localizable"", ""login.sso.error.alert.invalid_status.message"", String(describing: p1))
+              }",0,,
+"public func addParticipantsAndUpdateConversationState(usersAndRoles: [(ZMUser, Role?)]) {
+        
+        // Is this a new conversation, or an existing one that is being updated?
+        let doesExistsOnBackend = self.remoteIdentifier != nil
+        
+        let addedRoles = usersAndRoles.compactMap { (user, role) -> ParticipantRole? in
+            guard !user.isAccountDeleted else { return nil }
+            
+            // make sure the role is the right team/conversation role
+            require(
+                role == nil || (role!.team == self.team || role!.conversation == self),
+                ""Tried to add a role that does not belong to the conversation""
+            )
+            
+            guard let (result, pr) = updateExistingOrCreateParticipantRole(for: user, with: role) else { return nil }
+            return (result == .created) ? pr : nil
+        }
+        
+        let addedSelfUser = doesExistsOnBackend && addedRoles.contains(where: {$0.user.isSelfUser})
+        if addedSelfUser {
+            self.markToDownloadRolesIfNeeded()
+            self.needsToBeUpdatedFromBackend = true
+        }
+        
+        if !addedRoles.isEmpty {
+            self.checkIfArchivedStatusChanged(addedSelfUser: addedSelfUser)
+            self.checkIfVerificationLevelChanged(addedUsers: Set(addedRoles.map { $0.user}))
+        }
+    }",1,26,self.checkIfVerificationLevelChanged(addedUsers: Set(addedRoles.map { $0.user}))
+"internal func sign(digest: ByteBuffer) throws -> ByteBuffer {
+        let bio = BIO_new(BIO_s_mem())
+        defer { BIO_free(bio) }
+        let res = buffer.withUnsafeReadableBytes { ptr in
+            Int(BIO_puts(bio, ptr.baseAddress?.assumingMemoryBound(to: Int8.self)))
+        }
+        assert(res >= 0, ""BIO_puts failed"")
+
+        guard let opaquePointer = OpaquePointer.make(optional: PEM_read_bio_ECPrivateKey(bio!, nil, nil, nil)) else {
+            throw APNSwiftError.SigningError.invalidAuthKey
+        }
+        defer { EC_KEY_free(opaquePointer) }
+        
+        let sig = digest.withUnsafeReadableBytes { ptr in
+            ECDSA_do_sign(ptr.baseAddress?.assumingMemoryBound(to: UInt8.self), Int32(digest.readableBytes), opaquePointer)
+        }
+        defer { ECDSA_SIG_free(sig) }
+
+        var derEncodedSignature: UnsafeMutablePointer<UInt8>?
+        let derLength = i2d_ECDSA_SIG(sig, &derEncodedSignature)
+        guard let derCopy = derEncodedSignature, derLength > 0 else {
+            throw APNSwiftError.SigningError.invalidASN1
+        }
+
+        var derBytes = ByteBufferAllocator().buffer(capacity: Int(derLength))
+        for b in 0 ..< Int(derLength) {
+            derBytes.writeBytes([derCopy[b]])
+        }
+
+        return derBytes
+    }",1,"4,6,18,25,26,27,28","Int(BIO_puts(bio, ptr.baseAddress?.assumingMemoryBound(to: Int8.self)))/~/        assert(res >= 0, ""BIO_puts failed"")/~/        var derEncodedSignature: UnsafeMutablePointer<UInt8>?/~/        for b in 0 ..< Int(derLength) {/~/            derBytes.writeBytes([derCopy[b]])/~/        }/~/"
+"    func contentSizeCategoryDidChange() {
+        NSAttributedString.invalidateParagraphStyle()
+        NSAttributedString.invalidateMarkdownStyle()
+        ConversationListCell.invalidateCachedCellSize()
+        defaultFontScheme = FontScheme(contentSizeCategory: UIApplication.shared.preferredContentSizeCategory)
+        AppRootRouter.configureAppearance()
+    }",0,,
+"internal static func participantsNOthers(_ p1: Any, _ p2: Int) -> String {
+          return L10n.tr(""Localizable"", ""content.system.participants_n_others"", String(describing: p1), p2)
+        }",0,,
+"    private func updateFloatingVideo(with state: VideoStream?) {
+        // No stream, remove floating video if there is any.
+        guard let state = state else {
+            Log.calling.debug(""Removing self video from floating preview"")
+            return thumbnailViewController.removeCurrentThumbnailContentView()
+        }
+
+        // We only support the self preview in the floating overlay.
+        guard state.stream.streamId == ZMUser.selfUser()?.selfStreamId else {
+            return Log.calling.error(""Invalid operation: Non self preview in overlay"")
+        }
+
+        // We have a stream but don't have a preview view yet.
+        if nil == thumbnailViewController.contentView, let previewView = selfPreviewView {
+            Log.calling.debug(""Adding self video to floating preview"")
+            thumbnailViewController.setThumbnailContentView(previewView, contentSize: .previewSize(for: traitCollection))
+        }
+    }",0,,
+"private func dequeueInput() {
+        while !inputQueue.isEmpty {
+            autoreleasepool {
+                let data = inputQueue[0]
+                var work = data
+                if let buffer = fragBuffer {
+                    var combine = NSData(data: buffer) as Data
+                    combine.append(data)
+                    work = combine
+                    fragBuffer = nil
+                }
+                let buffer = UnsafeRawPointer((work as NSData).bytes).assumingMemoryBound(to: UInt8.self)
+                let length = work.count
+                if !connected {
+                    processTCPHandshake(buffer, bufferLen: length)
+                } else {
+                    processRawMessagesInBuffer(buffer, bufferLen: length)
+                }
+                inputQueue = inputQueue.filter{ $0 != data }
+            }
+        }
+    }",0,,
+"    func asUrlDecoded() throws -> String {
+        switch self {
+        case .urlEncoded(let encoded):
+            guard let decoded = encoded.removingPercentEncoding else {
+                throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: [], debugDescription: ""Unable to remove percent encoding for \(encoded)""))
+            }
+            return decoded
+        case .urlDecoded(let decoded):
+            return decoded
+        }
+    }",0,,
+"    func hash(into: inout Hasher) {
+        do {
+            try self.asUrlDecoded().hash(into: &into)
+        } catch {
+            Logger(label: ""codes.vapor.url"").report(error: error)
+        }
+    }",0,,
+"    @objc public func verifyLegalHoldSubjects() {
+        needsToVerifyLegalHold = true
+        managedObjectContext?.saveOrRollback()
+    }",0,,
+"internal static func messagePlural(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""self.new_device_alert.message_plural"", String(describing: p1))
+        }",0,,
+"    internal init(io: NonBlockingFileIO, allocator: ByteBufferAllocator, request: Request) {
+        self.io = io
+        self.allocator = allocator
+        self.request = request
+    }",0,,
+"    override func createConstraints() {
+        super.createConstraints()
+        previewView.fitInSuperview()
+    }",0,,
+"    private func appendLegalHoldDisabledSystemMessageForConversation() {
+        appendSystemMessage(type: .legalHoldDisabled,
+                            sender: ZMUser.selfUser(in: self.managedObjectContext!),
+                            users: nil,
+                            clients: nil,
+                            timestamp: timestampAfterLastMessage())
+    }",0,,
+"internal static func other(_ p1: Any) -> String {
+            return L10n.tr(""Localizable"", ""content.system.cannot_decrypt_resolved.other"", String(describing: p1))
+          }",0,,
+"    public func handleDoubleTap(gesture: UIGestureRecognizer) {
+        let location = gesture.location(in: gridView)
+        toggleMaximized(view: streamView(at: location))
+    }",0,,
+"internal static func reply(_ p1: Any) -> String {
+            return L10n.tr(""Localizable"", ""conversation.status.message.reply"", String(describing: p1))
+          }",0,,
+"    private func streamView(for videoStream: VideoStream) -> OrientableView {
+        let streamId = videoStream.stream.streamId
+
+        if let streamView = viewCache[streamId] {
+            return streamView
+        } else {
+            let view = VideoPreviewView(stream: videoStream.stream, isCovered: isCovered, shouldShowActiveSpeakerFrame: configuration.shouldShowActiveSpeakerFrame)
+            viewCache[streamId] = view
+            return view
+        }
+    }",0,,
+"    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        return dataSource.count
+    }",0,,
+"internal static func title(_ p1: Any) -> String {
+            return L10n.tr(""Localizable"", ""registration.email_invitation.hero.title"", String(describing: p1))
+          }",0,,
+"internal static func connectingTo(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""content.system.connecting_to"", String(describing: p1))
+        }",0,,
+"    public init(rawValue: Int) {
+        self.rawValue = rawValue
+    }",0,,
+"internal static func newUser(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""push.notification.new_user"", String(describing: p1))
+        }",0,,
+"internal static func date(_ p1: Any) -> String {
+              return L10n.tr(""Localizable"", ""content.message.reply.original_timestamp.date"", String(describing: p1))
+            }",0,,
+"internal static func thisConversation(_ p1: Any) -> String {
+        return L10n.tr(""Localizable"", ""notifications.this_conversation"", String(describing: p1))
+      }",0,,
+"result.set(value: .urlEncoded(value), forPath: [])
+            case 2:
+                let key = kv[0]
+                let value = String(kv[1])
+                result.set(value: .urlEncoded(value), forPath: try parseKey(key: Substring(key)))
+            default:
+                //Empty `&&`
+                continue
+            }
+        }
+        return result
+    }
+
+    func parseKey(key: Substring) throws -> [String] {
+        guard let percentDecodedKey = key.removingPercentEncoding else {
+            throw URLEncodedFormError.malformedKey(key: key)
+        }
+        return try percentDecodedKey.split(separator: ""["").enumerated().map { (i, part) in 
+            switch i {
+            case 0:
+                return String(part)
+            default:
+                guard part.last == ""]"" else {
+                    throw URLEncodedFormError.malformedKey(key: key)
+                }
+                return String(part.dropLast())
+            }
+        }
+    }",1,"0,4","                result.set(value: .urlEncoded(value), forPath: [])/~/                result.set(value: .urlEncoded(value), forPath: try parseKey(key: Substring(key)))"
+"internal static func message(_ p1: Any) -> String {
+          return L10n.tr(""Localizable"", ""url_action.switch_backend.message"", String(describing: p1))
+        }",0,,
+"private func dequeueWrite(_ data: Data, code: OpCode, writeCompletion: (() -> ())? = nil) {
+        let operation = BlockOperation()
+        operation.addExecutionBlock { [weak self, weak operation] in
+            //stream isn't ready, let's wait
+            guard let s = self else { return }
+            guard let sOperation = operation else { return }
+            var offset = 2
+            let dataLength = data.count
+            let frame = NSMutableData(capacity: dataLength + s.MaxFrameSize)
+            let buffer = UnsafeMutableRawPointer(frame!.mutableBytes).assumingMemoryBound(to: UInt8.self)
+            buffer[0] = s.FinMask | code.rawValue
+            if dataLength < 126 {
+                buffer[1] = CUnsignedChar(dataLength)
+            } else if dataLength <= Int(UInt16.max) {
+                buffer[1] = 126
+                WebSocket.writeUint16(buffer, offset: offset, value: UInt16(dataLength))
+                offset += MemoryLayout<UInt16>.size
+            } else {
+                buffer[1] = 127
+                WebSocket.writeUint64(buffer, offset: offset, value: UInt64(dataLength))
+                offset += MemoryLayout<UInt64>.size
+            }
+            buffer[1] |= s.MaskMask
+            let maskKey = UnsafeMutablePointer<UInt8>(buffer + offset)
+            _ = SecRandomCopyBytes(kSecRandomDefault, Int(MemoryLayout<UInt32>.size), maskKey)
+            offset += MemoryLayout<UInt32>.size
+            
+            for i in 0..<dataLength {
+                buffer[offset] = data[i] ^ maskKey[i % MemoryLayout<UInt32>.size]
+                offset += 1
+            }
+            var total = 0
+            while !sOperation.isCancelled {
+                guard let outStream = s.outputStream else { break }
+                let writeBuffer = UnsafeRawPointer(frame!.bytes+total).assumingMemoryBound(to: UInt8.self)
+                let len = outStream.write(writeBuffer, maxLength: offset-total)
+                if len < 0 {
+                    var error: Error?
+                    if let streamError = outStream.streamError {
+                        error = streamError
+                    } else {
+                        let errCode = InternalErrorCode.outputStreamWriteError.rawValue
+                        error = s.errorWithDetail(""output stream error during write"", code: errCode)
+                    }
+                    s.doDisconnect(error as NSError?)
+                    break
+                } else {
+                    total += len
+                }
+                if total >= offset {
+                    if let queue = self?.callbackQueue, let callback = writeCompletion {
+                        queue.async {
+                            callback()
+                        }
+                    }
+
+                    break
+                }
+            }
+        }
+        writeQueue.addOperation(operation)
+    }",0,,
+"    func sortedUsers(_ users: Set<ZMUser>) -> [ZMUser] {
+        let nameDescriptor = NSSortDescriptor(key: ""normalizedName"", ascending: true)
+        let sortedUser = (users as NSSet?)?.sortedArray(using: [nameDescriptor]) as? [ZMUser]
+
+        return sortedUser ?? []
+    }",0,,
+"    private func displayIndicatorViewsIfNeeded() {
+        networkConditionView.networkQuality = configuration.networkQuality
+        networkConditionView.isHidden = shouldHideNetworkCondition
+    }",0,,

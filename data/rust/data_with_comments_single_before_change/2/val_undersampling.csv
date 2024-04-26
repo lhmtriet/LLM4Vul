@@ -1,0 +1,904 @@
+processed_func,target,flaw_line_index,flaw_line
+"    fn get(&mut self, key: SuffixCacheKey, pc: InstPtr) -> Option<InstPtr> {
+        let hash = self.hash(&key);
+        let pos = &mut self.sparse[hash];
+        if let Some(entry) = self.dense.get(*pos) {
+            if entry.key == key {
+                return Some(entry.pc);
+            }
+        }
+        *pos = self.dense.len();
+        self.dense.push(SuffixCacheEntry { key: key, pc: pc });
+        None
+    }",0,,
+"    pub async fn run(&mut self) -> TResult<()> {
+        loop {
+            // Take the permit first, but we won't use it right now
+            // that's why we will forget it
+            self.base.climit.acquire().await.unwrap().forget();
+            let stream = self.accept().await?;
+            let mut chandle = ConnectionHandler::new(
+                self.base.db.clone(),
+                Connection::new(stream),
+                self.base.climit.clone(),
+                Terminator::new(self.base.signal.subscribe()),
+                self.base.terminate_tx.clone(),
+            );
+            tokio::spawn(async move {
+                if let Err(e) = chandle.run().await {
+                    log::error!(""Error: {}"", e);
+                }
+            });
+        }
+    }",1,5,            let stream = self.accept().await?;
+"	fn default() -> Self {
+		Self::Undefined
+	}",0,,
+"fn try_pager(
+        single_screen_action: SingleScreenAction,
+        wrapping_mode: WrappingMode,
+        pager_from_config: Option<&str>,
+    ) -> Result<Self> {
+        use crate::pager::{self, PagerKind, PagerSource};
+        use std::process::{Command, Stdio};
+
+        let pager_opt =
+            pager::get_pager(pager_from_config).chain_err(|| ""Could not parse pager command."")?;
+
+        let pager = match pager_opt {
+            Some(pager) => pager,
+            None => return Ok(OutputType::stdout()),
+        };
+
+        if pager.kind == PagerKind::Bat {
+            return Err(ErrorKind::InvalidPagerValueBat.into());
+        }
+
+        let mut p = Command::new(&pager.bin);
+        let args = pager.args;
+
+        if pager.kind == PagerKind::Less {
+            // less needs to be called with the '-R' option in order to properly interpret the
+            // ANSI color sequences printed by bat. If someone has set PAGER=""less -F"", we
+            // therefore need to overwrite the arguments and add '-R'.
+            //
+            // We only do this for PAGER (as it is not specific to 'bat'), not for BAT_PAGER
+            // or bats '--pager' command line option.
+            let replace_arguments_to_less = pager.source == PagerSource::EnvVarPager;
+
+            if args.is_empty() || replace_arguments_to_less {
+                p.arg(""--RAW-CONTROL-CHARS"");
+                if single_screen_action == SingleScreenAction::Quit {
+                    p.arg(""--quit-if-one-screen"");
+                }
+
+                if wrapping_mode == WrappingMode::NoWrapping(true) {
+                    p.arg(""--chop-long-lines"");
+                }
+
+                // Passing '--no-init' fixes a bug with '--quit-if-one-screen' in older
+                // versions of 'less'. Unfortunately, it also breaks mouse-wheel support.
+                //
+                // See: http://www.greenwoodsoftware.com/less/news.530.html
+                //
+                // For newer versions (530 or 558 on Windows), we omit '--no-init' as it
+                // is not needed anymore.
+                match retrieve_less_version(&pager.bin) {
+                    None => {
+                        p.arg(""--no-init"");
+                    }
+                    Some(version) if (version < 530 || (cfg!(windows) && version < 558)) => {
+                        p.arg(""--no-init"");
+                    }
+                    _ => {}
+                }
+            } else {
+                p.args(args);
+            }
+            p.env(""LESSCHARSET"", ""UTF-8"");
+        } else {
+            p.args(args);
+        };
+
+        Ok(p.stdin(Stdio::piped())
+            .spawn()
+            .map(OutputType::Pager)
+            .unwrap_or_else(|_| OutputType::stdout()))
+    }",1,20,        let mut p = Command::new(&pager.bin);
+"pub fn current_block_hash() -> Option<H256> {
+		Self::current_block().map(|block| block.header.hash())
+	}",0,,
+"pub fn new() -> Self {
+        Compiler {
+            insts: vec![],
+            compiled: Program::new(),
+            capture_name_idx: HashMap::new(),
+            num_exprs: 0,
+            size_limit: 10 * (1 << 20),
+            suffix_cache: SuffixCache::new(1000),
+            utf8_seqs: Some(Utf8Sequences::new('\x00', '\x00')),
+            byte_classes: ByteClassSet::new(),
+            extra_inst_bytes: 0,
+        }
+    }",0,,
+"fn insert(&self, func: &mut Function) {
+        match self {
+            Self::Gc => {
+                func.instruction(Instruction::Call(0));
+            }
+            Self::Get(x) => {
+                func.instruction(Instruction::I32Const(*x));
+                func.instruction(Instruction::TableGet { table: 0 });
+                func.instruction(Instruction::Drop);
+            }
+            Self::SetFromParam(x, y) => {
+                func.instruction(Instruction::I32Const(*x));
+                func.instruction(Instruction::LocalGet(*y));
+                func.instruction(Instruction::TableSet { table: 0 });
+            }
+            Self::SetFromGet(x, y) => {
+                func.instruction(Instruction::I32Const(*x));
+                func.instruction(Instruction::I32Const(*y));
+                func.instruction(Instruction::TableGet { table: 0 });
+                func.instruction(Instruction::TableSet { table: 0 });
+            }
+        }
+    }",1,"0,6,11,12,16,17","fn insert(&self, func: &mut Function) {/~/                func.instruction(Instruction::I32Const(*x));/~/                func.instruction(Instruction::I32Const(*x));/~/                func.instruction(Instruction::LocalGet(*y));/~/                func.instruction(Instruction::I32Const(*x));/~/                func.instruction(Instruction::I32Const(*y));"
+"    fn c_repeat_zero_or_more(
+        &mut self,
+        expr: &Hir,
+        greedy: bool,
+    ) -> ResultOrEmpty {
+        let split_entry = self.insts.len();
+        let split = self.push_split_hole();
+        let Patch { hole: hole_rep, entry: entry_rep } = match self.c(expr)? {
+            Some(p) => p,
+            None => return self.pop_split_hole(),
+        };
+
+        self.fill(hole_rep, split_entry);
+        let split_hole = if greedy {
+            self.fill_split(split, Some(entry_rep), None)
+        } else {
+            self.fill_split(split, None, Some(entry_rep))
+        };
+        Ok(Some(Patch { hole: split_hole, entry: split_entry }))
+    }",0,,
+"    pub async fn run(&mut self) -> TResult<()> {
+        loop {
+            // Take the permit first, but we won't use it right now
+            // that's why we will forget it
+            self.base.climit.acquire().await.unwrap().forget();
+            let stream = self.accept().await?;
+            let mut sslhandle = ConnectionHandler::new(
+                self.base.db.clone(),
+                Connection::new(stream),
+                self.base.climit.clone(),
+                Terminator::new(self.base.signal.subscribe()),
+                self.base.terminate_tx.clone(),
+            );
+            tokio::spawn(async move {
+                if let Err(e) = sslhandle.run().await {
+                    log::error!(""Error: {}"", e);
+                }
+            });
+        }
+    }",1,5,            let stream = self.accept().await?;
+"    pub(crate) fn from_wasmtime(types: &TypeTables, ty: &EntityType) -> ExternType {
+        match ty {
+            EntityType::Function(idx) => {
+                FuncType::from_wasm_func_type(types.wasm_signatures[*idx].clone()).into()
+            }
+            EntityType::Global(ty) => GlobalType::from_wasmtime_global(ty).into(),
+            EntityType::Memory(ty) => MemoryType::from_wasmtime_memory(ty).into(),
+            EntityType::Table(ty) => TableType::from_wasmtime_table(ty).into(),
+            EntityType::Module(ty) => {
+                let ty = &types.module_signatures[*ty];
+                ModuleType::from_wasmtime(types, ty).into()
+            }
+            EntityType::Instance(ty) => {
+                let ty = &types.instance_signatures[*ty];
+                InstanceType::from_wasmtime(types, ty).into()
+            }
+            EntityType::Tag(_) => unimplemented!(""wasm tag support""),
+        }
+    }",0,,
+"fn test_err_capped_before_exception() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov64 r1, 0x0
+        mov64 r2, 0x0
+        add64 r0, 0x0
+        add64 r0, 0x0
+        div64 r1, r2
+        add64 r0, 0x0
+        exit"",
+        [],
+        (),
+        0,
+        {
+            |_vm, res: Result| {
+                matches!(res.unwrap_err(),
+                    EbpfError::ExceededMaxInstructions(pc, initial_insn_count)
+                    if pc == 31 && initial_insn_count == 2
+                )
+            }
+        },
+        2
+    );
+    test_interpreter_and_jit_asm!(
+        ""
+        mov64 r1, 0x0
+        mov64 r2, 0x0
+        add64 r0, 0x0
+        add64 r0, 0x0
+        syscall Unresolved
+        add64 r0, 0x0
+        exit"",
+        [],
+        (),
+        0,
+        {
+            |_vm, res: Result| {
+                matches!(res.unwrap_err(),
+                    EbpfError::ExceededMaxInstructions(pc, initial_insn_count)
+                    if pc == 33 && initial_insn_count == 4
+                )
+            }
+        },
+        4
+    );
+}",0,,
+"fn instantiate_with_dummy(store: &mut Store<StoreLimits>, module: &Module) -> Option<Instance> {
+    // Creation of imports can fail due to resource limit constraints, and then
+    // instantiation can naturally fail for a number of reasons as well. Bundle
+    // the two steps together to match on the error below.
+    let instance =
+        dummy::dummy_linker(store, module).and_then(|l| l.instantiate(&mut *store, module));
+
+    let e = match instance {
+        Ok(i) => return Some(i),
+        Err(e) => e,
+    };
+
+    // If the instantiation hit OOM for some reason then that's ok, it's
+    // expected that fuzz-generated programs try to allocate lots of
+    // stuff.
+    if store.data().oom {
+        return None;
+    }
+
+    // Allow traps which can happen normally with `unreachable` or a
+    // timeout or such
+    if e.downcast_ref::<Trap>().is_some() {
+        return None;
+    }
+
+    let string = e.to_string();
+    // Also allow errors related to fuel consumption
+    if string.contains(""all fuel consumed"")
+        // Currently we instantiate with a `Linker` which can't instantiate
+        // every single module under the sun due to using name-based resolution
+        // rather than positional-based resolution
+        || string.contains(""incompatible import type"")
+    {
+        return None;
+    }
+
+    // Everything else should be a bug in the fuzzer or a bug in wasmtime
+    panic!(""failed to instantiate {:?}"", e);
+}",0,,
+"pub fn to_wasm_binary(&self) -> Vec<u8> {
+        let mut module = Module::new();
+
+        // Import the GC function.
+        let mut imports = ImportSection::new();
+        imports.import("""", Some(""gc""), EntityType::Function(0));
+
+        // Define our table.
+        let mut tables = TableSection::new();
+        tables.table(TableType {
+            element_type: ValType::ExternRef,
+            minimum: self.table_size(),
+            maximum: None,
+        });
+
+        // Encode the types for all functions that we are using.
+        let mut types = TypeSection::new();
+        types.function(vec![], vec![]); // 0: ""gc""
+        let mut params: Vec<ValType> = Vec::with_capacity(self.num_params() as usize);
+        for _i in 0..self.num_params() {
+            params.push(ValType::ExternRef);
+        }
+        let results = vec![];
+        types.function(params, results); // 1: ""run""
+
+        // Define the ""run"" function export.
+        let mut functions = FunctionSection::new();
+        functions.function(1);
+
+        let mut exports = ExportSection::new();
+        exports.export(""run"", Export::Function(1));
+
+        let mut params: Vec<(u32, ValType)> = Vec::with_capacity(self.num_params() as usize);
+        for _i in 0..self.num_params() {
+            params.push((0, ValType::ExternRef));
+        }
+        let mut func = Function::new(params);
+
+        for op in self.ops.iter().take(MAX_OPS) {
+            op.insert(&mut func);
+        }
+
+        let mut code = CodeSection::new();
+        code.function(&func);
+
+        module
+            .section(&types)
+            .section(&imports)
+            .section(&functions)
+            .section(&tables)
+            .section(&exports)
+            .section(&code);
+
+        module.finish()
+    }",1,"15,16,17,18,19,20,21,22,23,24,30,32,33,34,35,36,39","// Encode the types for all functions that we are using./~/        let mut types = TypeSection::new();/~/        types.function(vec![], vec![]); // 0: ""gc""/~/        let mut params: Vec<ValType> = Vec::with_capacity(self.num_params() as usize);/~/        for _i in 0..self.num_params() {/~/            params.push(ValType::ExternRef);/~/        }/~/        let results = vec![];/~/        types.function(params, results); // 1: ""run""/~//~/        exports.export(""run"", Export::Function(1));/~/        let mut params: Vec<(u32, ValType)> = Vec::with_capacity(self.num_params() as usize);/~/        for _i in 0..self.num_params() {/~/            params.push((0, ValType::ExternRef));/~/        }/~/        let mut func = Function::new(params);/~/            op.insert(&mut func);"
+"fn global_init_no_leak() -> anyhow::Result<()> {
+    let (mut store, module) = ref_types_module(
+        r#""
+            (module
+                (import """" """" (global externref))
+                (global externref (global.get 0))
+            )
+        ""#,
+    )?;
+
+    let externref = ExternRef::new(());
+    let global = Global::new(
+        &mut store,
+        GlobalType::new(ValType::ExternRef, Mutability::Const),
+        externref.clone().into(),
+    )?;
+    Instance::new(&mut store, &module, &[global.into()])?;
+    drop(store);
+    assert_eq!(externref.strong_count(), 1);
+
+    Ok(())
+}",0,,
+"pub fn table_size(&self) -> u32 {
+        let table_size = std::cmp::max(self.table_size, TABLE_SIZE_RANGE.start);
+        let table_size = std::cmp::min(table_size, TABLE_SIZE_RANGE.end);
+        table_size
+    }",0,,
+"pub(crate) fn tokenize(mut input: &str) -> Vec<(Token, Span)> {
+    let mut result = vec![];
+    let mut offset = 0;
+
+    loop {
+        let input_len = input.len();
+        input = input.trim_start();
+        while input.starts_with('#') {
+            input = input.trim_start_matches(|c| c != '\n').trim_start();
+        }
+        offset += input_len - input.len();
+
+        match input.chars().next() {
+            None => break,
+            Some(c) => {
+                let (len, token) = consume_chain! {
+                    input, c;
+
+                    if input.starts_with(""<%"") => (2, Token::BStart);
+                    if input.starts_with(""%>"") => (2, Token::BEnd);
+                    if input.starts_with("">>"") => (2, Token::LookAhead);
+                    if input.starts_with(""<<"") => (2, Token::LookBehind);
+                    if input.starts_with(""::"") => (2, Token::Backref);
+
+                    if c == '%' => (1, Token::BWord);
+                    if c == '*' => (1, Token::Star);
+                    if c == '+' => (1, Token::Plus);
+                    if c == '?' => (1, Token::QuestionMark);
+                    if c == '|' => (1, Token::Pipe);
+                    if c == ':' => (1, Token::Colon);
+                    if c == ')' => (1, Token::CloseParen);
+                    if c == '{' => (1, Token::OpenBrace);
+                    if c == '}' => (1, Token::CloseBrace);
+                    if c == ',' => (1, Token::Comma);
+                    if c == '!' => (1, Token::Not);
+                    if c == '[' => (1, Token::OpenBracket);
+                    if c == '-' => (1, Token::Dash);
+                    if c == ']' => (1, Token::CloseBracket);
+                    if c == '.' => (1, Token::Dot);
+                    if c == ';' => (1, Token::Semicolon);
+                    if c == '=' => (1, Token::Equals);
+
+                    if c == '\'' => match input[1..].find('\'') {
+                        Some(len_inner) => (len_inner + 2, Token::String),
+                        None => (input.len(), Token::ErrorMsg(ParseErrorMsg::UnclosedString)),
+                    };
+
+                    if c == '""' => match find_unescaped_quote(&input[1..]) {
+                        Some(len_inner) => (len_inner + 2, Token::String),
+                        None => (input.len(), Token::ErrorMsg(ParseErrorMsg::UnclosedString)),
+                    };
+
+                    if let Some(rest) = input.strip_prefix(""U+"") => {
+                        match rest.find(|c: char| !c.is_ascii_hexdigit()) {
+                            Some(0) => (1, Token::Error),
+                            Some(len_inner) => (len_inner + 2, Token::CodePoint),
+                            None => (input.len(), Token::CodePoint),
+                        }
+                    };
+
+                    if matches!(c, '0'..='9') => (
+                        input.find(|c: char| !matches!(c, '0'..='9')).unwrap_or(input.len()),
+                        Token::Number,
+                    );
+
+                    if c.is_alphabetic() || c == '_' => (
+                        input.find(|c: char| !c.is_alphanumeric() && c != '_').unwrap_or(input.len()),
+                        Token::Identifier,
+                    );
+
+                    if c == '^' => (1, Token::ErrorMsg(ParseErrorMsg::Caret));
+                    if c == '$' => (1, Token::ErrorMsg(ParseErrorMsg::Dollar));
+
+                    if let Some(rest) = input.strip_prefix(""(?"") => (
+                        match rest.chars().next() {
+                            Some('<') => {
+                                let name_len = rest.chars()
+                                    .skip(1)
+                                    .take_while(char::is_ascii_alphanumeric)
+                                    .count();
+
+                                if name_len > 0 && matches!(rest.chars().nth(1 + name_len), Some('>')) {
+                                    4 + name_len
+                                } else if let Some('=' | '!') = rest.chars().nth(1) {
+                                    4
+                                } else {
+                                    3
+                                }
+                            }
+                            Some('P') if matches!(rest.chars().nth(1), Some('<')) => {
+                                let name_len = rest.chars()
+                                    .skip(2)
+                                    .take_while(char::is_ascii_alphanumeric)
+                                    .count();
+
+                                if name_len > 0 && matches!(rest.chars().nth(2 + name_len), Some('>')) {
+                                    5 + name_len
+                                } else {
+                                    4
+                                }
+                            },
+                            Some('>' | '!' | ':' | '=' | '(' | '|') => 3,
+                            _ => 2,
+                        },
+                        Token::ErrorMsg(ParseErrorMsg::SpecialGroup),
+                    );
+                    if c == '(' => (1, Token::OpenParen);
+
+                    if c == '\\' => {
+                        if input.starts_with(""\\u{"") || input.starts_with(""\\x{"") {
+                            match input[3..].find('}') {
+                                Some(len) => (len + 4, Token::ErrorMsg(ParseErrorMsg::BackslashUnicode)),
+                                None => (2, Token::ErrorMsg(ParseErrorMsg::Backslash)),
+                            }
+                        } else if let Some(rest) = input.strip_prefix(""\\u"") {
+                            match rest.find(|c: char| !c.is_ascii_hexdigit()).unwrap_or(rest.len()) {
+                                4.. => (6, Token::ErrorMsg(ParseErrorMsg::BackslashU4)),
+                                _ => (2, Token::ErrorMsg(ParseErrorMsg::Backslash)),
+                            }
+                        } else if let Some(rest) = input.strip_prefix(""\\x"") {
+                            match rest.find(|c: char| !c.is_ascii_hexdigit()).unwrap_or(rest.len()) {
+                                2.. => (4, Token::ErrorMsg(ParseErrorMsg::BackslashX2)),
+                                _ => (2, Token::ErrorMsg(ParseErrorMsg::Backslash)),
+                            }
+                        } else if let Some(rest) = input.strip_prefix(""\\k<"") {
+                            match rest.find('>') {
+                                Some(len) => (len + 4, Token::ErrorMsg(ParseErrorMsg::BackslashK)),
+                                _ => (2, Token::ErrorMsg(ParseErrorMsg::Backslash)),
+                            }
+                        } else if input.len() >= 2 {
+                            (2, Token::ErrorMsg(ParseErrorMsg::Backslash))
+                        } else {
+                            (1, Token::Error)
+                        }
+                    };
+                };
+
+                let start = offset;
+                offset += len;
+                input = &input[len..];
+                result.push((token, Span::new(start, offset)));
+            }
+        }
+    }
+
+    result
+}",1,"129,130","} else if input.len() >= 2 {/~/                            (2, Token::ErrorMsg(ParseErrorMsg::Backslash))"
+"	pub fn is_valid_web_proxy_access_token(&self, token: &String) -> bool {
+		self.web_proxy_tokens.lock().contains_key(&token)
+	}",1,"0,1","	pub fn is_valid_web_proxy_access_token(&self, token: &String) -> bool {/~/		self.web_proxy_tokens.lock().contains_key(&token)"
+"fn main() -> std::io::Result<()> {
+    env::set_var(""RUST_LOG"", ""swhks=trace"");
+    env_logger::init();
+
+    let pid_file_path = String::from(""/tmp/swhks.pid"");
+    let sock_file_path = String::from(""/tmp/swhkd.sock"");
+
+    if Path::new(&pid_file_path).exists() {
+        log::trace!(""Reading {} file and checking for running instances."", pid_file_path);
+        let swhkd_pid = match fs::read_to_string(&pid_file_path) {
+            Ok(swhkd_pid) => swhkd_pid,
+            Err(e) => {
+                log::error!(""Unable to read {} to check all running instances"", e);
+                exit(1);
+            }
+        };
+        log::debug!(""Previous PID: {}"", swhkd_pid);
+
+        let mut sys = System::new_all();
+        sys.refresh_all();
+        for (pid, process) in sys.processes() {
+            if pid.to_string() == swhkd_pid && process.exe() == env::current_exe().unwrap() {
+                log::error!(""Server is already running!"");
+                exit(1);
+            }
+        }
+    }
+
+    if Path::new(&sock_file_path).exists() {
+        log::trace!(""Sockfile exists, attempting to remove it."");
+        match fs::remove_file(&sock_file_path) {
+            Ok(_) => {
+                log::debug!(""Removed old socket file"");
+            }
+            Err(e) => {
+                log::error!(""Error removing the socket file!: {}"", e);
+                log::error!(""You can manually remove the socket file: {}"", sock_file_path);
+                exit(1);
+            }
+        };
+    }
+
+    match fs::write(&pid_file_path, id().to_string()) {
+        Ok(_) => {}
+        Err(e) => {
+            log::error!(""Unable to write to {}: {}"", pid_file_path, e);
+            exit(1);
+        }
+    }
+
+    let listener = UnixListener::bind(sock_file_path)?;
+    loop {
+        match listener.accept() {
+            Ok((mut socket, address)) => {
+                let mut response = String::new();
+                socket.read_to_string(&mut response)?;
+                run_system_command(&response);
+                log::debug!(""Socket: {:?} Address: {:?} Response: {}"", socket, address, response);
+            }
+            Err(e) => log::error!(""accept function failed: {:?}"", e),
+        }
+    }
+}",1,5,"    let sock_file_path = String::from(""/tmp/swhkd.sock"");"
+"pub async fn mksnap(handle: &CoreDB, con: &mut Connection, act: ActionGroup) -> TResult<()> {
+    let howmany = act.howmany();
+    if howmany == 0 {
+        if !handle.is_snapshot_enabled() {
+            // Since snapshotting is disabled, we can't create a snapshot!
+            // We'll just return an error returning the same
+            let error = ""err-snapshot-disabled"";
+            con.write_response(GroupBegin(1)).await?;
+            let error = RespCodes::OtherError(Some(error.to_string()));
+            return con.write_response(error).await;
+        }
+        // We will just follow the standard convention of creating snapshots
+        let mut was_engine_error = false;
+        let mut snap_result = None;
+        let mut engine_was_busy = false;
+        {
+            let snaphandle = handle.snapcfg.clone();
+            let snapstatus = (*snaphandle)
+                .as_ref()
+                .unwrap_or_else(|| unsafe { unreachable_unchecked() });
+            let snapengine = SnapshotEngine::new(snapstatus.max, &handle, None);
+            if snapengine.is_err() {
+                was_engine_error = true;
+            } else {
+                if snapstatus.is_busy() {
+                    engine_was_busy = true;
+                } else {
+                    let mut snapengine =
+                        snapengine.unwrap_or_else(|_| unsafe { unreachable_unchecked() });
+
+                    snap_result = snapengine.mksnap();
+                }
+            }
+        }
+        if was_engine_error {
+            return con
+                .write_response(responses::fresp::R_SERVER_ERR.to_owned())
+                .await;
+        }
+        if engine_was_busy {
+            con.write_response(GroupBegin(1)).await?;
+            let error = RespCodes::OtherError(Some(""err-snapshot-busy"".to_owned()));
+            return con.write_response(error).await;
+        }
+        if let Some(succeeded) = snap_result {
+            if succeeded {
+                // Snapshotting succeeded, return Okay
+                return con
+                    .write_response(responses::fresp::R_OKAY.to_owned())
+                    .await;
+            } else {
+                // Nope, something happened while creating a snapshot
+                // return a server error
+                return con
+                    .write_response(responses::fresp::R_SERVER_ERR.to_owned())
+                    .await;
+            }
+        } else {
+            // We shouldn't ever reach here if all our logic is correct
+            // but if we do, something is wrong with the runtime
+            con.write_response(GroupBegin(1)).await?;
+            let error = RespCodes::OtherError(Some(""err-access-after-termsig"".to_owned()));
+            return con.write_response(error).await;
+        }
+    } else {
+        if howmany == 1 {
+            // This means that the user wants to create a 'named' snapshot
+            let snapname = act
+                .get_ref()
+                .get(1)
+                .unwrap_or_else(|| unsafe { unreachable_unchecked() });
+            let mut path = PathBuf::from(DIR_SNAPSHOT);
+            path.push(""remote"");
+            path.push(snapname.to_owned() + "".snapshot"");
+            let failed;
+            {
+                match diskstore::flush_data(&path, &handle.acquire_read().get_ref()) {
+                    Ok(_) => failed = false,
+                    Err(e) => {
+                        log::error!(""Error while creating snapshot: {}"", e);
+                        failed = true;
+                    }
+                }
+            }
+            if failed {
+                return con
+                    .write_response(responses::fresp::R_SERVER_ERR.to_owned())
+                    .await;
+            } else {
+                return con
+                    .write_response(responses::fresp::R_OKAY.to_owned())
+                    .await;
+            }
+        } else {
+            return con
+                .write_response(responses::fresp::R_ACTION_ERR.to_owned())
+                .await;
+        }
+    }
+}",1,99,}
+"fn on_initialize(_: T::BlockNumber) -> Weight {
+			Pending::<T>::kill();
+
+			// If the digest contain an existing ethereum block(encoded as PreLog), If contains,
+			// execute the imported block firstly and disable transact dispatch function.
+			if let Ok(log) = fp_consensus::find_pre_log(&frame_system::Pallet::<T>::digest()) {
+				let PreLog::Block(block) = log;
+
+				for transaction in block.transactions {
+					let source = Self::recover_signer(&transaction).expect(
+						""pre-block transaction signature invalid; the block cannot be built"",
+					);
+
+					Self::do_transact(source, transaction).expect(
+						""pre-block transaction verification failed; the block cannot be built"",
+					);
+				}
+			}
+
+			0
+		}",1,13,"					Self::do_transact(source, transaction).expect("
+"fn do_transact(source: H160, transaction: Transaction) -> DispatchResultWithPostInfo {
+		let transaction_hash =
+			H256::from_slice(Keccak256::digest(&rlp::encode(&transaction)).as_slice());
+		let transaction_index = Pending::<T>::get().len() as u32;
+
+		let (to, _, info) = Self::execute(
+			source,
+			transaction.input.clone(),
+			transaction.value,
+			transaction.gas_limit,
+			Some(transaction.gas_price),
+			Some(transaction.nonce),
+			transaction.action,
+			None,
+		)?;
+
+		let (reason, status, used_gas, dest) = match info {
+			CallOrCreateInfo::Call(info) => (
+				info.exit_reason,
+				TransactionStatus {
+					transaction_hash,
+					transaction_index,
+					from: source,
+					to,
+					contract_address: None,
+					logs: info.logs.clone(),
+					logs_bloom: {
+						let mut bloom: Bloom = Bloom::default();
+						Self::logs_bloom(info.logs, &mut bloom);
+						bloom
+					},
+				},
+				info.used_gas,
+				to,
+			),
+			CallOrCreateInfo::Create(info) => (
+				info.exit_reason,
+				TransactionStatus {
+					transaction_hash,
+					transaction_index,
+					from: source,
+					to,
+					contract_address: Some(info.value),
+					logs: info.logs.clone(),
+					logs_bloom: {
+						let mut bloom: Bloom = Bloom::default();
+						Self::logs_bloom(info.logs, &mut bloom);
+						bloom
+					},
+				},
+				info.used_gas,
+				Some(info.value),
+			),
+		};
+
+		let receipt = ethereum::Receipt {
+			state_root: match reason {
+				ExitReason::Succeed(_) => H256::from_low_u64_be(1),
+				ExitReason::Error(_) => H256::from_low_u64_le(0),
+				ExitReason::Revert(_) => H256::from_low_u64_le(0),
+				ExitReason::Fatal(_) => H256::from_low_u64_le(0),
+			},
+			used_gas,
+			logs_bloom: status.clone().logs_bloom,
+			logs: status.clone().logs,
+		};
+
+		Pending::<T>::append((transaction, status, receipt));
+
+		Self::deposit_event(Event::Executed(
+			source,
+			dest.unwrap_or_default(),
+			transaction_hash,
+			reason,
+		));
+		Ok(PostDispatchInfo {
+			actual_weight: Some(T::GasWeightMapping::gas_to_weight(
+				used_gas.unique_saturated_into(),
+			)),
+			pays_fee: Pays::No,
+		})
+		.into()
+	}",1,0,"fn do_transact(source: H160, transaction: Transaction) -> DispatchResultWithPostInfo {"
+"fn test_empty_input() -> std::result::Result<(), PrecompileFailure> {
+		let input: [u8; 0] = [];
+
+		let cost: u64 = 1;
+
+		let context: Context = Context {
+			address: Default::default(),
+			caller: Default::default(),
+			apparent_value: From::from(0),
+		};
+
+		match Modexp::execute(&input, Some(cost), &context, false) {
+			Ok(_) => {
+				panic!(""Test not expected to pass"");
+			}
+			Err(e) => {
+				assert_eq!(
+					e,
+					PrecompileFailure::Error {
+						exit_status: ExitError::Other(
+							""input must contain at least 96 bytes"".into()
+						)
+					}
+				);
+				Ok(())
+			}
+		}
+	}",0,,
+"pub fn parse_slice(p: &[u8]) -> Result<Message, Error> {
+        if p.len() != util::MESSAGE_SIZE {
+            return Err(Error::InvalidInputLength);
+        }
+
+        let mut a = [0; util::MESSAGE_SIZE];
+        a.copy_from_slice(p);
+        Ok(Self::parse(&a))
+    }",0,,
+"pub(crate) unsafe fn write_value_to(&self, store: &mut StoreOpaque, p: *mut u128) {
+        match self {
+            Val::I32(i) => ptr::write(p as *mut i32, *i),
+            Val::I64(i) => ptr::write(p as *mut i64, *i),
+            Val::F32(u) => ptr::write(p as *mut u32, *u),
+            Val::F64(u) => ptr::write(p as *mut u64, *u),
+            Val::V128(b) => ptr::write(p as *mut u128, *b),
+            Val::ExternRef(None) => ptr::write(p, 0),
+            Val::ExternRef(Some(x)) => {
+                let externref_ptr = x.inner.as_raw();
+                store.insert_vmexternref(x.inner.clone());
+                ptr::write(p as *mut *mut u8, externref_ptr)
+            }
+            Val::FuncRef(f) => ptr::write(
+                p as *mut *mut runtime::VMCallerCheckedAnyfunc,
+                if let Some(f) = f {
+                    f.caller_checked_anyfunc(store).as_ptr()
+                } else {
+                    ptr::null_mut()
+                },
+            ),
+        }
+    }",1,"0,1,2,3,4,5,6,8,10","pub(crate) unsafe fn write_value_to(&self, store: &mut StoreOpaque, p: *mut u128) {/~/        match self {/~/            Val::I32(i) => ptr::write(p as *mut i32, *i),/~/            Val::I64(i) => ptr::write(p as *mut i64, *i),/~/            Val::F32(u) => ptr::write(p as *mut u32, *u),/~/            Val::F64(u) => ptr::write(p as *mut u64, *u),/~/            Val::V128(b) => ptr::write(p as *mut u128, *b),/~/            Val::ExternRef(Some(x)) => {/~/                store.insert_vmexternref(x.inner.clone());"
+"fn test_wat_string() {
+        let ops = TableOps {
+            num_params: 2,
+            table_size: 10,
+            ops: vec![
+                TableOp::Gc,
+                TableOp::Get(0),
+                TableOp::SetFromParam(1, 2),
+                TableOp::SetFromGet(3, 4),
+            ],
+        };
+
+        let expected = r#""
+(module
+  (type (;0;) (func))
+  (type (;1;) (func (param externref externref)))
+  (import """" ""gc"" (func (;0;) (type 0)))
+  (func (;1;) (type 1) (param externref externref)
+    call 0
+    i32.const 0
+    table.get 0
+    drop
+    i32.const 1
+    local.get 2
+    table.set 0
+    i32.const 3
+    i32.const 4
+    table.get 0
+    table.set 0)
+  (table (;0;) 10 externref)
+  (export ""run"" (func 1)))
+""#;
+        let actual = ops.to_wasm_binary();
+        let actual = wasmprinter::print_bytes(&actual).unwrap();
+        assert_eq!(actual.trim(), expected.trim());
+    }",1,"2,3,15,17,18,19,20,21,22,23,24,25,26,27,28,29,30","num_params: 2,/~/            table_size: 10,/~/  (type (;1;) (func (param externref externref)))/~/  (func (;1;) (type 1) (param externref externref)/~/    call 0/~/    i32.const 0/~/    table.get 0/~/    drop/~/    i32.const 1/~/    local.get 2/~/    table.set 0/~/    i32.const 3/~/    i32.const 4/~/    table.get 0/~/    table.set 0)/~/  (table (;0;) 10 externref)/~/  (export ""run"" (func 1)))"
+"fn test_jsle_imm() {
+    test_interpreter_and_jit_asm!(
+        ""
+        mov32 r0, 0
+        mov r1, -2
+        jsle r1, -3, +1
+        jsle r1, -1, +1
+        exit
+        mov32 r0, 1
+        jsle r1, -2, +1
+        mov32 r0, 2
+        exit"",
+        [],
+        (),
+        0,
+        { |_vm, res: Result| { res.unwrap() == 0x1 } },
+        7
+    );
+}",0,,
